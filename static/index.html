@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gustav - Calculateur de Tubes de Prélèvement | CHU de Québec</title>
+  <!-- Tailwind CSS & FontAwesome -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#0284c7',
+              600: '#0369a1',
+              700: '#075985',
+              800: '#0c4a6e',
+              900: '#082f49',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="h-full flex flex-col text-slate-800 bg-slate-100">
+
+  <!-- Top Navigation / Header -->
+  <header class="bg-gradient-to-r from-sky-900 via-sky-800 to-indigo-900 text-white shadow-lg sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-white/10 backdrop-blur border border-white/20 flex items-center justify-center shadow-inner">
+          <i class="fa-solid fa-vial-virus text-sky-300 text-xl"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-xl font-bold tracking-tight text-white">GUSTAV</h1>
+            <span class="bg-sky-400/20 text-sky-200 border border-sky-400/30 text-xs px-2 py-0.5 rounded-full font-medium">Manuel des prélèvements</span>
+          </div>
+          <p class="text-xs text-sky-200/80">CHU de Québec-Université Laval • Calculateur de Tubes & Ordre de Prélèvement</p>
+        </div>
+      </div>
+
+      <!-- Controls: Hospital Site & Population -->
+      <div class="flex items-center space-x-3">
+        <!-- Site Selector -->
+        <div class="flex items-center bg-white/10 backdrop-blur rounded-lg px-3 py-1.5 border border-white/15 text-sm">
+          <i class="fa-solid fa-hospital text-sky-300 mr-2 text-xs"></i>
+          <select id="siteSelect" class="bg-transparent text-white font-medium focus:outline-none cursor-pointer text-xs sm:text-sm">
+            <option value="Tous les sites" class="text-slate-800">Tous les sites (Standard CHU)</option>
+            <option value="Hôpital Enfant-Jésus (HEJ)" class="text-slate-800">Hôpital Enfant-Jésus (HEJ)</option>
+            <option value="Hôpital Saint-François d'Assise (HSFA)" class="text-slate-800">Hôpital Saint-François d'Assise (HSFA)</option>
+            <option value="Hôtel-Dieu de Québec (HDQ)" class="text-slate-800">L'Hôtel-Dieu de Québec (HDQ)</option>
+            <option value="Centre hospitalier Université Laval (CHUL)" class="text-slate-800">CHUL (Centre hospitalier Université Laval)</option>
+            <option value="Hôpital du Saint-Sacrement (HSS)" class="text-slate-800">Hôpital du Saint-Sacrement (HSS)</option>
+            <option value="Institut Universitaire de Cardiologie et de Pneumologie de Québec" class="text-slate-800">IUCPQ</option>
+            <option value="Hôpital régional de Portneuf" class="text-slate-800">Hôpital régional de Portneuf</option>
+          </select>
+        </div>
+
+        <!-- Pediatric Toggle -->
+        <button id="pediatricBtn" class="flex items-center space-x-2 bg-white/10 hover:bg-white/20 transition-all rounded-lg px-3 py-1.5 border border-white/15 text-xs sm:text-sm font-medium">
+          <i class="fa-solid fa-child text-sky-300"></i>
+          <span id="pediatricLabel">Adulte</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Grid -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    
+    <!-- LEFT COLUMN: Search & Active Basket (5 Cols) -->
+    <div class="lg:col-span-5 space-y-5">
+      
+      <!-- Search Box Card -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+        <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+          <i class="fa-solid fa-magnifying-glass text-sky-600 mr-1.5"></i>
+          Sélectionner des analyses sanguines
+        </label>
+        <p class="text-xs text-slate-500 mb-3">Tapez le nom, l'acronyme (ex: <span class="font-mono text-sky-700 bg-sky-50 px-1 rounded">FSC</span>, <span class="font-mono text-sky-700 bg-sky-50 px-1 rounded">iono</span>, <span class="font-mono text-sky-700 bg-sky-50 px-1 rounded">tropo</span>, <span class="font-mono text-sky-700 bg-sky-50 px-1 rounded">INR</span>, <span class="font-mono text-sky-700 bg-sky-50 px-1 rounded">créat</span>) ou choisissez un panel.</p>
+        
+        <!-- Search Input -->
+        <div class="relative">
+          <div class="relative flex items-center">
+            <input
+              type="text"
+              id="analysisInput"
+              placeholder="Ex: FSC, iono, troponine, ferritine, bilan hépatique..."
+              class="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-300 focus:border-sky-500 focus:ring-2 focus:ring-sky-200 text-sm font-medium transition-all shadow-inner outline-none"
+              autocomplete="off"
+            />
+            <div class="absolute left-3.5 text-slate-400 pointer-events-none">
+              <i class="fa-solid fa-search"></i>
+            </div>
+            <button id="clearInputBtn" class="absolute right-3 text-slate-400 hover:text-slate-600 hidden">
+              <i class="fa-solid fa-times-circle"></i>
+            </button>
+          </div>
+
+          <!-- Dropdown Results -->
+          <div id="searchResultsDropdown" class="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-xl shadow-xl border border-slate-200 max-h-72 overflow-y-auto custom-scrollbar z-50 hidden divide-y divide-slate-100">
+            <!-- Dynamic Items -->
+          </div>
+        </div>
+
+        <!-- Quick Panels Presets -->
+        <div class="mt-4 pt-4 border-t border-slate-100">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-2">Ajout rapide par panels :</span>
+          <div class="flex flex-wrap gap-1.5" id="quickPanelsContainer">
+            <!-- Dynamic Quick Panel Pills -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Prescription Basket Card -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center space-x-2">
+            <span class="w-6 h-6 rounded-full bg-sky-100 text-sky-700 font-bold text-xs flex items-center justify-center" id="basketCount">0</span>
+            <h2 class="text-sm font-bold text-slate-800">Analyses sélectionnées</h2>
+          </div>
+          <button id="clearBasketBtn" class="text-xs text-rose-600 hover:text-rose-800 font-medium transition flex items-center space-x-1 disabled:opacity-40" disabled>
+            <i class="fa-solid fa-trash-can"></i>
+            <span>Vider</span>
+          </button>
+        </div>
+
+        <!-- Basket Chips Container -->
+        <div id="basketChipsContainer" class="min-h-[120px] max-h-80 overflow-y-auto custom-scrollbar p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex flex-wrap gap-2 items-start content-start">
+          <p id="emptyBasketMsg" class="text-xs text-slate-400 italic text-center w-full py-8">
+            Aucune analyse sélectionnée.<br/>Recherchez une analyse ci-dessus ou cliquez sur un panel pour commencer.
+          </p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN: Calculated Tubes & Order of Draw (7 Cols) -->
+    <div class="lg:col-span-7 space-y-5">
+      
+      <!-- Summary Hero Card -->
+      <div class="bg-gradient-to-br from-slate-900 via-sky-950 to-indigo-950 text-white rounded-2xl p-6 shadow-md border border-slate-800 relative overflow-hidden">
+        <div class="absolute -right-6 -bottom-6 opacity-10 text-9xl">
+          <i class="fa-solid fa-vials"></i>
+        </div>
+        
+        <div class="relative z-10 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center space-x-2 mb-1">
+              <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center">
+                <i class="fa-solid fa-check-circle mr-1.5"></i>
+                Ordre CLSI H3-A6
+              </span>
+              <span class="text-xs text-slate-400 font-medium" id="summarySiteLabel">Tous les sites</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight" id="heroSummaryTitle">
+              0 Tube Requis
+            </h2>
+            <p class="text-xs sm:text-sm text-sky-200/80 mt-0.5" id="heroSummarySubtitle">
+              Ajoutez des analyses pour calculer les tubes et l'ordre de prélèvement.
+            </p>
+          </div>
+
+          <!-- Total Count Badges -->
+          <div class="flex items-center space-x-3 bg-white/10 backdrop-blur rounded-xl p-3 border border-white/10 shadow-inner">
+            <div class="text-center px-2">
+              <div class="text-2xl font-black text-white" id="countTubes">0</div>
+              <div class="text-[10px] uppercase tracking-wider text-sky-200 font-semibold">Tubes</div>
+            </div>
+            <div class="w-px h-8 bg-white/20"></div>
+            <div class="text-center px-2">
+              <div class="text-2xl font-black text-amber-300" id="countBottles">0</div>
+              <div class="text-[10px] uppercase tracking-wider text-amber-200 font-semibold">Flacons</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Glance Tubes & Colors Summary Tray -->
+      <div id="quickGlanceCard" class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hidden">
+        <div class="flex items-center justify-between mb-3 pb-2.5 border-b border-slate-100">
+          <div class="flex items-center space-x-2">
+            <span class="w-6 h-6 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center text-xs">
+              <i class="fa-solid fa-eye"></i>
+            </span>
+            <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-800">
+              Aperçu Rapide • Tubes & Couleurs à préparer
+            </h3>
+          </div>
+          <span class="text-[11px] font-semibold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-100">
+            Ordre de prélèvement (1 → fin)
+          </span>
+        </div>
+        
+        <!-- Horizontal Capsule Flow Container -->
+        <div id="quickGlanceTray" class="flex flex-wrap items-center gap-2.5 sm:gap-3 py-1">
+          <!-- Dynamic visual tube capsules -->
+        </div>
+      </div>
+
+      <!-- Special Alerts Banner (if any) -->
+      <div id="alertsBanner" class="bg-amber-50 border border-amber-200 rounded-2xl p-4 hidden">
+        <div class="flex items-start space-x-3">
+          <div class="text-amber-600 mt-0.5"><i class="fa-solid fa-triangle-exclamation text-lg"></i></div>
+          <div class="flex-1">
+            <h3 class="text-sm font-bold text-amber-900">Consignes cliniques particulières</h3>
+            <ul id="alertsList" class="mt-1 text-xs text-amber-800 space-y-1 list-disc list-inside"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Generated Tubes List -->
+      <div class="space-y-4" id="tubesContainer">
+        <!-- Dynamic Tube Cards -->
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Modal for Gustav Full Fiche -->
+  <div id="ficheModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] shadow-2xl flex flex-col overflow-hidden border border-slate-200">
+      <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-file-waveform text-sky-400"></i>
+          <h3 class="text-base font-bold text-white" id="modalTitle">Fiche d'analyse</h3>
+        </div>
+        <button id="closeModalBtn" class="text-slate-400 hover:text-white transition">
+          <i class="fa-solid fa-times text-lg"></i>
+        </button>
+      </div>
+      <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4" id="modalBody">
+        <!-- Dynamic modal content -->
+      </div>
+      <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex justify-end space-x-2">
+        <a id="modalExternalLink" href="#" target="_blank" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-semibold transition flex items-center space-x-1.5">
+          <i class="fa-solid fa-external-link-alt"></i>
+          <span>Ouvrir dans Gustav Live</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let selectedAnalyses = new Set();
+    let currentSite = "Tous les sites";
+    let isPediatric = false;
+    let panelsData = {};
+    let debounceTimer = null;
+    let highlightedIndex = -1;
+    let currentResults = [];
+
+    // DOM Elements
+    const analysisInput = document.getElementById("analysisInput");
+    const clearInputBtn = document.getElementById("clearInputBtn");
+    const searchResultsDropdown = document.getElementById("searchResultsDropdown");
+    const basketChipsContainer = document.getElementById("basketChipsContainer");
+    const basketCount = document.getElementById("basketCount");
+    const clearBasketBtn = document.getElementById("clearBasketBtn");
+    const emptyBasketMsg = document.getElementById("emptyBasketMsg");
+    const quickPanelsContainer = document.getElementById("quickPanelsContainer");
+    const siteSelect = document.getElementById("siteSelect");
+    const pediatricBtn = document.getElementById("pediatricBtn");
+    const pediatricLabel = document.getElementById("pediatricLabel");
+    const summarySiteLabel = document.getElementById("summarySiteLabel");
+    const heroSummaryTitle = document.getElementById("heroSummaryTitle");
+    const heroSummarySubtitle = document.getElementById("heroSummarySubtitle");
+    const countTubes = document.getElementById("countTubes");
+    const countBottles = document.getElementById("countBottles");
+    const tubesContainer = document.getElementById("tubesContainer");
+    const alertsBanner = document.getElementById("alertsBanner");
+    const alertsList = document.getElementById("alertsList");
+    const ficheModal = document.getElementById("ficheModal");
+    const closeModalBtn = document.getElementById("closeModalBtn");
+
+    // Init
+    async function init() {
+      // Load panels
+      const panelsRes = await fetch("/api/panels");
+      panelsData = await panelsRes.json();
+      renderQuickPanels();
+
+      // Event Listeners
+      analysisInput.addEventListener("input", onSearchInput);
+      analysisInput.addEventListener("keydown", onSearchKeyDown);
+      analysisInput.addEventListener("focus", () => {
+        if (analysisInput.value.trim().length > 0) search(analysisInput.value);
+        else showDefaultSuggestions();
+      });
+
+      clearInputBtn.addEventListener("click", () => {
+        analysisInput.value = "";
+        clearInputBtn.classList.add("hidden");
+        searchResultsDropdown.classList.add("hidden");
+      });
+
+      document.addEventListener("click", (e) => {
+        if (!analysisInput.contains(e.target) && !searchResultsDropdown.contains(e.target)) {
+          searchResultsDropdown.classList.add("hidden");
+        }
+      });
+
+      clearBasketBtn.addEventListener("click", () => {
+        selectedAnalyses.clear();
+        updateBasket();
+      });
+
+      siteSelect.addEventListener("change", (e) => {
+        currentSite = e.target.value;
+        summarySiteLabel.innerText = currentSite;
+        recalculate();
+      });
+
+      pediatricBtn.addEventListener("click", () => {
+        isPediatric = !isPediatric;
+        if (isPediatric) {
+          pediatricLabel.innerText = "Pédiatrique (Microtubes)";
+          pediatricBtn.classList.add("bg-pink-600", "text-white");
+          pediatricBtn.classList.remove("bg-white/10");
+        } else {
+          pediatricLabel.innerText = "Adulte";
+          pediatricBtn.classList.remove("bg-pink-600", "text-white");
+          pediatricBtn.classList.add("bg-white/10");
+        }
+        recalculate();
+      });
+
+      closeModalBtn.addEventListener("click", () => ficheModal.classList.add("hidden"));
+      ficheModal.addEventListener("click", (e) => {
+        if (e.target === ficheModal) ficheModal.classList.add("hidden");
+      });
+    }
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function renderQuickPanels() {
+      quickPanelsContainer.innerHTML = "";
+      const icons = {
+        "bilan_base": "fa-stethoscope",
+        "bilan_cardiaque": "fa-heart-pulse",
+        "bilan_coagulation": "fa-droplet",
+        "bilan_hepatique": "fa-flask-vial",
+        "bilan_martial": "fa-dna",
+        "bilan_infectieux_sepsis": "fa-shield-virus",
+        "bilan_preoperatoire": "fa-syringe",
+        "gaz_sanguins": "fa-lungs",
+        "bilan_urinaire": "fa-vial"
+      };
+
+      for (const [key, panel] of Object.entries(panelsData)) {
+        const btn = document.createElement("button");
+        btn.className = "text-xs bg-slate-100 hover:bg-sky-100 hover:text-sky-800 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200 transition flex items-center space-x-1.5 font-medium";
+        const iconClass = icons[key] || "fa-plus-circle";
+        btn.innerHTML = `<i class="fa-solid ${iconClass} text-sky-600 text-[10px]"></i><span>${escapeHtml(panel.name.split('(')[0].trim())}</span>`;
+        btn.addEventListener("click", () => {
+          panel.pids.forEach(p => selectedAnalyses.add(p));
+          updateBasket();
+        });
+        quickPanelsContainer.appendChild(btn);
+      }
+    }
+
+    async function showDefaultSuggestions() {
+      const res = await fetch("/api/search?q=");
+      const data = await res.json();
+      renderDropdown(data);
+    }
+
+    function onSearchInput(e) {
+      const val = e.target.value;
+      if (val.length > 0) clearInputBtn.classList.remove("hidden");
+      else clearInputBtn.classList.add("hidden");
+
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => search(val), 150);
+    }
+
+    async function search(q) {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      renderDropdown(data);
+    }
+
+    function renderDropdown(items) {
+      currentResults = items;
+      highlightedIndex = -1;
+      searchResultsDropdown.innerHTML = "";
+
+      if (!items || items.length === 0) {
+        searchResultsDropdown.innerHTML = `<div class="p-4 text-xs text-slate-400 text-center italic">Aucun résultat trouvé dans le répertoire Gustav.</div>`;
+        searchResultsDropdown.classList.remove("hidden");
+        return;
+      }
+
+      items.forEach((item, idx) => {
+        const div = document.createElement("div");
+        div.className = "px-4 py-2.5 hover:bg-sky-50 cursor-pointer flex items-center justify-between text-xs transition";
+        div.dataset.index = idx;
+
+        if (item.type === "panel") {
+          div.innerHTML = `
+            <div class="flex items-center space-x-2.5">
+              <span class="w-6 h-6 rounded bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs">⭐</span>
+              <div>
+                <div class="font-bold text-slate-800">${escapeHtml(item.name)}</div>
+                <div class="text-[11px] text-slate-500">${escapeHtml(item.description)}</div>
+              </div>
+            </div>
+            <span class="text-[10px] bg-amber-100 text-amber-800 font-semibold px-2 py-0.5 rounded-full">+ ${item.pids.length} analyses</span>
+          `;
+          div.addEventListener("click", () => {
+            item.pids.forEach(p => selectedAnalyses.add(p));
+            analysisInput.value = "";
+            clearInputBtn.classList.add("hidden");
+            searchResultsDropdown.classList.add("hidden");
+            updateBasket();
+          });
+        } else {
+          const isAdded = selectedAnalyses.has(item.pid);
+          div.innerHTML = `
+            <div class="flex items-center space-x-2.5">
+              <span class="w-6 h-6 rounded ${isAdded ? 'bg-emerald-100 text-emerald-700' : 'bg-sky-100 text-sky-700'} flex items-center justify-center font-bold text-[10px] uppercase font-mono">${escapeHtml(item.pid.slice(0,3))}</span>
+              <div>
+                <div class="font-semibold text-slate-800">${escapeHtml(item.name)}</div>
+                <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(item.pid)} • ${escapeHtml(item.category || 'Manuel des prélèvements')}</div>
+              </div>
+            </div>
+            <button class="text-xs font-semibold ${isAdded ? 'text-emerald-600' : 'text-sky-600 hover:text-sky-800'} px-2 py-1 rounded">
+              <i class="fa-solid ${isAdded ? 'fa-check' : 'fa-plus'}"></i>
+            </button>
+          `;
+          div.addEventListener("click", () => {
+            selectedAnalyses.add(item.pid);
+            analysisInput.value = "";
+            clearInputBtn.classList.add("hidden");
+            searchResultsDropdown.classList.add("hidden");
+            updateBasket();
+          });
+        }
+
+        searchResultsDropdown.appendChild(div);
+      });
+
+      searchResultsDropdown.classList.remove("hidden");
+    }
+
+    function onSearchKeyDown(e) {
+      const items = searchResultsDropdown.querySelectorAll("div[data-index]");
+      if (!items.length || searchResultsDropdown.classList.contains("hidden")) return;
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        highlightedIndex = (highlightedIndex + 1) % items.length;
+        updateHighlight(items);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        highlightedIndex = (highlightedIndex - 1 + items.length) % items.length;
+        updateHighlight(items);
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (highlightedIndex >= 0 && highlightedIndex < items.length) {
+          items[highlightedIndex].click();
+        } else if (items.length > 0) {
+          items[0].click();
+        }
+      } else if (e.key === "Escape") {
+        searchResultsDropdown.classList.add("hidden");
+      }
+    }
+
+    function updateHighlight(items) {
+      items.forEach((it, idx) => {
+        if (idx === highlightedIndex) {
+          it.classList.add("bg-sky-100");
+          it.scrollIntoView({ block: "nearest" });
+        } else {
+          it.classList.remove("bg-sky-100");
+        }
+      });
+    }
+
+    async function updateBasket() {
+      const count = selectedAnalyses.size;
+      basketCount.innerText = count;
+      clearBasketBtn.disabled = count === 0;
+
+      if (count === 0) {
+        basketChipsContainer.innerHTML = `
+          <p id="emptyBasketMsg" class="text-xs text-slate-400 italic text-center w-full py-8">
+            Aucune analyse sélectionnée.<br/>Recherchez une analyse ci-dessus ou cliquez sur un panel pour commencer.
+          </p>
+        `;
+        recalculate();
+        return;
+      }
+
+      // Fetch names
+      basketChipsContainer.innerHTML = "";
+      for (const pid of selectedAnalyses) {
+        const chip = document.createElement("div");
+        chip.className = "bg-white border border-slate-200 hover:border-sky-300 shadow-sm rounded-lg px-2.5 py-1 text-xs flex items-center space-x-2 text-slate-800 transition group";
+        chip.innerHTML = `
+          <span class="font-medium truncate max-w-[200px]" title="${pid}">${pid.toUpperCase()}</span>
+          <button class="text-slate-400 hover:text-rose-600 transition" title="Supprimer">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        `;
+        chip.querySelector("button").addEventListener("click", () => {
+          selectedAnalyses.delete(pid);
+          updateBasket();
+        });
+        basketChipsContainer.appendChild(chip);
+      }
+
+      recalculate();
+    }
+
+    async function recalculate() {
+      if (selectedAnalyses.size === 0) {
+        heroSummaryTitle.innerText = "0 Tube Requis";
+        heroSummarySubtitle.innerText = "Ajoutez des analyses pour calculer les tubes et l'ordre de prélèvement.";
+        countTubes.innerText = "0";
+        countBottles.innerText = "0";
+        tubesContainer.innerHTML = "";
+        alertsBanner.classList.add("hidden");
+        document.getElementById("quickGlanceCard").classList.add("hidden");
+        return;
+      }
+
+      const payload = {
+        pids: Array.from(selectedAnalyses),
+        site: currentSite,
+        is_pediatric: isPediatric
+      };
+
+      const res = await fetch("/api/calculate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      renderResults(data);
+    }
+
+    function renderResults(data) {
+      const totalTubes = data.total_tubes;
+      const totalBottles = data.total_bottles;
+
+      // Hero Summary
+      let summaryText = "";
+      if (totalTubes > 0 && totalBottles > 0) {
+        summaryText = `${totalTubes} Tube${totalTubes > 1 ? 's' : ''} + ${totalBottles} Flacon${totalBottles > 1 ? 's' : ''}`;
+      } else if (totalBottles > 0) {
+        summaryText = `${totalBottles} Flacon${totalBottles > 1 ? 's d\'hémoculture' : ' d\'hémoculture'}`;
+      } else {
+        summaryText = `${totalTubes} Tube${totalTubes > 1 ? 's de prélèvement' : ' de prélèvement'}`;
+      }
+
+      heroSummaryTitle.innerText = summaryText;
+      heroSummarySubtitle.innerText = `Calculé pour ${data.analyses_included.length} analyses • Groupement consolidé & Ordre de prélèvement`;
+      countTubes.innerText = totalTubes;
+      countBottles.innerText = totalBottles;
+
+      // Render Quick Glance Tubes & Colors Tray
+      const quickGlanceCard = document.getElementById("quickGlanceCard");
+      const quickGlanceTray = document.getElementById("quickGlanceTray");
+
+      if (data.tubes && data.tubes.length > 0) {
+        quickGlanceTray.innerHTML = "";
+        data.tubes.forEach((tube, idx) => {
+          const isLast = idx === data.tubes.length - 1;
+          const stepNum = idx + 1;
+          
+          let summaryAnalyses = "";
+          if (tube.analyses.length <= 2) {
+            summaryAnalyses = tube.analyses.map(a => a.name.split('(')[0].trim()).join(", ");
+          } else {
+            summaryAnalyses = `${tube.analyses[0].name.split('(')[0].trim()} + ${tube.analyses.length - 1} autres`;
+          }
+
+          const capsule = document.createElement("div");
+          capsule.className = "flex items-center space-x-2";
+          capsule.innerHTML = `
+            <div class="flex items-center bg-slate-50 hover:bg-slate-100 transition border border-slate-200/90 rounded-xl p-2 sm:px-3 sm:py-2 shadow-sm space-x-2.5">
+              <!-- Tube Cap Visual -->
+              <div class="relative flex items-center justify-center">
+                <div class="w-6 sm:w-7 h-8 sm:h-9 rounded-md shadow-sm border border-black/10 flex flex-col justify-between overflow-hidden" style="background: linear-gradient(180deg, ${tube.color_code} 0%, ${tube.color_code} 70%, #f8fafc 100%)">
+                  <div class="w-full h-3 border-b border-black/15 shadow-inner" style="background-color: ${tube.color_code}"></div>
+                  <div class="text-[9px] font-black text-center text-white/95 pb-0.5 leading-none">${stepNum}</div>
+                </div>
+              </div>
+              <!-- Info -->
+              <div>
+                <div class="flex items-center space-x-1.5">
+                  <span class="text-xs sm:text-sm font-black text-slate-800">${tube.tube_count}x</span>
+                  <span class="text-xs font-bold text-slate-900">${tube.cap_color_name}</span>
+                </div>
+                <div class="text-[10px] text-slate-500 font-medium truncate max-w-[130px] sm:max-w-[170px]" title="${tube.analyses.map(a => a.name).join(', ')}">
+                  ${summaryAnalyses}
+                </div>
+              </div>
+            </div>
+            ${!isLast ? '<i class="fa-solid fa-arrow-right text-slate-300 text-xs hidden sm:inline-block"></i>' : ''}
+          `;
+          quickGlanceTray.appendChild(capsule);
+        });
+        quickGlanceCard.classList.remove("hidden");
+      } else {
+        quickGlanceCard.classList.add("hidden");
+      }
+
+      // Alerts
+      if (data.special_instructions && data.special_instructions.length > 0) {
+        alertsList.innerHTML = "";
+        data.special_instructions.forEach(ins => {
+          const li = document.createElement("li");
+          li.innerText = ins;
+          alertsList.appendChild(li);
+        });
+        alertsBanner.classList.remove("hidden");
+      } else {
+        alertsBanner.classList.add("hidden");
+      }
+
+      // Tube Cards
+      tubesContainer.innerHTML = "";
+      data.tubes.forEach((tube, idx) => {
+        const card = document.createElement("div");
+        card.className = "bg-white rounded-2xl p-5 shadow-sm border border-slate-200 transition-all hover:shadow-md";
+        const stepNum = idx + 1;
+
+        let analysesListHtml = tube.analyses.map(a => `
+          <li class="flex items-center justify-between text-xs py-1 border-b border-slate-100 last:border-0">
+            <div class="flex items-center space-x-2 truncate">
+              <span class="w-1.5 h-1.5 rounded-full" style="background-color: ${tube.color_code}"></span>
+              <span class="font-semibold text-slate-800 truncate">${escapeHtml(a.name)}</span>
+              <span class="text-[10px] text-slate-400 font-mono">(${escapeHtml(a.pid)})</span>
+            </div>
+            <button onclick="openFicheModal('${a.pid}')" class="text-sky-600 hover:text-sky-800 text-[11px] font-semibold flex items-center space-x-1 pl-2">
+              <i class="fa-solid fa-circle-info"></i>
+              <span>Fiche</span>
+            </button>
+          </li>
+        `).join("");
+
+        let specificAlertsHtml = tube.specific_alerts && tube.specific_alerts.length > 0 ? `
+          <div class="mt-3 bg-amber-50/80 border border-amber-200/60 rounded-xl p-2.5 text-xs text-amber-900">
+            <span class="font-bold flex items-center"><i class="fa-solid fa-triangle-exclamation mr-1.5 text-amber-600"></i>Consigne spécifique :</span>
+            <p class="mt-0.5 text-[11px]">${escapeHtml(tube.specific_alerts.join(" • "))}</p>
+          </div>
+        ` : '';
+
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-3 mb-3">
+            <div class="flex items-center space-x-3">
+              <!-- Order Step Badge -->
+              <div class="w-9 h-9 rounded-xl font-black text-sm flex flex-col items-center justify-center shadow-inner text-white" style="background-color: ${tube.color_code}">
+                <span class="text-[9px] uppercase tracking-tighter opacity-80 leading-none">Étape</span>
+                <span class="text-base font-extrabold leading-none mt-0.5">${stepNum}</span>
+              </div>
+              <div>
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span class="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded text-white" style="background-color: ${tube.color_code}">
+                    ${tube.cap_color_name}
+                  </span>
+                  <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-semibold border border-slate-200">
+                    Ordre CLSI #${tube.order_step}
+                  </span>
+                  <span class="text-xs text-slate-400 font-medium">${tube.max_volume}</span>
+                </div>
+                <h3 class="text-base font-bold text-slate-900 mt-1">${tube.name}</h3>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="text-lg font-black text-slate-800">${tube.tube_count}x</span>
+              <span class="text-xs text-slate-500 block -mt-1 font-medium">${tube.unit_label}</span>
+            </div>
+          </div>
+
+          <!-- Additive & Rule -->
+          <div class="bg-slate-50 rounded-xl p-3 text-xs text-slate-600 border border-slate-100 mb-3 space-y-1">
+            <div class="flex items-center space-x-2">
+              <i class="fa-solid fa-flask-vial text-slate-400"></i>
+              <span><strong class="text-slate-700">Additif :</strong> ${tube.additive}</span>
+            </div>
+            <div class="flex items-start space-x-2 text-slate-500">
+              <i class="fa-solid fa-info-circle text-sky-600 mt-0.5"></i>
+              <span>${tube.special_instructions}</span>
+            </div>
+          </div>
+
+          <!-- Analyses Inside -->
+          <div>
+            <div class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+              <span>Analyses regroupées dans ce tube (${tube.analyses.length}) :</span>
+            </div>
+            <ul class="divide-y divide-slate-100 bg-slate-50/50 rounded-xl p-3 border border-slate-100">
+              ${analysesListHtml}
+            </ul>
+          </div>
+
+          ${tube.consolidation_note ? `
+            <div class="mt-2.5 bg-sky-50/70 border border-sky-200/60 rounded-xl px-3 py-2 text-[11px] text-sky-900 flex items-start space-x-2">
+              <i class="fa-solid fa-code-merge text-sky-600 mt-0.5"></i>
+              <span>${escapeHtml(tube.consolidation_note)}</span>
+            </div>
+          ` : ''}
+
+          ${specificAlertsHtml}
+        `;
+
+        tubesContainer.appendChild(card);
+      });
+    }
+
+    async function openFicheModal(pid) {
+      const res = await fetch(`/api/analysis/${pid}`);
+      if (!res.ok) return;
+      const data = await res.json();
+
+      document.getElementById("modalTitle").innerText = `${data.name} (${data.pid.toUpperCase()})`;
+      document.getElementById("modalExternalLink").href = data.url;
+
+      let containersHtml = data.containers.map(c => `
+        <tr class="border-b border-slate-100 text-xs">
+          <td class="py-2 font-semibold text-slate-700">${c.sites || 'Tous les sites'}</td>
+          <td class="py-2 text-sky-700 font-bold">${c.container}</td>
+          <td class="py-2 text-center">${c.count}</td>
+          <td class="py-2">${c.specimen}</td>
+          <td class="py-2 font-mono">${c.quantity || '-'}</td>
+        </tr>
+      `).join("");
+
+      document.getElementById("modalBody").innerHTML = `
+        <div class="space-y-4 text-xs">
+          <div>
+            <span class="font-bold text-slate-600 uppercase tracking-wider block mb-1">Renseignements généraux</span>
+            <p class="text-sm font-bold text-slate-900">${data.name}</p>
+            <p class="text-slate-500">Catégorie : ${data.thematic || 'Manuel des prélèvements'}</p>
+          </div>
+
+          <div>
+            <span class="font-bold text-slate-600 uppercase tracking-wider block mb-1.5">Tableau des contenants par site</span>
+            <div class="border border-slate-200 rounded-xl overflow-hidden">
+              <table class="w-full text-left">
+                <thead class="bg-slate-100 text-slate-600 text-[11px] font-bold">
+                  <tr>
+                    <th class="py-2 px-2">Site</th>
+                    <th class="py-2">Contenant</th>
+                    <th class="py-2 text-center">Nbre</th>
+                    <th class="py-2">Spécimen</th>
+                    <th class="py-2">Quantité</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 p-2">
+                  ${containersHtml || '<tr><td colspan="5" class="p-3 text-center text-slate-400">Aucun tableau disponible</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          ${data.alerts && data.alerts.length > 0 ? `
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-amber-900">
+              <span class="font-bold block mb-1">Directives / Précautions :</span>
+              <p>${data.alerts.join("<br/>")}</p>
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+      ficheModal.classList.remove("hidden");
+    }
+
+    // Launch
+    window.addEventListener("DOMContentLoaded", init);
+  </script>
+</body>
+</html>

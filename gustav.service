@@ -1,0 +1,24 @@
+[Unit]
+Description=Gustav - Calculateur de Tubes Sanguins (CHU de Québec)
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/gustav
+ExecStart=/opt/gustav/venv/bin/uvicorn app:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+# Security & Sandboxing Hardening
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictRealtime=true
+
+[Install]
+WantedBy=multi-user.target
