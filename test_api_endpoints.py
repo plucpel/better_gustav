@@ -60,6 +60,28 @@ def test_app():
     assert fsc_data["pid"] == "fsc"
     print(f"  -> Analysis detail for FSC: {fsc_data['name']} retrieved.")
 
+    print("\n=== 7. Testing Fecal Analyses (C. diff + Calprotectine + Coproculture) ===")
+    fecal_payload = {"pids": ["closd", "caprs", "selle"]}
+    r = client.post("/api/calculate", json=fecal_payload)
+    assert r.status_code == 200
+    f_data = r.json()
+    assert f_data["total_tubes"] == 0, "Fecal analyses must NOT recommend blood tubes!"
+    assert f_data["total_fecal"] == 2
+    print(f"  -> Verified Fecal output: {f_data['total_fecal']} Contenants de selles (0 Blood Tubes).")
+    for t in f_data["tubes"]:
+        print(f"     • {t['tube_count']}x {t['name']} ({t['cap_color_name']})")
+
+    print("\n=== 8. Testing Urine Analyses (SMU + ECBU + Urines 24h) ===")
+    urine_payload = {"pids": ["anuri", "curi", "uruc"]}
+    r = client.post("/api/calculate", json=urine_payload)
+    assert r.status_code == 200
+    u_data = r.json()
+    assert u_data["total_tubes"] == 0, "Urine analyses must NOT recommend blood tubes!"
+    assert u_data["total_urine"] == 3
+    print(f"  -> Verified Urine output: {u_data['total_urine']} Contenants d'urines (0 Blood Tubes).")
+    for t in u_data["tubes"]:
+        print(f"     • {t['tube_count']}x {t['name']} ({t['cap_color_name']})")
+
     print("\n ALL API & CALCULATION TESTS PASSED PERFECTLY!")
 
 if __name__ == "__main__":

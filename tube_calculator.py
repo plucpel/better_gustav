@@ -62,13 +62,15 @@ def parse_volume_ml(qty_str):
         
     return 0.0
 
-# Standard Order of Draw Definitions
+# Comprehensive Specimen & Tube Definitions
 TUBE_DEFINITIONS = {
+    # 1. BLOOD SPECIMENS (CLSI H3-A6 Standard Order of Draw)
     "HEMOCULTURE": {
         "order": 1,
+        "specimen_type": "Sang",
         "name_fr": "Flacons d'hémoculture (Aérobie + Anaérobie)",
         "pediatric_name_fr": "Flacon d'hémoculture pédiatrique",
-        "color_code": "#D97706", # Amber / Gold
+        "color_code": "#D97706", # Amber
         "cap_color_name": "Jaune / Vert / Rose",
         "additive": "Bouillon de culture SPS + Résine neutralisante",
         "max_volume": "8-10 mL par flacon (adulte) / 1-3 mL (pédiatrique)",
@@ -76,6 +78,7 @@ TUBE_DEFINITIONS = {
     },
     "CITRATE": {
         "order": 2,
+        "specimen_type": "Sang",
         "name_fr": "Tube Bouchon Bleu pâle (Citrate 3.2%)",
         "pediatric_name_fr": "Microtube Bouchon Bleu pâle (Citrate)",
         "color_code": "#0284C7", # Sky Blue
@@ -86,16 +89,18 @@ TUBE_DEFINITIONS = {
     },
     "SERUM_GEL": {
         "order": 3,
+        "specimen_type": "Sang",
         "name_fr": "Tube Bouchon Doré / Or (Gel séparateur + Activateur)",
         "pediatric_name_fr": "Microtube Bouchon Doré (Gel séparateur)",
-        "color_code": "#CA8A04", # Gold / Yellow
+        "color_code": "#CA8A04", # Gold
         "cap_color_name": "Doré / Or",
-        "additive": "Silice activateur de caillot + Gel polymère",
+        "additive": "Silice activateur de caillot + Gel polymère (SST)",
         "max_volume": "5.0 mL",
         "special_instructions": "Laisser coaguler 30 minutes à la verticale avant centrifugation. 5 inversions."
     },
     "SERUM_PLAIN": {
         "order": 3,
+        "specimen_type": "Sang",
         "name_fr": "Tube Bouchon Rouge (Sec sans gel)",
         "pediatric_name_fr": "Microtube Bouchon Rouge",
         "color_code": "#DC2626", # Red
@@ -106,9 +111,10 @@ TUBE_DEFINITIONS = {
     },
     "HEPARINE_LITHIUM": {
         "order": 4,
+        "specimen_type": "Sang",
         "name_fr": "Tube Bouchon Menthe (Héparine de Lithium + Gel PST)",
         "pediatric_name_fr": "Microtube Bouchon Vert (Héparine-Lithium)",
-        "color_code": "#059669", # Mint / Emerald green
+        "color_code": "#059669", # Mint
         "cap_color_name": "Menthe / Vert clair",
         "additive": "Héparine de lithium (68 UI) + Gel séparateur PST",
         "max_volume": "4.5 mL",
@@ -116,6 +122,7 @@ TUBE_DEFINITIONS = {
     },
     "HEPARINE_SODIUM": {
         "order": 4,
+        "specimen_type": "Sang",
         "name_fr": "Tube Bouchon Vert foncé (Héparine de Sodium)",
         "pediatric_name_fr": "Microtube Bouchon Vert",
         "color_code": "#15803D", # Dark green
@@ -126,9 +133,10 @@ TUBE_DEFINITIONS = {
     },
     "EDTA": {
         "order": 5,
+        "specimen_type": "Sang",
         "name_fr": "Tube Bouchon Lavande / Mauve (K2-EDTA)",
         "pediatric_name_fr": "Microtube Bouchon Lavande (K2-EDTA)",
-        "color_code": "#7C3AED", # Purple / Lavender
+        "color_code": "#7C3AED", # Purple
         "cap_color_name": "Lavande / Mauve",
         "additive": "K2-EDTA (anticoagulant hématologie)",
         "max_volume": "4.0 mL",
@@ -136,6 +144,7 @@ TUBE_DEFINITIONS = {
     },
     "EDTA_ROSE": {
         "order": 5,
+        "specimen_type": "Sang",
         "name_fr": "Tube Bouchon Rose (K2-EDTA - Banque de sang)",
         "pediatric_name_fr": "Microtube Bouchon Rose (Banque de sang)",
         "color_code": "#DB2777", # Pink
@@ -146,6 +155,7 @@ TUBE_DEFINITIONS = {
     },
     "ROYAL_BLUE": {
         "order": 5,
+        "specimen_type": "Sang",
         "name_fr": "Tube Bouchon Bleu Royal (Oligo-éléments / Métaux)",
         "pediatric_name_fr": "Tube Bouchon Bleu Royal",
         "color_code": "#1E40AF", # Royal Blue
@@ -156,6 +166,7 @@ TUBE_DEFINITIONS = {
     },
     "FLUORURE": {
         "order": 6,
+        "specimen_type": "Sang",
         "name_fr": "Tube Bouchon Gris (Fluorure de Sodium / Oxalate)",
         "pediatric_name_fr": "Microtube Bouchon Gris",
         "color_code": "#475569", # Slate
@@ -166,6 +177,7 @@ TUBE_DEFINITIONS = {
     },
     "GAZ_SERINGUE": {
         "order": 7,
+        "specimen_type": "Sang",
         "name_fr": "Seringue héparinée pour Gaz sanguins",
         "pediatric_name_fr": "Seringue héparinée pour Gaz sanguins",
         "color_code": "#0891B2", # Cyan
@@ -174,51 +186,208 @@ TUBE_DEFINITIONS = {
         "max_volume": "1-2 mL",
         "special_instructions": "CRITIQUE : Chasser immédiatement les bulles d'air, boucher et acheminer au laboratoire sur glace fondante en < 15-30 min."
     },
+
+    # 2. URINE SPECIMENS (Prélèvements Urinaires)
+    "URINE_STERILE": {
+        "order": 10,
+        "specimen_type": "Urine",
+        "name_fr": "Contenant stérile pour Urine (Bouchon Orange)",
+        "pediatric_name_fr": "Sac collecteur pédiatrique / Contenant stérile",
+        "color_code": "#F97316", # Orange
+        "cap_color_name": "Bouchon Orange",
+        "additive": "Stérile sans agent de conservation (Culture, ECBU, PCR)",
+        "max_volume": "100 mL (10-20 mL requis)",
+        "special_instructions": "Prélèvement d'urine mi-jet après toilette génitale soigneuse. Acheminer rapidement ou réfrigérer à 4°C."
+    },
+    "URINE_ROUTINE": {
+        "order": 11,
+        "specimen_type": "Urine",
+        "name_fr": "Tube conique / Contenant pour culot urinaire (Bouchon Jaune)",
+        "pediatric_name_fr": "Contenant pour urine (Bouchon Jaune)",
+        "color_code": "#EAB308", # Yellow
+        "cap_color_name": "Bouchon Jaune",
+        "additive": "Non stérile (Sommaire et microscopie / SMU / Dépistage)",
+        "max_volume": "10-20 mL",
+        "special_instructions": "Prélèvement d'urine spontané (miction simple). Utilisé pour SMU, biochimie mictionnelle et toxicologie."
+    },
+    "URINE_24H": {
+        "order": 12,
+        "specimen_type": "Urine",
+        "name_fr": "Cruche de collecte des urines de 24 heures",
+        "pediatric_name_fr": "Cruche de collecte des urines de 24h",
+        "color_code": "#854D0E", # Brown / Amber
+        "cap_color_name": "Cruche 24h",
+        "additive": "Selon l'analyse (Sans préservatif ou avec acide/base)",
+        "max_volume": "2 à 3 Litres",
+        "special_instructions": "Jeter la 1ère miction du matin, puis recueillir toutes les urines pendant 24h jusqu'au lendemain matin inclus. Conserver au frais."
+    },
+
+    # 3. FECAL SPECIMENS (Prélèvements Fécaux / Selles)
+    "SELLES_STERILE": {
+        "order": 20,
+        "specimen_type": "Selles",
+        "name_fr": "Contenant stérile pour Selles (Bouchon Orange)",
+        "pediatric_name_fr": "Contenant stérile pour Selles (Bouchon Orange)",
+        "color_code": "#EA580C", # Vivid Orange
+        "cap_color_name": "Bouchon Orange",
+        "additive": "Stérile sans milieu liquide (C. difficile, Calprotectine, Élastase, H. pylori)",
+        "max_volume": "Pot 60 mL (remplir au tiers ~5-10 g)",
+        "special_instructions": "Recueillir les selles sans contact avec l'urine ni l'eau de la cuvette. Ne pas remplir le contenant à plus du tiers."
+    },
+    "SELLES_CARY_BLAIR": {
+        "order": 21,
+        "specimen_type": "Selles",
+        "name_fr": "Milieu de transport Cary-Blair / EPT (Coproculture)",
+        "pediatric_name_fr": "Milieu de transport Cary-Blair (Bouchon Vert)",
+        "color_code": "#16A34A", # Green
+        "cap_color_name": "Bouchon Vert (Cary-Blair)",
+        "additive": "Milieu Cary-Blair / EPT pour coproculture bactérienne",
+        "max_volume": "Tube avec milieu de transport",
+        "special_instructions": "Coproculture bactérienne. Prélever un fragment de selle avec la cuillère intégrée jusqu'au trait indicateur."
+    },
+    "SELLES_SAF": {
+        "order": 22,
+        "specimen_type": "Selles",
+        "name_fr": "Milieu de transport SAF (Parasitologie des selles)",
+        "pediatric_name_fr": "Milieu de transport SAF",
+        "color_code": "#9333EA", # Purple
+        "cap_color_name": "Bouchon SAF",
+        "additive": "Fixateur Sodium Acétate Formol (SAF)",
+        "max_volume": "Tube avec liquide fixateur",
+        "special_instructions": "Recherche de parasites, kystes et amibes. Émulsionner les selles dans le liquide SAF jusqu'au trait."
+    },
+    "SELLES_FIT": {
+        "order": 23,
+        "specimen_type": "Selles",
+        "name_fr": "Tube de dépistage de sang occulte fécal (RSOSi / FIT)",
+        "pediatric_name_fr": "Tube de dépistage RSOSi",
+        "color_code": "#E11D48", # Rose / Red
+        "cap_color_name": "Tube RSOSi",
+        "additive": "Tampon stabilisateur d'hémoglobine humaine",
+        "max_volume": "Dispositif avec tige striée",
+        "special_instructions": "Piquer la selle en plusieurs points avec la tige striée et refermer hermétiquement."
+    },
+
+    # 4. SWABS, CSF & OTHER SPECIMENS
+    "SPECIMEN_LCR": {
+        "order": 30,
+        "specimen_type": "LCR",
+        "name_fr": "Tubes stériles pour LCR (Ponction lombaire)",
+        "pediatric_name_fr": "Tubes stériles pour LCR",
+        "color_code": "#0284C7",
+        "cap_color_name": "Tubes LCR #1 à #4",
+        "additive": "Tubes stériles coniques numérotés",
+        "max_volume": "1 à 2 mL par tube",
+        "special_instructions": "Acheminer immédiatement à la main au laboratoire (< 15-30 min)."
+    },
+    "SPECIMEN_SWAB": {
+        "order": 31,
+        "specimen_type": "Écouvillon",
+        "name_fr": "Écouvillon de transport (UTM-RT / ESwab / M40)",
+        "pediatric_name_fr": "Écouvillon pédiatrique",
+        "color_code": "#0D9488", # Teal
+        "cap_color_name": "Écouvillon",
+        "additive": "Milieu liquide de transport",
+        "max_volume": "1 tige",
+        "special_instructions": "Frotter la zone cible et casser la tige dans le milieu de transport."
+    },
     "SPECIMEN_DIVERS": {
-        "order": 8,
-        "name_fr": "Contenant spécial / Stérile / Urines / LCR",
-        "pediatric_name_fr": "Contenant spécial",
-        "color_code": "#EA580C", # Orange
-        "cap_color_name": "Orange / Jaune",
+        "order": 40,
+        "specimen_type": "Divers",
+        "name_fr": "Contenant spécialisé / Divers",
+        "pediatric_name_fr": "Contenant spécialisé",
+        "color_code": "#64748B",
+        "cap_color_name": "Contenant spécifique",
         "additive": "Selon l'analyse",
         "max_volume": "Variable",
         "special_instructions": "Consulter la fiche spécifique pour les consignes de prélèvement."
     }
 }
 
-def classify_container(container_str, analysis_name="", pid=""):
-    """Classify a Gustav container string into standardized tube categories."""
+def classify_container(container_str, analysis_name="", pid="", thematic=""):
+    """
+    Deterministically classify a Gustav container string and analysis context
+    into standardized specimen and tube categories (Blood, Urine, Stool, Swabs, CSF, etc.).
+    """
     c_lower = container_str.lower()
     name_lower = analysis_name.lower()
     pid_lower = pid.lower()
+    them_lower = thematic.lower()
+    all_text = f"{c_lower} {name_lower} {pid_lower} {them_lower}"
 
-    if any(k in c_lower for k in ["hemoculture", "hémoculture", "bactec", "bact-alert", "bouteille"]):
+    # 1. HÉMOCULTURES & BOUTEILLES DE CULTURE
+    if any(k in c_lower for k in ["hemoculture", "hémoculture", "bactec", "bact-alert", "bouteille d'hémoculture", "bouteille d’hémoculture"]):
         return "HEMOCULTURE"
-    if any(k in c_lower for k in ["bleu (citrate", "citrate", "bleu"]):
-        if "bleu royal" in c_lower:
-            return "ROYAL_BLUE"
-        return "CITRATE"
+
+    # 2. SELLES / MATIÈRES FÉCALES (Coprologie)
+    is_stool = any(k in all_text for k in ["selle", "selles", "fécal", "fecal", "copro", "c. diff", "difficile", "calprotectine", "élastase fécale", "elastase fecale", "parasite"])
+    if is_stool or "cary" in c_lower or "saf" in c_lower or "selles" in c_lower:
+        if "cary" in c_lower or "ept" in c_lower:
+            return "SELLES_CARY_BLAIR"
+        if "saf" in c_lower:
+            return "SELLES_SAF"
+        if any(k in all_text for k in ["sang occulte", "rsosi", "fit", "sofe"]):
+            return "SELLES_FIT"
+        if "orange" in c_lower or "stérile" in c_lower or "contenant" in c_lower or is_stool:
+            return "SELLES_STERILE"
+
+    # 3. URINES (SMU, ECBU, Urines 24h, Biochimie urinaire)
+    is_urine = any(k in all_text for k in ["urine", "urinaire", "ecbu", "sommaire", "microscopie", "culot urinaire", "clairance", "miction", "anuri", "curi", "uruc"])
+    if is_urine or any(k in c_lower for k in ["cruche", "culot", "conique bouchon jaune", "pour urine"]):
+        if any(k in c_lower for k in ["cruche", "24h", "24 h", "24 heures"]) or any(k in name_lower for k in ["24 h", "24 heures", "24h"]):
+            return "URINE_24H"
+        if any(k in c_lower for k in ["culot", "jaune", "non stérile", "miction", "anuri"]) and "stérile (bouchon orange)" not in c_lower:
+            return "URINE_ROUTINE"
+        if "orange" in c_lower or "stérile" in c_lower or "cobas-pcr" in c_lower or "culture" in name_lower or "ecbu" in all_text:
+            return "URINE_STERILE"
+        return "URINE_ROUTINE"
+
+    # 4. LCR & LIQUIDES BIOLOGIQUES & ÉCOUVILLONS
+    if "lcr" in c_lower or "lcr" in name_lower or "céphalo-rachidien" in name_lower or "cephalo-rachidien" in name_lower:
+        return "SPECIMEN_LCR"
+    if any(k in c_lower for k in ["tige", "écouvillon", "ecouvillon", "utm", "m40", "amies", "eswab"]):
+        return "SPECIMEN_SWAB"
+
+    # 5. GAZ SANGUINS (Seringues)
+    if any(k in c_lower for k in ["seringue", "gaz"]) or "gaz" in pid_lower or "gazométrie" in name_lower or "gaz sanguins" in name_lower:
+        return "GAZ_SERINGUE"
+
+    # 6. TUBES SANGUINS STRICTS
+    # Citrate / Bleu
     if "bleu royal" in c_lower:
         return "ROYAL_BLUE"
-    if "rose" in c_lower or any(k in name_lower for k in ["groupe sanguin", "coombs", "rai", "compatibilite"]):
+    if any(k in c_lower for k in ["bleu (citrate", "citrate", "bleu pâ"]) or (("bleu" in c_lower or "citrate" in c_lower) and "orange" not in c_lower):
+        return "CITRATE"
+
+    # Rose / Banque de sang
+    if "rose" in c_lower or any(k in name_lower for k in ["groupe sanguin", "coombs", "rai", "compatibilite", "crossmatch"]):
         return "EDTA_ROSE"
+
+    # Lavande / EDTA
     if any(k in c_lower for k in ["lavande", "edta", "mauve"]):
         return "EDTA"
-    if any(k in c_lower for k in ["menthe", "menthe_heparine_lithium", "heparine_lithium", "pst"]):
+
+    # Menthe / Héparine Lithium
+    if any(k in c_lower for k in ["menthe", "pst", "heparine_lithium", "héparine de lithium"]) or ("vert" in c_lower and "sodium" not in c_lower and "hepna" not in c_lower and "cary" not in c_lower):
         return "HEPARINE_LITHIUM"
+
+    # Vert foncé / Héparine Sodium
     if any(k in c_lower for k in ["vert (hepna)", "heparine_sodium", "hepna", "vert foncé"]):
         return "HEPARINE_SODIUM"
-    if any(k in c_lower for k in ["vert", "vert_heparine_lithium"]):
-        return "HEPARINE_LITHIUM"
-    if any(k in c_lower for k in ["or (activateur caillot)", "or", "dore", "doré", "gel activateur"]):
-        return "SERUM_GEL"
+
+    # Doré / Or (Gel séparateur SST) -> MUST NOT MATCH 'orange'!
+    if "orange" not in c_lower:
+        if bool(re.search(r"\b(or|doré|dore|sst)\b", c_lower)) or "or (activateur" in c_lower or "gel activateur" in c_lower:
+            return "SERUM_GEL"
+
+    # Rouge / Sec sans gel
     if any(k in c_lower for k in ["rouge", "sec sans gel"]):
         return "SERUM_PLAIN"
+
+    # Gris / Fluorure
     if any(k in c_lower for k in ["gris", "fluorure", "oxalate"]):
         return "FLUORURE"
-    if any(k in c_lower for k in ["seringue", "gaz"]) or "gaz" in pid_lower or "gaz" in name_lower:
-        return "GAZ_SERINGUE"
-    
+
     # Fallback based on analysis name
     if any(k in name_lower for k in ["formule sanguine", "plaquettes", "reticulocytes", "frottis", "hba1c"]):
         return "EDTA"
@@ -421,7 +590,7 @@ def calculate_tubes(selected_pids, site="Tous les sites", is_pediatric=False):
             chosen_qty = item["containers"][0].get("quantity", "")
             chosen_count = item["containers"][0].get("count", "1")
 
-        cat_key = classify_container(chosen_container_str, item["name"], pid)
+        cat_key = classify_container(chosen_container_str, item["name"], pid, item.get("thematic", ""))
 
         # Site adjustments (e.g. HSS using serum gel)
         if ("hss" in normalize_str(site) or "portneuf" in normalize_str(site)) and cat_key == "HEPARINE_LITHIUM":
@@ -446,10 +615,13 @@ def calculate_tubes(selected_pids, site="Tous les sites", is_pediatric=False):
             for pc in item["pediatric_microtubes"]:
                 grouped_tubes[cat_key]["pediatric_info"].append(pc.get("description", ""))
 
-    # Sort categories by Order of Draw
+    # Sort categories by Order of Draw / Specimen Type
     tube_results = []
-    total_tubes_count = 0
+    total_blood_tubes = 0
     total_bottles_count = 0
+    total_urine_count = 0
+    total_fecal_count = 0
+    total_other_count = 0
 
     sorted_categories = sorted(
         [k for k in grouped_tubes.keys() if k is not None],
@@ -459,6 +631,7 @@ def calculate_tubes(selected_pids, site="Tous les sites", is_pediatric=False):
     for cat_key in sorted_categories:
         tube_def = TUBE_DEFINITIONS.get(cat_key, TUBE_DEFINITIONS["SPECIMEN_DIVERS"])
         group_data = grouped_tubes[cat_key]
+        spec_type = tube_def.get("specimen_type", "Divers")
 
         if cat_key == "HEMOCULTURE":
             if is_pediatric:
@@ -493,7 +666,6 @@ def calculate_tubes(selected_pids, site="Tous les sites", is_pediatric=False):
                     max_single_vol = max([parse_volume_ml(a.get("quantity", "")) for a in group_data["analyses"]] + [0.0])
                     tube_count = max(1, math.ceil(max_single_vol / nominal_cap)) if max_single_vol > 0 else 1
 
-                unit_label = "Microtube" if tube_count == 1 else "Microtubes"
                 container_display_name = tube_def["pediatric_name_fr"]
             else:
                 # Adult mode
@@ -507,39 +679,58 @@ def calculate_tubes(selected_pids, site="Tous les sites", is_pediatric=False):
                     except ValueError:
                         pass
                 
-                # 2. Cumulative volume-based count (e.g. 7 mL ANA + 5 mL ACOCH = 12 mL -> 3 tubes)
-                total_vol = 0.0
-                has_routine_base = False
-                for a in group_data["analyses"]:
-                    vol = parse_volume_ml(a.get("quantity", ""))
-                    if vol > 1.0:
-                        # Dedicated / high-volume / sendout test requirement (e.g. 5 mL, 7 mL, 12 mL)
-                        total_vol += vol
-                    elif vol > 0.0:
-                        if not has_routine_base:
+                # 2. Cumulative volume-based count (for blood tubes)
+                if spec_type == "Sang":
+                    total_vol = 0.0
+                    has_routine_base = False
+                    for a in group_data["analyses"]:
+                        vol = parse_volume_ml(a.get("quantity", ""))
+                        if vol > 1.0:
                             total_vol += vol
-                            has_routine_base = True
+                        elif vol > 0.0:
+                            if not has_routine_base:
+                                total_vol += vol
+                                has_routine_base = True
+                            else:
+                                total_vol += 0.2
                         else:
-                            # Routine tests sharing serum on analyzer
-                            total_vol += 0.2
-                    else:
-                        if not has_routine_base:
-                            total_vol += 1.0
-                            has_routine_base = True
-                        else:
-                            total_vol += 0.2
-                
-                vol_tubes = math.ceil(total_vol / nominal_cap) if total_vol > 0 else 1
-                
-                tube_count = max(max_explicit, vol_tubes, 1)
-                unit_label = "Tube" if tube_count == 1 else "Tubes"
+                            if not has_routine_base:
+                                total_vol += 1.0
+                                has_routine_base = True
+                            else:
+                                total_vol += 0.2
+                    
+                    vol_tubes = math.ceil(total_vol / nominal_cap) if total_vol > 0 else 1
+                    tube_count = max(max_explicit, vol_tubes, 1)
+
+                    if vol_tubes > 1 and total_vol > nominal_cap:
+                        volume_alert = f"Volume sanguin total requis ({total_vol:g} mL) supérieur à la contenance d'un tube standard ({nominal_cap:g} mL) → {tube_count} tubes nécessaires."
+                        group_data["alerts"].add(volume_alert)
+                else:
+                    # Non-blood specimen: count containers directly
+                    tube_count = max(max_explicit, 1)
+
                 container_display_name = tube_def["name_fr"]
 
-                if vol_tubes > 1 and total_vol > nominal_cap:
-                    volume_alert = f"Volume sanguin total requis ({total_vol:g} mL) supérieur à la contenance d'un tube standard ({nominal_cap:g} mL) → {tube_count} tubes nécessaires."
-                    group_data["alerts"].add(volume_alert)
-
-            total_tubes_count += tube_count
+            # Assign correct unit label and increment respective counter
+            if spec_type == "Sang":
+                unit_label = ("Microtube" if tube_count == 1 else "Microtubes") if is_pediatric else ("Tube" if tube_count == 1 else "Tubes")
+                total_blood_tubes += tube_count
+            elif spec_type == "Urine":
+                unit_label = "Cruche 24h" if cat_key == "URINE_24H" else ("Contenant" if tube_count == 1 else "Contenants")
+                total_urine_count += tube_count
+            elif spec_type == "Selles":
+                unit_label = "Pot stérile" if cat_key == "SELLES_STERILE" else ("Tube" if tube_count == 1 else "Tubes")
+                total_fecal_count += tube_count
+            elif spec_type == "Écouvillon":
+                unit_label = "Écouvillon" if tube_count == 1 else "Écouvillons"
+                total_other_count += tube_count
+            elif spec_type == "LCR":
+                unit_label = "Tube LCR" if tube_count == 1 else "Tubes LCR"
+                total_other_count += tube_count
+            else:
+                unit_label = "Contenant" if tube_count == 1 else "Contenants"
+                total_other_count += tube_count
 
         # Clean specific alerts
         clean_alerts = []
@@ -550,13 +741,16 @@ def calculate_tubes(selected_pids, site="Tous les sites", is_pediatric=False):
         # Consolidation explanation
         consolidation_note = ""
         if len(group_data["analyses"]) > 1:
-            if tube_count == 1 and cat_key in ["HEPARINE_LITHIUM", "SERUM_GEL", "EDTA"]:
+            if spec_type == "Sang" and tube_count == 1 and cat_key in ["HEPARINE_LITHIUM", "SERUM_GEL", "EDTA"]:
                 consolidation_note = f"Échantillon partagé sur automate : les {len(group_data['analyses'])} analyses de routine sont exécutées à partir du même tube (seuls quelques microlitres par test sont prélevés par l'automate)."
-            elif tube_count > 1 and not is_pediatric:
+            elif spec_type == "Sang" and tube_count > 1 and not is_pediatric:
                 consolidation_note = f"Volume cumulé requis ({total_vol:g} mL) nécessitant {tube_count} tubes."
+            elif spec_type in ["Urine", "Selles"]:
+                consolidation_note = f"Analyses combinées : ces {len(group_data['analyses'])} analyses sont réalisées à partir du même contenant."
 
         tube_results.append({
             "category_key": cat_key,
+            "specimen_type": spec_type,
             "order_step": tube_def["order"],
             "name": container_display_name,
             "cap_color_name": tube_def["cap_color_name"],
@@ -580,10 +774,15 @@ def calculate_tubes(selected_pids, site="Tous les sites", is_pediatric=False):
             dedup_alerts.append(al)
             seen_alerts.add(al)
 
+    total_all_containers = total_blood_tubes + total_bottles_count + total_urine_count + total_fecal_count + total_other_count
+
     return {
-        "total_tubes": total_tubes_count,
+        "total_tubes": total_blood_tubes,
         "total_bottles": total_bottles_count,
-        "total_containers": total_tubes_count + total_bottles_count,
+        "total_urine": total_urine_count,
+        "total_fecal": total_fecal_count,
+        "total_other": total_other_count,
+        "total_containers": total_all_containers,
         "tubes": tube_results,
         "special_instructions": dedup_alerts,
         "analyses_included": analyses_summary,
