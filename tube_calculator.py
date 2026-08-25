@@ -238,12 +238,12 @@ TUBE_DEFINITIONS = {
         "order": 21,
         "specimen_type": "Selles",
         "name_fr": "Milieu de transport Cary-Blair / EPT (Coproculture)",
-        "pediatric_name_fr": "Milieu de transport Cary-Blair (Bouchon Vert)",
-        "color_code": "#16A34A", # Green
-        "cap_color_name": "Bouchon Vert (Cary-Blair)",
-        "additive": "Milieu Cary-Blair / EPT pour coproculture bactérienne",
-        "max_volume": "Tube avec milieu de transport",
-        "special_instructions": "Coproculture bactérienne. Prélever un fragment de selle avec la cuillère intégrée jusqu'au trait indicateur."
+        "pediatric_name_fr": "Milieu de transport Cary-Blair (Bouchon Blanc)",
+        "color_code": "#64748B", # Slate / White Cap styling
+        "cap_color_name": "Bouchon Blanc (Cary-Blair)",
+        "additive": "Milieu liquide EPT (Cary-Blair) - GRM 101441",
+        "max_volume": "Tube 30 mL avec milieu liquide rose",
+        "special_instructions": "Coproculture bactérienne. Prélever un fragment de selle avec la cuillère intégrée jusqu'au trait indicateur. Bien revisser le bouchon blanc."
     },
     "SELLES_SAF": {
         "order": 22,
