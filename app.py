@@ -103,6 +103,10 @@ from profiles_manager import (
     upsert_nurse,
     update_nurse,
     delete_nurse,
+    get_all_locations,
+    upsert_location,
+    update_location,
+    delete_location,
     unified_search_prescribers
 )
 
@@ -117,6 +121,9 @@ class PrescriberModel(BaseModel):
 class NurseModel(BaseModel):
     nurse_name: Annotated[str, Field(max_length=120)]
     sample_location: Optional[Annotated[str, Field(max_length=120)]] = ""
+
+class LocationModel(BaseModel):
+    name: Annotated[str, Field(max_length=200)]
 
 # ==============================================================================
 # PROFILES & DIRECTORY ENDPOINTS
@@ -176,6 +183,35 @@ async def api_delete_nurse(nurse_id: str):
     if not delete_nurse(nurse_id):
         raise HTTPException(status_code=404, detail="Nurse not found")
     return {"status": "success", "deleted_id": nurse_id}
+
+# ==============================================================================
+# LOCATIONS ENDPOINTS
+# ==============================================================================
+
+@app.get("/api/locations")
+async def api_get_locations():
+    """Get all sample collection locations."""
+    return get_all_locations()
+
+@app.post("/api/locations")
+async def api_create_location(req: LocationModel):
+    """Create a sample collection location."""
+    return upsert_location(req.model_dump())
+
+@app.put("/api/locations/{location_id}")
+async def api_update_location(location_id: str, req: LocationModel):
+    """Update a sample collection location."""
+    res = update_location(location_id, req.model_dump())
+    if not res:
+        raise HTTPException(status_code=404, detail="Location not found")
+    return res
+
+@app.delete("/api/locations/{location_id}")
+async def api_delete_location(location_id: str):
+    """Delete a sample collection location."""
+    if not delete_location(location_id):
+        raise HTTPException(status_code=404, detail="Location not found")
+    return {"status": "success", "deleted_id": location_id}
 
 # ==============================================================================
 # REQUISITION ENDPOINTS

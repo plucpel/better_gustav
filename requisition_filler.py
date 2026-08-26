@@ -497,9 +497,22 @@ def generate_filled_requisition_pdf(
                 widget.update()
         elif ftype == "Text":
             if fname in text_values_to_set:
-                widget.field_value = text_values_to_set[fname]
+                val_str = str(text_values_to_set[fname])
+                widget.field_value = val_str
                 if fname == HEADER_FIELD_NAMES["other_analyses"]:
                     widget.text_fontsize = 8.5
+                elif fname == HEADER_FIELD_NAMES["sample_location"]:
+                    if len(val_str) > 65:
+                        widget.text_fontsize = 6.2
+                    elif len(val_str) > 45:
+                        widget.text_fontsize = 6.8
+                    else:
+                        widget.text_fontsize = 7.5
+                elif fname == HEADER_FIELD_NAMES["nurse_name"]:
+                    if len(val_str) > 40:
+                        widget.text_fontsize = 6.8
+                    else:
+                        widget.text_fontsize = 7.5
                 else:
                     widget.text_fontsize = 8.0
                 widget.update()

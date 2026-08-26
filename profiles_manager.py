@@ -22,6 +22,7 @@ os.makedirs(DATA_DIR, exist_ok=True)
 
 PRESCRIBERS_FILE = os.path.join(DATA_DIR, "prescribers.json")
 NURSES_FILE = os.path.join(DATA_DIR, "nurses.json")
+LOCATIONS_FILE = os.path.join(DATA_DIR, "locations.json")
 CMQ_PHYSICIANS_FILE = os.path.join(DATA_DIR, "cmq_physicians.json")
 
 _file_lock = threading.Lock()
@@ -359,3 +360,56 @@ def unified_search_prescribers(query: str, limit: int = 15) -> List[Dict[str, An
                 break
 
     return matched_clinic + matched_cmq
+
+# ==============================================================================
+# SAMPLE LOCATIONS (LIEUX DE PRÉLÈVEMENT)
+# ==============================================================================
+
+def get_all_locations() -> List[Dict[str, Any]]:
+    """Returns all saved sample collection locations from data/locations.json."""
+    with _file_lock:
+        return _load_json(LOCATIONS_FILE)
+
+def upsert_location(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Adds or updates a sample collection location."""
+    name = str(data.get("name", "")).strip()
+    if not name:
+        raise ValueError("Location name required")
+
+    with _file_lock:
+        locations = _load_json(LOCATIONS_FILE)
+        for loc in locations:
+            if loc.get("name", "").strip().lower() == name.lower():
+                return loc
+
+        loc_id = data.get("id") or f"loc_{uuid.uuid4().hex[:8]}"
+        new_item = {
+            "id": str(loc_id),
+            "name": name
+        }
+        locations.append(new_item)
+        _save_json(LOCATIONS_FILE, locations)
+        return new_item
+
+def update_location(location_id: str, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Updates a location by ID."""
+    with _file_lock:
+        locations = _load_json(LOCATIONS_FILE)
+        for loc in locations:
+            if loc.get("id") == location_id:
+                if "name" in data:
+                    loc["name"] = str(data["name"]).strip()
+                _save_json(LOCATIONS_FILE, locations)
+                return loc
+    return None
+
+def delete_location(location_id: str) -> bool:
+    """Deletes a location by ID."""
+    with _file_lock:
+        locations = _load_json(LOCATIONS_FILE)
+        initial_len = len(locations)
+        locations = [l for l in locations if l.get("id") != location_id]
+        if len(locations) < initial_len:
+            _save_json(LOCATIONS_FILE, locations)
+            return True
+    return False

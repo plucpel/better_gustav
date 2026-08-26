@@ -19,9 +19,14 @@ from profiles_manager import (
     get_all_nurses,
     update_nurse,
     delete_nurse,
+    get_all_locations,
+    upsert_location,
+    update_location,
+    delete_location,
     unified_search_prescribers,
     PRESCRIBERS_FILE,
-    NURSES_FILE
+    NURSES_FILE,
+    LOCATIONS_FILE
 )
 
 class TestProfilesManager(unittest.TestCase):
@@ -30,15 +35,20 @@ class TestProfilesManager(unittest.TestCase):
         # Backup test files if exist
         self.prescribers_bak = PRESCRIBERS_FILE + ".bak"
         self.nurses_bak = NURSES_FILE + ".bak"
+        self.locations_bak = LOCATIONS_FILE + ".bak"
         
         if os.path.exists(PRESCRIBERS_FILE):
             os.rename(PRESCRIBERS_FILE, self.prescribers_bak)
         if os.path.exists(NURSES_FILE):
             os.rename(NURSES_FILE, self.nurses_bak)
+        if os.path.exists(LOCATIONS_FILE):
+            os.rename(LOCATIONS_FILE, self.locations_bak)
             
         with open(PRESCRIBERS_FILE, "w", encoding="utf-8") as f:
             json.dump([], f)
         with open(NURSES_FILE, "w", encoding="utf-8") as f:
+            json.dump([], f)
+        with open(LOCATIONS_FILE, "w", encoding="utf-8") as f:
             json.dump([], f)
 
     def tearDown(self):
@@ -52,6 +62,11 @@ class TestProfilesManager(unittest.TestCase):
             os.rename(self.nurses_bak, NURSES_FILE)
         elif os.path.exists(NURSES_FILE):
             os.remove(NURSES_FILE)
+
+        if os.path.exists(self.locations_bak):
+            os.rename(self.locations_bak, LOCATIONS_FILE)
+        elif os.path.exists(LOCATIONS_FILE):
+            os.remove(LOCATIONS_FILE)
 
     def test_normalize_text(self):
         self.assertEqual(normalize_text("Dr. Pierre Martin, MD"), "pierre martin")
@@ -164,6 +179,44 @@ class TestProfilesManager(unittest.TestCase):
 
         nurses = client.get("/api/nurses").json()
         self.assertTrue(any("Gagnon" in n["nurse_name"] for n in nurses))
+
+    def test_location_crud_and_api(self):
+        client = TestClient(app)
+        
+        # 1. Add Location
+        loc1 = upsert_location({
+            "name": "Soins infirmiers Isabelle Lechasseur, 120-777 boul. Lebourgneuf, Québec, G2J 1C3"
+        })
+        self.assertIn("Lebourgneuf", loc1["name"])
+        
+        # 2. Duplicate prevention
+        loc2 = upsert_location({
+            "name": "Soins infirmiers Isabelle Lechasseur, 120-777 boul. Lebourgneuf, Québec, G2J 1C3"
+        })
+        self.assertEqual(len(get_all_locations()), 1)
+
+        # 3. API Create & GET
+        res_create = client.post("/api/locations", json={
+            "name": "Réseau Infirmia - Ste-Foy, 101-3200 Ch. Quatre-bourgeois, Québec, G1W 0G8"
+        })
+        self.assertEqual(res_create.status_code, 200)
+        loc_id = res_create.json()["id"]
+
+        res_get = client.get("/api/locations")
+        self.assertEqual(res_get.status_code, 200)
+        self.assertEqual(len(res_get.json()), 2)
+
+        # 4. API Update
+        res_update = client.put(f"/api/locations/{loc_id}", json={
+            "name": "Réseau Infirmia - Ste-Foy (Suite 101)"
+        })
+        self.assertEqual(res_update.status_code, 200)
+        self.assertEqual(res_update.json()["name"], "Réseau Infirmia - Ste-Foy (Suite 101)")
+
+        # 5. API Delete
+        res_del = client.delete(f"/api/locations/{loc_id}")
+        self.assertEqual(res_del.status_code, 200)
+        self.assertEqual(len(get_all_locations()), 1)
 
 if __name__ == "__main__":
     unittest.main()
