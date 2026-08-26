@@ -822,20 +822,7 @@
       previewPdfBtn.addEventListener("click", () => generateAndDownloadPdf(true));
       downloadPdfModalBtn.addEventListener("click", () => generateAndDownloadPdf(false));
 
-      // Prescriber and Nurse Profile Listeners
-      document.getElementById("reqPrescriberSelect").addEventListener("change", onPrescriberSelectChange);
-      document.getElementById("btnDeletePrescriber").addEventListener("click", onDeletePrescriberClick);
-      document.getElementById("reqDoctorName").addEventListener("input", onDoctorNameInput);
-
-      document.getElementById("reqNurseSelect").addEventListener("change", onNurseSelectChange);
-      document.getElementById("btnDeleteNurse").addEventListener("click", onDeleteNurseClick);
-      document.getElementById("reqNurseName").addEventListener("input", onNurseNameInput);
-
       document.getElementById("btnClearPatient").addEventListener("click", clearPatientFields);
-
-      // Initialize default profiles
-      renderPrescriberOptions(localStorage.getItem(STORAGE_KEY_ACTIVE_PRESCRIBER));
-      renderNurseOptions(localStorage.getItem(STORAGE_KEY_ACTIVE_NURSE));
     }
 
     function escapeHtml(str) {
@@ -1433,20 +1420,18 @@
 
       // Check if we have active prescriber and nurse in storage to auto-fill
       const activePrescriberId = localStorage.getItem(STORAGE_KEY_ACTIVE_PRESCRIBER);
-      const prescribers = getSavedPrescribers();
-      renderPrescriberOptions(activePrescriberId);
-      if (activePrescriberId) {
-        const found = prescribers.find(p => p.id === activePrescriberId);
+      renderPrescriberDropdown(activePrescriberId);
+      if (activePrescriberId && cachedPrescribers.length > 0) {
+        const found = cachedPrescribers.find(p => p.id === activePrescriberId);
         if (found && !document.getElementById("reqDoctorName").value) {
           applyPrescriber(found);
         }
       }
 
       const activeNurseId = localStorage.getItem(STORAGE_KEY_ACTIVE_NURSE);
-      const nurses = getSavedNurses();
-      renderNurseOptions(activeNurseId);
-      if (activeNurseId) {
-        const found = nurses.find(n => n.id === activeNurseId);
+      renderNurseDropdown(activeNurseId);
+      if (activeNurseId && cachedNurses.length > 0) {
+        const found = cachedNurses.find(n => n.id === activeNurseId);
         if (found && !document.getElementById("reqNurseName").value) {
           applyNurse(found);
         }
