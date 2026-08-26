@@ -188,6 +188,32 @@
             </div>
           </div>
         </div>
+
+        <!-- Requisition PDF Action Banner inside Hero Card -->
+        <div id="heroRequisitionBar" class="mt-4 pt-4 border-t border-white/15 flex flex-wrap items-center justify-between gap-3 hidden">
+          <div class="flex items-center space-x-2.5">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 shadow-inner">
+              <i class="fa-solid fa-file-signature text-sm"></i>
+            </div>
+            <div>
+              <div class="text-xs font-bold text-white flex items-center space-x-2">
+                <span>Requête OPTILAB pré-remplie</span>
+                <span id="heroReqCheckBadge" class="bg-emerald-400/20 text-emerald-200 border border-emerald-400/30 text-[10px] px-2 py-0.5 rounded-full font-bold">0 cases cochées</span>
+              </div>
+              <p class="text-[11px] text-sky-200/80">Formulaire officiel 03-108 (2026-05) avec vos analyses pré-cochées</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button id="openRequisitionModalBtn" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs px-3.5 py-1.5 rounded-lg shadow transition flex items-center space-x-1.5">
+              <i class="fa-solid fa-pen-to-square text-[11px]"></i>
+              <span>Options &amp; Remplir</span>
+            </button>
+            <button id="quickDownloadPdfBtn" class="bg-white/15 hover:bg-white/25 text-white font-semibold text-xs px-3 py-1.5 rounded-lg border border-white/20 transition flex items-center space-x-1.5">
+              <i class="fa-solid fa-file-arrow-down text-[11px]"></i>
+              <span>Télécharger PDF</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Quick Glance Tubes & Colors Summary Tray -->
@@ -256,6 +282,144 @@
     </div>
   </div>
 
+  <!-- Modal for OPTILAB PDF Requisition -->
+  <div id="requisitionModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] shadow-2xl flex flex-col overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+      <div class="px-6 py-4 bg-gradient-to-r from-slate-900 via-sky-950 to-indigo-950 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300 shadow-inner">
+            <i class="fa-solid fa-file-signature text-base"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">Requête d'Analyses Médicales (OPTILAB)</h3>
+            <p class="text-xs text-sky-200/80">REQUÊTE D'ANALYSES - GÉNÉRALES - LABORATOIRE MULTIDISCIPLINAIRE (03-108 / 2026-05)</p>
+          </div>
+        </div>
+        <button id="closeRequisitionModalBtn" class="text-slate-400 hover:text-white transition">
+          <i class="fa-solid fa-times text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-5">
+        <!-- Summary Cards / Badges -->
+        <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-4 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center space-x-2">
+              <span id="reqMatchedCountBadge" class="bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs px-2.5 py-1 rounded-lg font-bold flex items-center space-x-1.5">
+                <i class="fa-solid fa-check-circle text-emerald-600"></i>
+                <span id="reqMatchedCountText">0 cases cochées</span>
+              </span>
+              <span id="reqOtherCountBadge" class="bg-amber-100 text-amber-800 border border-amber-200 text-xs px-2.5 py-1 rounded-lg font-bold hidden flex items-center space-x-1.5">
+                <i class="fa-solid fa-file-lines text-amber-600"></i>
+                <span id="reqOtherCountText">0 autres analyses</span>
+              </span>
+            </div>
+            <span class="text-xs text-slate-500 font-semibold" id="reqSiteIndicator">Site : Tous les sites</span>
+          </div>
+
+          <!-- Checked Boxes List -->
+          <div>
+            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Cases pré-cochées sur la requête :</span>
+            <div id="reqCheckedList" class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto custom-scrollbar p-1">
+              <!-- Dynamic pills -->
+            </div>
+          </div>
+
+          <!-- Other Analyses Text Preview (if any) -->
+          <div id="reqOtherSection" class="hidden pt-2.5 border-t border-slate-200">
+            <span class="text-[11px] font-bold text-amber-800 uppercase tracking-wider block mb-1">
+              <i class="fa-solid fa-pen-to-square mr-1 text-amber-600"></i>Inscrit dans « AUTRES ANALYSES OU DEMANDES SPÉCIALES » :
+            </span>
+            <div id="reqOtherTextPreview" class="text-xs text-slate-800 font-medium bg-white p-2.5 rounded-lg border border-slate-200/90 font-mono">
+            </div>
+          </div>
+        </div>
+
+        <!-- Optional Patient & Prescriber Information Form -->
+        <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+          <div class="bg-slate-100/80 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <i class="fa-solid fa-user-pen text-sky-700 text-xs"></i>
+              <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Renseignements de l'usager &amp; Prescripteur (Optionnel)</span>
+            </div>
+            <span class="text-[11px] text-slate-500 italic">Optionnel • Prêt à imprimer</span>
+          </div>
+
+          <div class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs bg-white">
+            <!-- Patient Name -->
+            <div class="sm:col-span-2">
+              <label class="block font-semibold text-slate-700 mb-1">Nom et prénom de l'usager</label>
+              <input type="text" id="reqPatientName" placeholder="Ex: Tremblay, Jean" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+            </div>
+
+            <!-- RAMQ -->
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Numéro RAMQ</label>
+              <input type="text" id="reqRamq" placeholder="Ex: TREJ 8005 1512" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+            </div>
+
+            <!-- DOB -->
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Date de naissance</label>
+              <input type="date" id="reqDob" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+            </div>
+
+            <!-- Sex -->
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Sexe</label>
+              <select id="reqSex" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs bg-white">
+                <option value="">Non spécifié</option>
+                <option value="M">Masculin (M)</option>
+                <option value="F">Féminin (F)</option>
+              </select>
+            </div>
+
+            <!-- Dossier -->
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Numéro de dossier</label>
+              <input type="text" id="reqDossier" placeholder="Ex: 1234567" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+            </div>
+
+            <!-- Clinical Info -->
+            <div class="sm:col-span-3">
+              <label class="block font-semibold text-slate-700 mb-1">Renseignements cliniques / Diagnostic</label>
+              <input type="text" id="reqClinicalInfo" placeholder="Ex: Bilan pré-opératoire, suspicion DRS..." class="w-full px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+            </div>
+
+            <!-- Doctor Name -->
+            <div class="sm:col-span-2">
+              <label class="block font-semibold text-slate-700 mb-1">Médecin prescripteur</label>
+              <input type="text" id="reqDoctorName" placeholder="Ex: Dr. Pierre Martin" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+            </div>
+
+            <!-- Doctor License -->
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Numéro de pratique</label>
+              <input type="text" id="reqDoctorLicense" placeholder="Ex: 12345" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
+        <button id="cancelRequisitionBtn" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 transition">
+          Fermer
+        </button>
+        <div class="flex items-center space-x-2">
+          <button id="previewPdfBtn" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold transition flex items-center space-x-1.5 shadow">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+            <span>Ouvrir l'aperçu PDF</span>
+          </button>
+          <button id="downloadPdfModalBtn" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center space-x-1.5 shadow-md">
+            <i class="fa-solid fa-download"></i>
+            <span>Télécharger la Requête PDF</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     // State
     let selectedAnalyses = new Set();
@@ -288,6 +452,27 @@
     const alertsList = document.getElementById("alertsList");
     const ficheModal = document.getElementById("ficheModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
+
+    // Requisition Elements
+    const heroRequisitionBar = document.getElementById("heroRequisitionBar");
+    const heroReqCheckBadge = document.getElementById("heroReqCheckBadge");
+    const openRequisitionModalBtn = document.getElementById("openRequisitionModalBtn");
+    const quickDownloadPdfBtn = document.getElementById("quickDownloadPdfBtn");
+    const requisitionModal = document.getElementById("requisitionModal");
+    const closeRequisitionModalBtn = document.getElementById("closeRequisitionModalBtn");
+    const cancelRequisitionBtn = document.getElementById("cancelRequisitionBtn");
+    const previewPdfBtn = document.getElementById("previewPdfBtn");
+    const downloadPdfModalBtn = document.getElementById("downloadPdfModalBtn");
+    const reqMatchedCountBadge = document.getElementById("reqMatchedCountBadge");
+    const reqMatchedCountText = document.getElementById("reqMatchedCountText");
+    const reqOtherCountBadge = document.getElementById("reqOtherCountBadge");
+    const reqOtherCountText = document.getElementById("reqOtherCountText");
+    const reqSiteIndicator = document.getElementById("reqSiteIndicator");
+    const reqCheckedList = document.getElementById("reqCheckedList");
+    const reqOtherSection = document.getElementById("reqOtherSection");
+    const reqOtherTextPreview = document.getElementById("reqOtherTextPreview");
+
+    let currentRequisitionInspection = null;
 
     // Init
     async function init() {
@@ -345,6 +530,17 @@
       ficheModal.addEventListener("click", (e) => {
         if (e.target === ficheModal) ficheModal.classList.add("hidden");
       });
+
+      // Requisition Modal Event Listeners
+      openRequisitionModalBtn.addEventListener("click", openRequisitionModal);
+      quickDownloadPdfBtn.addEventListener("click", () => generateAndDownloadPdf(false));
+      closeRequisitionModalBtn.addEventListener("click", () => requisitionModal.classList.add("hidden"));
+      cancelRequisitionBtn.addEventListener("click", () => requisitionModal.classList.add("hidden"));
+      requisitionModal.addEventListener("click", (e) => {
+        if (e.target === requisitionModal) requisitionModal.classList.add("hidden");
+      });
+      previewPdfBtn.addEventListener("click", () => generateAndDownloadPdf(true));
+      downloadPdfModalBtn.addEventListener("click", () => generateAndDownloadPdf(false));
     }
 
     function escapeHtml(str) {
@@ -548,6 +744,8 @@
         tubesContainer.innerHTML = "";
         alertsBanner.classList.add("hidden");
         document.getElementById("quickGlanceCard").classList.add("hidden");
+        heroRequisitionBar.classList.add("hidden");
+        currentRequisitionInspection = null;
         return;
       }
 
@@ -557,14 +755,43 @@
         is_pediatric: isPediatric
       };
 
-      const res = await fetch("/api/calculate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
+      // Parallel requests for tube calculations and requisition inspection
+      const [resCalc, resReq] = await Promise.all([
+        fetch("/api/calculate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        }),
+        fetch("/api/requisition/inspect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pids: Array.from(selectedAnalyses), site: currentSite })
+        })
+      ]);
+
+      const data = await resCalc.json();
+      currentRequisitionInspection = await resReq.json();
 
       renderResults(data);
+      renderRequisitionBar(currentRequisitionInspection);
+    }
+
+    function renderRequisitionBar(inspection) {
+      if (!inspection || selectedAnalyses.size === 0) {
+        heroRequisitionBar.classList.add("hidden");
+        return;
+      }
+
+      const matched = inspection.total_matched || 0;
+      const other = inspection.total_other || 0;
+
+      let badgeText = `${matched} case${matched > 1 ? 's' : ''} cochée${matched > 1 ? 's' : ''}`;
+      if (other > 0) {
+        badgeText += ` • ${other} autre${other > 1 ? 's' : ''}`;
+      }
+
+      heroReqCheckBadge.innerText = badgeText;
+      heroRequisitionBar.classList.remove("hidden");
     }
 
     function renderResults(data) {
@@ -863,6 +1090,97 @@
       `;
 
       ficheModal.classList.remove("hidden");
+    }
+
+    function openRequisitionModal() {
+      if (!currentRequisitionInspection || selectedAnalyses.size === 0) return;
+
+      const ins = currentRequisitionInspection;
+      reqSiteIndicator.innerText = `Site : ${currentSite}`;
+      reqMatchedCountText.innerText = `${ins.total_matched} case${ins.total_matched > 1 ? 's' : ''} cochée${ins.total_matched > 1 ? 's' : ''}`;
+
+      if (ins.total_other > 0) {
+        reqOtherCountBadge.classList.remove("hidden");
+        reqOtherCountText.innerText = `${ins.total_other} dans Autres demandes`;
+        reqOtherSection.classList.remove("hidden");
+        reqOtherTextPreview.innerText = ins.other_analyses.map(o => `${o.name} (${o.pid.toUpperCase()})`).join(" • ");
+      } else {
+        reqOtherCountBadge.classList.add("hidden");
+        reqOtherSection.classList.add("hidden");
+      }
+
+      // Render Checked Pills
+      reqCheckedList.innerHTML = "";
+      ins.matched_checkboxes.forEach(m => {
+        const pill = document.createElement("div");
+        pill.className = "bg-white border border-emerald-300 text-slate-800 text-[11px] px-2 py-0.5 rounded-md flex items-center space-x-1.5 shadow-2xs font-medium";
+        pill.innerHTML = `
+          <i class="fa-solid fa-check text-emerald-600 text-[10px]"></i>
+          <span class="font-mono font-bold text-emerald-950">${escapeHtml(m.field_name)}</span>
+          <span class="text-slate-500 truncate max-w-[170px]" title="${escapeHtml(m.name)}">${escapeHtml(m.name.split('(')[0].trim())}</span>
+        `;
+        reqCheckedList.appendChild(pill);
+      });
+
+      requisitionModal.classList.remove("hidden");
+    }
+
+    function collectPatientInfo() {
+      return {
+        patient_name: document.getElementById("reqPatientName").value,
+        ramq: document.getElementById("reqRamq").value,
+        dob: document.getElementById("reqDob").value,
+        sex: document.getElementById("reqSex").value,
+        dossier: document.getElementById("reqDossier").value,
+        clinical_info: document.getElementById("reqClinicalInfo").value,
+        doctor_name: document.getElementById("reqDoctorName").value,
+        doctor_license: document.getElementById("reqDoctorLicense").value
+      };
+    }
+
+    async function generateAndDownloadPdf(openInNewTab = false) {
+      if (selectedAnalyses.size === 0) return;
+
+      const payload = {
+        pids: Array.from(selectedAnalyses),
+        site: currentSite,
+        patient_info: collectPatientInfo()
+      };
+
+      const btn = openInNewTab ? previewPdfBtn : (requisitionModal.classList.contains("hidden") ? quickDownloadPdfBtn : downloadPdfModalBtn);
+      const origHtml = btn.innerHTML;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-xs"></i> <span>Génération...</span>`;
+      btn.disabled = true;
+
+      try {
+        const res = await fetch("/api/requisition/pdf", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error("Échec de la génération de la requête");
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+
+        if (openInNewTab) {
+          window.open(blobUrl, "_blank");
+        } else {
+          const a = document.createElement("a");
+          a.href = blobUrl;
+          const siteClean = currentSite.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 15);
+          a.download = `Requete_Optilab_${siteClean}_${new Date().toISOString().slice(0,10)}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        }
+      } catch (err) {
+        alert("Erreur lors de la création du fichier PDF : " + err.message);
+      } finally {
+        btn.innerHTML = origHtml;
+        btn.disabled = false;
+      }
     }
 
     // Launch

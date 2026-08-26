@@ -13,8 +13,8 @@ echo "[1/4] Création du dossier cible sur chatterbox..."
 ssh "$HOST" "mkdir -p $TARGET_DIR/data $TARGET_DIR/static"
 
 echo "[2/4] Copie des fichiers d'application et de données..."
-scp -r app.py tube_calculator.py medical_dictionary.py requirements.txt gustav.service "$HOST:$TARGET_DIR/"
-scp -r data/gustav_lab_catalog.json "$HOST:$TARGET_DIR/data/"
+scp -r app.py tube_calculator.py medical_dictionary.py requisition_filler.py requirements.txt gustav.service "$HOST:$TARGET_DIR/"
+scp -r data/* "$HOST:$TARGET_DIR/data/"
 scp -r static/index.html "$HOST:$TARGET_DIR/static/"
 
 echo "[3/4] Configuration de l'environnement Python et des dépendances..."

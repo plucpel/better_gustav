@@ -70,7 +70,8 @@ def build():
         "sniffio>=1.1",
         "idna>=2.8",
         "click>=7.0",
-        "h11>=0.8"
+        "h11>=0.8",
+        "pymupdf>=1.23.0"
     ]
 
     cmd = [
@@ -89,6 +90,7 @@ def build():
     shutil.copy2(os.path.join(PROJECT_DIR, "app.py"), PORTABLE_DIR)
     shutil.copy2(os.path.join(PROJECT_DIR, "tube_calculator.py"), PORTABLE_DIR)
     shutil.copy2(os.path.join(PROJECT_DIR, "medical_dictionary.py"), PORTABLE_DIR)
+    shutil.copy2(os.path.join(PROJECT_DIR, "requisition_filler.py"), PORTABLE_DIR)
 
     # Copy data/
     shutil.copytree(os.path.join(PROJECT_DIR, "data"), os.path.join(PORTABLE_DIR, "data"), dirs_exist_ok=True)
