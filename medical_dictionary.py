@@ -89,6 +89,12 @@ CLINICAL_PANELS = {
         "description": "Toxine C. difficile, Coproculture bactérienne et Calprotectine fécale",
         "pids": ["closd", "selle", "caprs"],
         "keywords": ["diarrhee", "diarrhée", "selles", "c. diff", "coproculture", "calprotectine", "gastro", "fecal", "fécal"]
+    },
+    "c34sp": {
+        "name": "Complément (C3 et C4)",
+        "description": "Dosage combiné du complément C3 et C4 sérique",
+        "pids": ["c3", "c4"],
+        "keywords": ["c34sp", "c3 c4", "complement c3 c4", "complément c3 c4", "c3 et c4"]
     }
 }
 
@@ -137,9 +143,15 @@ SYNONYMS_TO_PID = {
     "d-dimeres": "dd",
     "d-dimères": "dd",
     "ddimeres": "dd",
-    "dd": "dd",
     "anticoagulant circulant": "anlup",
     "anti-xa": "axahb",
+    "anpch": "anpch",
+    "alpha-2 antiplasmine": "anpch",
+    "alpha 2 antiplasmine": "anpch",
+    "antiplasmine": "anpch",
+    "plach": "plach",
+    "plasminogene": "plach",
+    "plasminogène": "plach",
     
     # Biochemistry / Electrolytes / Renal
     "iono": "elec",

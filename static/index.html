@@ -1134,8 +1134,9 @@
 
       const matched = inspection.total_matched || 0;
       const other = inspection.total_other || 0;
+      const totalPages = inspection.total_pages || (inspection.active_forms ? inspection.active_forms.length : 1);
 
-      let badgeText = `${matched} case${matched > 1 ? 's' : ''} cochée${matched > 1 ? 's' : ''}`;
+      let badgeText = `${totalPages} page${totalPages > 1 ? 's' : ''} PDF • ${matched} case${matched > 1 ? 's' : ''} cochée${matched > 1 ? 's' : ''}`;
       if (other > 0) {
         badgeText += ` • ${other} autre${other > 1 ? 's' : ''}`;
       }
@@ -1446,7 +1447,8 @@
       if (!currentRequisitionInspection || selectedAnalyses.size === 0) return;
 
       const ins = currentRequisitionInspection;
-      reqSiteIndicator.innerText = `Site : ${currentSite}`;
+      const totalPages = ins.total_pages || (ins.active_forms ? ins.active_forms.length : 1);
+      reqSiteIndicator.innerText = `Site : ${currentSite} • ${totalPages} formulaire${totalPages > 1 ? 's' : ''} (${totalPages} page${totalPages > 1 ? 's' : ''} PDF)`;
       reqMatchedCountText.innerText = `${ins.total_matched} case${ins.total_matched > 1 ? 's' : ''} cochée${ins.total_matched > 1 ? 's' : ''}`;
 
       if (ins.total_other > 0) {
@@ -1459,18 +1461,56 @@
         reqOtherSection.classList.add("hidden");
       }
 
-      // Render Checked Pills
+      // Render Checked Pills Grouped by Form
       reqCheckedList.innerHTML = "";
-      ins.matched_checkboxes.forEach(m => {
-        const pill = document.createElement("div");
-        pill.className = "bg-white border border-emerald-300 text-slate-800 text-[11px] px-2 py-0.5 rounded-md flex items-center space-x-1.5 shadow-2xs font-medium";
-        pill.innerHTML = `
-          <i class="fa-solid fa-check text-emerald-600 text-[10px]"></i>
-          <span class="font-mono font-bold text-emerald-950">${escapeHtml(m.field_name)}</span>
-          <span class="text-slate-500 truncate max-w-[170px]" title="${escapeHtml(m.name)}">${escapeHtml(m.name.split('(')[0].trim())}</span>
-        `;
-        reqCheckedList.appendChild(pill);
-      });
+      const activeForms = ins.active_forms || [];
+
+      if (activeForms.length > 0) {
+        activeForms.forEach(form => {
+          if (!form.matched_checkboxes || form.matched_checkboxes.length === 0) return;
+          
+          const groupContainer = document.createElement("div");
+          groupContainer.className = "w-full mb-2 bg-slate-100/70 p-2 rounded-lg border border-slate-200";
+          
+          let formBadgeColor = "bg-indigo-100 text-indigo-900 border-indigo-200";
+          if (form.form_id === "micro_gen") formBadgeColor = "bg-emerald-100 text-emerald-900 border-emerald-200";
+          else if (form.form_id === "micro_mol") formBadgeColor = "bg-purple-100 text-purple-900 border-purple-200";
+          else if (form.form_id === "spec_multi") formBadgeColor = "bg-sky-100 text-sky-900 border-sky-200";
+
+          groupContainer.innerHTML = `
+            <div class="text-[11px] font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+              <div class="flex items-center space-x-1.5">
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold border ${formBadgeColor}">
+                  <i class="fa-solid fa-file-pdf mr-1"></i>${escapeHtml(form.title)}
+                </span>
+              </div>
+              <span class="text-[10px] font-semibold text-slate-500">${form.matched_count} case${form.matched_count > 1 ? 's' : ''}</span>
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              ${form.matched_checkboxes.map(m => `
+                <div class="bg-white border border-emerald-300 text-slate-800 text-[11px] px-2 py-0.5 rounded-md flex items-center space-x-1.5 shadow-2xs font-medium">
+                  <i class="fa-solid fa-check text-emerald-600 text-[10px]"></i>
+                  <span class="font-mono font-bold text-emerald-950">${escapeHtml(m.field_name)}</span>
+                  <span class="text-slate-500 truncate max-w-[170px]" title="${escapeHtml(m.name)}">${escapeHtml(m.name.split('(')[0].trim())}</span>
+                </div>
+              `).join('')}
+            </div>
+          `;
+          reqCheckedList.appendChild(groupContainer);
+        });
+      } else {
+        // Fallback flat list
+        ins.matched_checkboxes.forEach(m => {
+          const pill = document.createElement("div");
+          pill.className = "bg-white border border-emerald-300 text-slate-800 text-[11px] px-2 py-0.5 rounded-md flex items-center space-x-1.5 shadow-2xs font-medium";
+          pill.innerHTML = `
+            <i class="fa-solid fa-check text-emerald-600 text-[10px]"></i>
+            <span class="font-mono font-bold text-emerald-950">${escapeHtml(m.field_name)}</span>
+            <span class="text-slate-500 truncate max-w-[170px]" title="${escapeHtml(m.name)}">${escapeHtml(m.name.split('(')[0].trim())}</span>
+          `;
+          reqCheckedList.appendChild(pill);
+        });
+      }
 
       // Auto-populate default site, date, time if empty
       const reqSiteInput = document.getElementById("reqSite");

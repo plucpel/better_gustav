@@ -51200,5 +51200,88 @@
       "But / Indications : Dosage du zinc dans le plasma",
       "Zinc (plasma)"
     ]
+  },
+  "anpch": {
+    "pid": "anpch",
+    "name": "Alpha-2 antiplasmine",
+    "thematic": "Hémostase spécialisée",
+    "url": "https://gustavguideext.chudequebec.ca/aceptm/#document/anpch",
+    "containers": [
+      {
+        "sites": "Tous les sites",
+        "container": "Bleu pâle (citrate de sodium)",
+        "count": "1",
+        "specimen": "Plasma citraté",
+        "quantity": "2.7 mL"
+      }
+    ],
+    "pediatric_microtubes": [],
+    "specimen_type": "Sang",
+    "preparation": "",
+    "instructions": [
+      "Remplir le tube jusqu'au trait."
+    ],
+    "alerts": [],
+    "keywords": [
+      "Alpha-2 antiplasmine",
+      "antiplasmine",
+      "ANPCH",
+      "hémostase"
+    ]
+  },
+  "plach": {
+    "pid": "plach",
+    "name": "Plasminogène",
+    "thematic": "Hémostase spécialisée",
+    "url": "https://gustavguideext.chudequebec.ca/aceptm/#document/plach",
+    "containers": [
+      {
+        "sites": "Tous les sites",
+        "container": "Bleu pâle (citrate de sodium)",
+        "count": "1",
+        "specimen": "Plasma citraté",
+        "quantity": "2.7 mL"
+      }
+    ],
+    "pediatric_microtubes": [],
+    "specimen_type": "Sang",
+    "preparation": "",
+    "instructions": [
+      "Remplir le tube jusqu'au trait."
+    ],
+    "alerts": [],
+    "keywords": [
+      "Plasminogène",
+      "plasminogene",
+      "PLACH",
+      "hémostase"
+    ]
+  },
+  "c34sp": {
+    "pid": "c34sp",
+    "name": "Complément (C3 et C4)",
+    "thematic": "Immunologie",
+    "url": "https://gustavguideext.chudequebec.ca/aceptm/#document/c34sp",
+    "containers": [
+      {
+        "sites": "Tous les sites",
+        "container": "Or (activateur caillot)",
+        "count": "1",
+        "specimen": "Sérum",
+        "quantity": "3.5 mL"
+      }
+    ],
+    "pediatric_microtubes": [],
+    "specimen_type": "Sang",
+    "preparation": "",
+    "instructions": [],
+    "alerts": [],
+    "keywords": [
+      "Complément C3 et C4",
+      "C3",
+      "C4",
+      "C34SP",
+      "immunologie"
+    ]
   }
 }
