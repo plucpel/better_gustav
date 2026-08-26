@@ -345,27 +345,31 @@
                 <i class="fa-solid fa-user text-sky-700 text-xs"></i>
                 <span class="text-xs font-bold text-sky-900 uppercase tracking-wider">1. Usager (Patient)</span>
               </div>
+              <button type="button" id="btnClearPatient" class="text-[11px] text-slate-500 hover:text-rose-600 transition flex items-center space-x-1 font-medium" title="Effacer les champs de l'usager">
+                <i class="fa-solid fa-eraser text-[10px]"></i>
+                <span>Effacer</span>
+              </button>
             </div>
-            <div class="p-3.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs bg-white">
+            <div class="p-3.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs bg-white" autocomplete="off">
               <div class="sm:col-span-2">
                 <label class="block font-semibold text-slate-700 mb-0.5">Nom et prénom</label>
-                <input type="text" id="reqPatientName" placeholder="Ex: Tremblay, Jean" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+                <input type="text" id="reqPatientName" name="patient_query_text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="Ex: Tremblay, Jean" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
               </div>
               <div>
                 <label class="block font-semibold text-slate-700 mb-0.5">RAMQ</label>
-                <input type="text" id="reqRamq" placeholder="Ex: TREJ 8005 1512" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+                <input type="text" id="reqRamq" name="patient_ramq_text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="Ex: TREJ 8005 1512" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
               </div>
               <div>
                 <label class="block font-semibold text-slate-700 mb-0.5">Dossier</label>
-                <input type="text" id="reqDossier" placeholder="Ex: 1234567" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+                <input type="text" id="reqDossier" name="patient_chart_text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="Ex: 1234567" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
               </div>
               <div>
                 <label class="block font-semibold text-slate-700 mb-0.5">Date de naissance</label>
-                <input type="date" id="reqDob" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+                <input type="date" id="reqDob" name="patient_dob_text" autocomplete="off" data-lpignore="true" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
               </div>
               <div>
                 <label class="block font-semibold text-slate-700 mb-0.5">Sexe</label>
-                <select id="reqSex" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs bg-white">
+                <select id="reqSex" name="patient_sex_text" autocomplete="off" data-lpignore="true" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs bg-white">
                   <option value="">Non spécifié</option>
                   <option value="M">Masculin (M)</option>
                   <option value="F">Féminin (F)</option>
@@ -373,15 +377,15 @@
               </div>
               <div>
                 <label class="block font-semibold text-slate-700 mb-0.5">Site</label>
-                <input type="text" id="reqSite" placeholder="Ex: Hôpital Enfant-Jésus (HEJ)" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+                <input type="text" id="reqSite" name="patient_site_text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="Ex: Hôpital Enfant-Jésus (HEJ)" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
               </div>
               <div>
                 <label class="block font-semibold text-slate-700 mb-0.5">Nº chambre/civière</label>
-                <input type="text" id="reqRoom" placeholder="Ex: Civière 14" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+                <input type="text" id="reqRoom" name="patient_room_text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="Ex: Civière 14" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
               </div>
               <div class="sm:col-span-2 lg:col-span-4">
                 <label class="block font-semibold text-slate-700 mb-0.5">Renseignements cliniques / Diagnostic</label>
-                <input type="text" id="reqClinicalInfo" placeholder="Ex: Bilan pré-opératoire, suspicion DRS, douleur abdominale..." class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+                <input type="text" id="reqClinicalInfo" name="patient_diag_text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="Ex: Bilan pré-opératoire, suspicion DRS, douleur abdominale..." class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
               </div>
             </div>
           </div>
@@ -620,6 +624,8 @@
       document.getElementById("reqNurseSelect").addEventListener("change", onNurseSelectChange);
       document.getElementById("btnDeleteNurse").addEventListener("click", onDeleteNurseClick);
       document.getElementById("reqNurseName").addEventListener("input", onNurseNameInput);
+
+      document.getElementById("btnClearPatient").addEventListener("click", clearPatientFields);
 
       // Initialize default profiles
       renderPrescriberOptions(localStorage.getItem(STORAGE_KEY_ACTIVE_PRESCRIBER));
@@ -1241,6 +1247,21 @@
       }
 
       requisitionModal.classList.remove("hidden");
+    }
+
+    function clearPatientFields() {
+      document.getElementById("reqPatientName").value = "";
+      document.getElementById("reqRamq").value = "";
+      document.getElementById("reqDossier").value = "";
+      document.getElementById("reqDob").value = "";
+      document.getElementById("reqSex").value = "";
+      document.getElementById("reqRoom").value = "";
+      document.getElementById("reqClinicalInfo").value = "";
+      if (currentSite !== "Tous les sites") {
+        document.getElementById("reqSite").value = currentSite;
+      } else {
+        document.getElementById("reqSite").value = "";
+      }
     }
 
     // Profile Management & LocalStorage Persistence
