@@ -1,0 +1,37 @@
+[
+  {
+    "id": "nurse_stephanie_gagnon",
+    "nurse_name": "Stéphanie Gagnon OIIQ:2111799 RAMQ:821838",
+    "sample_location": ""
+  },
+  {
+    "id": "nurse_lea_plante",
+    "nurse_name": "Léa Plante OIIQ:2232595 RAMQ:837189",
+    "sample_location": ""
+  },
+  {
+    "id": "nurse_marie_chantal_dube",
+    "nurse_name": "Marie-Chantal Dubé OIIQ:2102639 RAMQ:830045",
+    "sample_location": ""
+  },
+  {
+    "id": "nurse_gabrielle_gaudet",
+    "nurse_name": "Gabrielle Gaudet OIIQ:2233531",
+    "sample_location": ""
+  },
+  {
+    "id": "nurse_elyse_villeneuve_gravel",
+    "nurse_name": "Élyse Villeneuve-Gravel OIIQ:2092317",
+    "sample_location": ""
+  },
+  {
+    "id": "nurse_raphael_dubois",
+    "nurse_name": "Raphaël Dubois OIIQ:2210766 RAMQ:836717",
+    "sample_location": ""
+  },
+  {
+    "id": "nurse_ophelie_vincent",
+    "nurse_name": "Ophélie Vincent OIIQ:2244670",
+    "sample_location": ""
+  }
+]
