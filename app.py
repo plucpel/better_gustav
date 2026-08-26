@@ -94,6 +94,93 @@ async def api_calculate(req: CalculateRequest):
         is_pediatric=bool(req.is_pediatric)
     )
 
+from profiles_manager import (
+    get_all_prescribers,
+    upsert_prescriber,
+    update_prescriber,
+    delete_prescriber,
+    get_all_nurses,
+    upsert_nurse,
+    update_nurse,
+    delete_nurse,
+    unified_search_prescribers
+)
+
+class PrescriberModel(BaseModel):
+    doctor_name: Annotated[str, Field(max_length=120)]
+    doctor_license: Optional[Annotated[str, Field(max_length=30)]] = ""
+    clinic_name: Optional[Annotated[str, Field(max_length=120)]] = ""
+    clinic_id: Optional[Annotated[str, Field(max_length=30)]] = ""
+    doctor_copy: Optional[Annotated[str, Field(max_length=120)]] = ""
+    doctor_copy_license: Optional[Annotated[str, Field(max_length=30)]] = ""
+
+class NurseModel(BaseModel):
+    nurse_name: Annotated[str, Field(max_length=120)]
+    sample_location: Optional[Annotated[str, Field(max_length=120)]] = ""
+
+# ==============================================================================
+# PROFILES & DIRECTORY ENDPOINTS
+# ==============================================================================
+
+@app.get("/api/prescribers/search")
+async def api_search_prescribers(q: str = Query("", max_length=100)):
+    """Search unified prescribers across clinic directory and CMQ registry."""
+    return unified_search_prescribers(q, limit=20)
+
+@app.get("/api/prescribers")
+async def api_get_prescribers():
+    """Get all clinic prescribers."""
+    return get_all_prescribers()
+
+@app.post("/api/prescribers")
+async def api_create_prescriber(req: PrescriberModel):
+    """Create or upsert a clinic prescriber."""
+    return upsert_prescriber(req.model_dump())
+
+@app.put("/api/prescribers/{prescriber_id}")
+async def api_update_prescriber(prescriber_id: str, req: PrescriberModel):
+    """Update a specific prescriber."""
+    res = update_prescriber(prescriber_id, req.model_dump())
+    if not res:
+        raise HTTPException(status_code=404, detail="Prescriber not found")
+    return res
+
+@app.delete("/api/prescribers/{prescriber_id}")
+async def api_delete_prescriber(prescriber_id: str):
+    """Delete a prescriber by ID."""
+    if not delete_prescriber(prescriber_id):
+        raise HTTPException(status_code=404, detail="Prescriber not found")
+    return {"status": "success", "deleted_id": prescriber_id}
+
+@app.get("/api/nurses")
+async def api_get_nurses():
+    """Get all saved nurses/préleveurs."""
+    return get_all_nurses()
+
+@app.post("/api/nurses")
+async def api_create_nurse(req: NurseModel):
+    """Create or upsert a nurse/préleveur."""
+    return upsert_nurse(req.model_dump())
+
+@app.put("/api/nurses/{nurse_id}")
+async def api_update_nurse(nurse_id: str, req: NurseModel):
+    """Update a specific nurse/préleveur."""
+    res = update_nurse(nurse_id, req.model_dump())
+    if not res:
+        raise HTTPException(status_code=404, detail="Nurse not found")
+    return res
+
+@app.delete("/api/nurses/{nurse_id}")
+async def api_delete_nurse(nurse_id: str):
+    """Delete a nurse/préleveur by ID."""
+    if not delete_nurse(nurse_id):
+        raise HTTPException(status_code=404, detail="Nurse not found")
+    return {"status": "success", "deleted_id": nurse_id}
+
+# ==============================================================================
+# REQUISITION ENDPOINTS
+# ==============================================================================
+
 @app.post("/api/requisition/inspect")
 async def api_requisition_inspect(req: RequisitionRequest):
     """Inspect which analyses map to PDF form checkboxes vs 'autres demandes'."""
@@ -106,6 +193,30 @@ async def api_requisition_inspect(req: RequisitionRequest):
 async def api_requisition_pdf_post(req: RequisitionRequest):
     """Generate and download the pre-filled OPTILAB PDF requisition."""
     patient_dict = req.patient_info.model_dump() if req.patient_info else {}
+
+    # Auto-learning: save/update prescriber & nurse if credentials supplied
+    if patient_dict.get("doctor_name") or patient_dict.get("doctor_license"):
+        try:
+            upsert_prescriber({
+                "doctor_name": patient_dict.get("doctor_name", ""),
+                "doctor_license": patient_dict.get("doctor_license", ""),
+                "clinic_name": patient_dict.get("clinic_name", ""),
+                "clinic_id": patient_dict.get("clinic_id", ""),
+                "doctor_copy": patient_dict.get("doctor_copy", ""),
+                "doctor_copy_license": patient_dict.get("doctor_copy_license", "")
+            })
+        except Exception as e:
+            print(f"[app] Prescriber auto-save skipped: {e}")
+
+    if patient_dict.get("nurse_name") or patient_dict.get("sample_location"):
+        try:
+            upsert_nurse({
+                "nurse_name": patient_dict.get("nurse_name", ""),
+                "sample_location": patient_dict.get("sample_location", "")
+            })
+        except Exception as e:
+            print(f"[app] Nurse auto-save skipped: {e}")
+
     pdf_bytes = generate_filled_requisition_pdf(
         pids=req.pids,
         site=req.site or "Tous les sites",

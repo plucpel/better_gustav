@@ -75,6 +75,12 @@
           <i class="fa-solid fa-child text-sky-300"></i>
           <span id="pediatricLabel">Adulte</span>
         </button>
+
+        <!-- Admin & Profiles Directory Button -->
+        <button id="btnOpenAdminModal" class="flex items-center space-x-1.5 bg-white/10 hover:bg-white/20 transition-all rounded-lg px-3 py-1.5 border border-white/15 text-xs sm:text-sm font-medium" title="Gérer le répertoire des médecins et préleveurs">
+          <i class="fa-solid fa-address-book text-sky-300"></i>
+          <span>Répertoire &amp; Admin</span>
+        </button>
       </div>
     </div>
   </header>
@@ -395,26 +401,31 @@
             <div class="bg-indigo-50/80 px-4 py-2 border-b border-indigo-100 flex flex-wrap items-center justify-between gap-2">
               <div class="flex items-center space-x-2">
                 <i class="fa-solid fa-user-doctor text-indigo-700 text-xs"></i>
-                <span class="text-xs font-bold text-indigo-900 uppercase tracking-wider">2. Prescripteur</span>
+                <span class="text-xs font-bold text-indigo-900 uppercase tracking-wider">2. Prescripteur (Médecin)</span>
               </div>
-              <div class="flex items-center space-x-1.5">
+              <div class="flex items-center space-x-2">
                 <select id="reqPrescriberSelect" class="text-xs bg-white border border-indigo-200 text-indigo-900 font-medium rounded-md px-2 py-1 outline-none focus:ring-1 focus:ring-indigo-400 max-w-[240px] truncate">
                   <option value="">-- Prescripteurs enregistrés --</option>
                 </select>
-                <button type="button" id="btnDeletePrescriber" title="Supprimer ce prescripteur enregistré" class="hidden text-rose-500 hover:text-rose-700 p-1 text-xs transition">
-                  <i class="fa-solid fa-trash-can"></i>
+                <button type="button" id="btnAdminPrescribersLink" title="Gérer le répertoire des médecins" class="text-xs text-indigo-700 hover:text-indigo-900 font-semibold px-2 py-1 bg-indigo-100/60 hover:bg-indigo-200/70 rounded transition flex items-center space-x-1">
+                  <i class="fa-solid fa-gear text-[10px]"></i>
+                  <span>Gérer</span>
                 </button>
               </div>
             </div>
             <div class="p-3.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs bg-white">
-              <div class="sm:col-span-2">
-                <label class="block font-semibold text-slate-700 mb-0.5">Nom complet (Médecin)</label>
-                <input type="text" id="reqDoctorName" list="prescribersDatalist" placeholder="Ex: Dr. Pierre Martin" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none text-xs" />
-                <datalist id="prescribersDatalist"></datalist>
+              <div class="sm:col-span-2 relative">
+                <label class="block font-semibold text-slate-700 mb-0.5 flex items-center justify-between">
+                  <span>Nom complet (Médecin)</span>
+                  <span class="text-[10px] text-indigo-600 font-normal"><i class="fa-solid fa-magnifying-glass mr-1"></i>Recherche CMQ &amp; Clinique</span>
+                </label>
+                <input type="text" id="reqDoctorName" autocomplete="off" placeholder="Ex: Tremblay ou Dr. Pierre Martin..." class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none text-xs font-medium" />
+                <!-- Type-Ahead Search Dropdown for Prescribers -->
+                <div id="prescriberSearchDropdown" class="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-2xl border border-indigo-100 max-h-60 overflow-y-auto custom-scrollbar z-50 hidden divide-y divide-slate-100"></div>
               </div>
               <div class="sm:col-span-2">
-                <label class="block font-semibold text-slate-700 mb-0.5">Numéro de pratique</label>
-                <input type="text" id="reqDoctorLicense" placeholder="Ex: 12345" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none text-xs" />
+                <label class="block font-semibold text-slate-700 mb-0.5">Numéro de pratique (Permis CMQ)</label>
+                <input type="text" id="reqDoctorLicense" autocomplete="off" placeholder="Ex: 12345" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none text-xs font-mono" />
               </div>
               <div class="sm:col-span-2">
                 <label class="block font-semibold text-slate-700 mb-0.5">Nom de la clinique</label>
@@ -422,15 +433,15 @@
               </div>
               <div class="sm:col-span-2">
                 <label class="block font-semibold text-slate-700 mb-0.5">ID clinique SIL-P</label>
-                <input type="text" id="reqClinicId" placeholder="Ex: SIL-999" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none text-xs" />
+                <input type="text" id="reqClinicId" placeholder="Ex: SIL-999" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none text-xs font-mono" />
               </div>
               <div class="sm:col-span-2">
                 <label class="block font-semibold text-slate-700 mb-0.5">MD en copie (nom complet)</label>
                 <input type="text" id="reqDoctorCopy" placeholder="Ex: Dr. Sophie Roy" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none text-xs" />
               </div>
               <div class="sm:col-span-2">
-                <label class="block font-semibold text-slate-700 mb-0.5">Numéro de pratique (Ordre)</label>
-                <input type="text" id="reqDoctorCopyLicense" placeholder="Ex: 67890" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none text-xs" />
+                <label class="block font-semibold text-slate-700 mb-0.5">Numéro de pratique copie (Ordre)</label>
+                <input type="text" id="reqDoctorCopyLicense" placeholder="Ex: 67890" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none text-xs font-mono" />
               </div>
             </div>
           </div>
@@ -442,12 +453,13 @@
                 <i class="fa-solid fa-syringe text-emerald-700 text-xs"></i>
                 <span class="text-xs font-bold text-emerald-900 uppercase tracking-wider">3. Préleveur (Prélèvement)</span>
               </div>
-              <div class="flex items-center space-x-1.5">
+              <div class="flex items-center space-x-2">
                 <select id="reqNurseSelect" class="text-xs bg-white border border-emerald-200 text-emerald-900 font-medium rounded-md px-2 py-1 outline-none focus:ring-1 focus:ring-emerald-400 max-w-[240px] truncate">
                   <option value="">-- Préleveurs enregistrés --</option>
                 </select>
-                <button type="button" id="btnDeleteNurse" title="Supprimer ce préleveur enregistré" class="hidden text-rose-500 hover:text-rose-700 p-1 text-xs transition">
-                  <i class="fa-solid fa-trash-can"></i>
+                <button type="button" id="btnAdminNursesLink" title="Gérer le répertoire des préleveurs" class="text-xs text-emerald-700 hover:text-emerald-900 font-semibold px-2 py-1 bg-emerald-100/60 hover:bg-emerald-200/70 rounded transition flex items-center space-x-1">
+                  <i class="fa-solid fa-gear text-[10px]"></i>
+                  <span>Gérer</span>
                 </button>
               </div>
             </div>
@@ -462,8 +474,7 @@
               </div>
               <div>
                 <label class="block font-semibold text-slate-700 mb-0.5">Nom complet (Préleveur)</label>
-                <input type="text" id="reqNurseName" list="nursesDatalist" placeholder="Ex: Julie Gagnon, Inf." class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 outline-none text-xs" />
-                <datalist id="nursesDatalist"></datalist>
+                <input type="text" id="reqNurseName" placeholder="Ex: Julie Gagnon, Inf." class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 outline-none text-xs" />
               </div>
               <div>
                 <label class="block font-semibold text-slate-700 mb-0.5">Lieu du prélèvement</label>
@@ -490,6 +501,201 @@
             <span>Télécharger la Requête PDF</span>
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================================== -->
+  <!-- ADMIN MODAL: Répertoire des Prescripteurs & Préleveurs -->
+  <!-- ============================================================================== -->
+  <div id="adminModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-fade-in">
+      
+      <!-- Admin Modal Header -->
+      <div class="px-6 py-4 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center border border-white/15">
+            <i class="fa-solid fa-address-book text-sky-300"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold">Répertoire &amp; Administration</h3>
+            <p class="text-xs text-slate-300">Gestion des prescripteurs, numéros de pratique, cliniques et préleveurs</p>
+          </div>
+        </div>
+        <button id="btnCloseAdminModal" class="text-slate-400 hover:text-white transition">
+          <i class="fa-solid fa-times text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Admin Tabs -->
+      <div class="flex border-b border-slate-200 bg-slate-50 px-6 pt-3 gap-2">
+        <button id="adminTabPrescribers" class="px-4 py-2 text-xs font-bold rounded-t-lg border-b-2 border-indigo-600 bg-white text-indigo-950 flex items-center space-x-2 shadow-2xs">
+          <i class="fa-solid fa-user-doctor text-indigo-600"></i>
+          <span>Prescripteurs (Médecins)</span>
+          <span id="adminPrescribersBadge" class="bg-indigo-100 text-indigo-800 px-1.5 py-0.2 rounded-full text-[10px]">0</span>
+        </button>
+        <button id="adminTabNurses" class="px-4 py-2 text-xs font-semibold rounded-t-lg text-slate-600 hover:text-slate-900 flex items-center space-x-2 transition">
+          <i class="fa-solid fa-syringe text-emerald-600"></i>
+          <span>Préleveurs (Infirmières)</span>
+          <span id="adminNursesBadge" class="bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded-full text-[10px]">0</span>
+        </button>
+      </div>
+
+      <!-- Admin Tab Content: Prescribers -->
+      <div id="adminContentPrescribers" class="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="relative flex-1 min-w-[220px]">
+            <input type="text" id="adminPrescriberSearch" placeholder="Filtrer par nom, numéro de permis ou clinique..." class="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none text-xs" />
+            <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+          </div>
+          <div class="flex items-center space-x-2">
+            <input type="file" id="adminImportFileInput" accept=".json,.csv" class="hidden" />
+            <button id="btnImportDirectory" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 border border-slate-300">
+              <i class="fa-solid fa-file-import text-indigo-600"></i>
+              <span>Importer JSON / CSV</span>
+            </button>
+            <button id="btnAddPrescriber" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shadow">
+              <i class="fa-solid fa-plus"></i>
+              <span>Ajouter un Médecin</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Prescribers Table -->
+        <div class="border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
+          <table class="w-full text-left text-xs divide-y divide-slate-200">
+            <thead class="bg-slate-50 text-slate-600 font-semibold uppercase text-[10px] tracking-wider">
+              <tr>
+                <th class="px-3.5 py-2.5">Médecin</th>
+                <th class="px-3.5 py-2.5">No Pratique</th>
+                <th class="px-3.5 py-2.5">Clinique / GMF</th>
+                <th class="px-3.5 py-2.5">ID SIL-P</th>
+                <th class="px-3.5 py-2.5">Copie</th>
+                <th class="px-3.5 py-2.5 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminPrescribersTableBody" class="divide-y divide-slate-100 bg-white">
+              <!-- Dynamic Rows -->
+            </tbody>
+          </table>
+          <div id="adminPrescribersEmptyMsg" class="hidden p-8 text-center text-slate-400 text-xs">
+            <i class="fa-solid fa-user-doctor text-2xl mb-2 text-slate-300 block"></i>
+            Aucun prescripteur enregistré. Utilisez "Ajouter" ou saisissez-en un lors d'une requête.
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Tab Content: Nurses -->
+      <div id="adminContentNurses" class="hidden flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="relative flex-1 min-w-[220px]">
+            <input type="text" id="adminNurseSearch" placeholder="Filtrer par nom ou lieu de prélèvement..." class="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 outline-none text-xs" />
+            <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+          </div>
+          <button id="btnAddNurse" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shadow">
+            <i class="fa-solid fa-plus"></i>
+            <span>Ajouter un Préleveur</span>
+          </button>
+        </div>
+
+        <!-- Nurses Table -->
+        <div class="border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
+          <table class="w-full text-left text-xs divide-y divide-slate-200">
+            <thead class="bg-slate-50 text-slate-600 font-semibold uppercase text-[10px] tracking-wider">
+              <tr>
+                <th class="px-4 py-2.5">Nom complet (Préleveur)</th>
+                <th class="px-4 py-2.5">Lieu de prélèvement habituel</th>
+                <th class="px-4 py-2.5 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminNursesTableBody" class="divide-y divide-slate-100 bg-white">
+              <!-- Dynamic Rows -->
+            </tbody>
+          </table>
+          <div id="adminNursesEmptyMsg" class="hidden p-8 text-center text-slate-400 text-xs">
+            <i class="fa-solid fa-syringe text-2xl mb-2 text-slate-300 block"></i>
+            Aucun préleveur enregistré.
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Modal Footer -->
+      <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-xs text-slate-500">
+        <span>💾 Données sauvegardées sur le serveur</span>
+        <button id="btnCloseAdminFooterBtn" class="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-lg transition">
+          Fermer
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Sub-Modal: Add / Edit Prescriber -->
+  <div id="prescriberEditModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-60 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden p-5 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h4 id="prescriberEditModalTitle" class="text-sm font-bold text-slate-800">Ajouter un Prescripteur</h4>
+        <button id="btnClosePrescriberEditModal" class="text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+      <input type="hidden" id="editPrescriberId" />
+      <div class="space-y-2.5 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-0.5">Nom complet (Médecin) *</label>
+          <input type="text" id="editDocName" placeholder="Ex: Dr. Pierre Martin" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 outline-none text-xs" />
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-0.5">Numéro de pratique (Permis CMQ) *</label>
+          <input type="text" id="editDocLicense" placeholder="Ex: 12345" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 outline-none text-xs font-mono" />
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-0.5">Nom de la clinique</label>
+          <input type="text" id="editDocClinic" placeholder="Ex: GMF Clinique Saint-Vallier" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 outline-none text-xs" />
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-0.5">ID clinique SIL-P</label>
+          <input type="text" id="editDocClinicId" placeholder="Ex: SIL-999" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 outline-none text-xs font-mono" />
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-0.5">MD en copie (nom complet)</label>
+          <input type="text" id="editDocCopy" placeholder="Ex: Dr. Sophie Roy" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 outline-none text-xs" />
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-0.5">Numéro de pratique MD en copie</label>
+          <input type="text" id="editDocCopyLicense" placeholder="Ex: 67890" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 outline-none text-xs font-mono" />
+        </div>
+      </div>
+      <div class="flex justify-end space-x-2 pt-2 border-t border-slate-100">
+        <button id="btnCancelPrescriberEdit" class="px-3 py-1.5 text-xs text-slate-600 font-semibold hover:bg-slate-100 rounded-lg">Annuler</button>
+        <button id="btnSavePrescriberEdit" class="px-4 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sub-Modal: Add / Edit Nurse -->
+  <div id="nurseEditModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-60 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden p-5 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h4 id="nurseEditModalTitle" class="text-sm font-bold text-slate-800">Ajouter un Préleveur</h4>
+        <button id="btnCloseNurseEditModal" class="text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+      <input type="hidden" id="editNurseId" />
+      <div class="space-y-2.5 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-0.5">Nom complet (Préleveur) *</label>
+          <input type="text" id="editNurseName" placeholder="Ex: Julie Gagnon, Inf." class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-200 outline-none text-xs" />
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-0.5">Lieu de prélèvement habituel</label>
+          <input type="text" id="editNurseLocation" placeholder="Ex: Prélèvements externes HEJ" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-200 outline-none text-xs" />
+        </div>
+      </div>
+      <div class="flex justify-end space-x-2 pt-2 border-t border-slate-100">
+        <button id="btnCancelNurseEdit" class="px-3 py-1.5 text-xs text-slate-600 font-semibold hover:bg-slate-100 rounded-lg">Annuler</button>
+        <button id="btnSaveNurseEdit" class="px-4 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow">Enregistrer</button>
       </div>
     </div>
   </div>
@@ -1264,243 +1470,609 @@
       }
     }
 
-    // Profile Management & LocalStorage Persistence
-    const STORAGE_KEY_PRESCRIBERS = "gustav_saved_prescribers";
-    const STORAGE_KEY_NURSES = "gustav_saved_nurses";
+    // ==============================================================================
+    // Server-Synchronized Profiles & CMQ Directory Integration
+    // ==============================================================================
+    let cachedPrescribers = [];
+    let cachedNurses = [];
+    let prescriberSearchTimer = null;
+    let prescriberHighlightedIndex = -1;
+    let prescriberSearchResults = [];
+
     const STORAGE_KEY_ACTIVE_PRESCRIBER = "gustav_active_prescriber_id";
     const STORAGE_KEY_ACTIVE_NURSE = "gustav_active_nurse_id";
 
-    function getSavedPrescribers() {
+    // DOM References for Profiles & Admin
+    const btnOpenAdminModal = document.getElementById("btnOpenAdminModal");
+    const adminModal = document.getElementById("adminModal");
+    const btnCloseAdminModal = document.getElementById("btnCloseAdminModal");
+    const btnCloseAdminFooterBtn = document.getElementById("btnCloseAdminFooterBtn");
+    const adminTabPrescribers = document.getElementById("adminTabPrescribers");
+    const adminTabNurses = document.getElementById("adminTabNurses");
+    const adminContentPrescribers = document.getElementById("adminContentPrescribers");
+    const adminContentNurses = document.getElementById("adminContentNurses");
+    const adminPrescribersBadge = document.getElementById("adminPrescribersBadge");
+    const adminNursesBadge = document.getElementById("adminNursesBadge");
+    const adminPrescriberSearch = document.getElementById("adminPrescriberSearch");
+    const adminNurseSearch = document.getElementById("adminNurseSearch");
+    const adminPrescribersTableBody = document.getElementById("adminPrescribersTableBody");
+    const adminNursesTableBody = document.getElementById("adminNursesTableBody");
+    const adminPrescribersEmptyMsg = document.getElementById("adminPrescribersEmptyMsg");
+    const adminNursesEmptyMsg = document.getElementById("adminNursesEmptyMsg");
+    const btnImportDirectory = document.getElementById("btnImportDirectory");
+    const adminImportFileInput = document.getElementById("adminImportFileInput");
+    const btnAddPrescriber = document.getElementById("btnAddPrescriber");
+    const btnAddNurse = document.getElementById("btnAddNurse");
+
+    // Sub-modals
+    const prescriberEditModal = document.getElementById("prescriberEditModal");
+    const prescriberEditModalTitle = document.getElementById("prescriberEditModalTitle");
+    const btnClosePrescriberEditModal = document.getElementById("btnClosePrescriberEditModal");
+    const btnCancelPrescriberEdit = document.getElementById("btnCancelPrescriberEdit");
+    const btnSavePrescriberEdit = document.getElementById("btnSavePrescriberEdit");
+    const editPrescriberId = document.getElementById("editPrescriberId");
+    const editDocName = document.getElementById("editDocName");
+    const editDocLicense = document.getElementById("editDocLicense");
+    const editDocClinic = document.getElementById("editDocClinic");
+    const editDocClinicId = document.getElementById("editDocClinicId");
+    const editDocCopy = document.getElementById("editDocCopy");
+    const editDocCopyLicense = document.getElementById("editDocCopyLicense");
+
+    const nurseEditModal = document.getElementById("nurseEditModal");
+    const nurseEditModalTitle = document.getElementById("nurseEditModalTitle");
+    const btnCloseNurseEditModal = document.getElementById("btnCloseNurseEditModal");
+    const btnCancelNurseEdit = document.getElementById("btnCancelNurseEdit");
+    const btnSaveNurseEdit = document.getElementById("btnSaveNurseEdit");
+    const editNurseId = document.getElementById("editNurseId");
+    const editNurseName = document.getElementById("editNurseName");
+    const editNurseLocation = document.getElementById("editNurseLocation");
+
+    const reqPrescriberSelect = document.getElementById("reqPrescriberSelect");
+    const reqNurseSelect = document.getElementById("reqNurseSelect");
+    const reqDoctorName = document.getElementById("reqDoctorName");
+    const reqDoctorLicense = document.getElementById("reqDoctorLicense");
+    const reqClinicName = document.getElementById("reqClinicName");
+    const reqClinicId = document.getElementById("reqClinicId");
+    const reqDoctorCopy = document.getElementById("reqDoctorCopy");
+    const reqDoctorCopyLicense = document.getElementById("reqDoctorCopyLicense");
+    const reqNurseName = document.getElementById("reqNurseName");
+    const reqSampleLocation = document.getElementById("reqSampleLocation");
+    const prescriberSearchDropdown = document.getElementById("prescriberSearchDropdown");
+    const btnAdminPrescribersLink = document.getElementById("btnAdminPrescribersLink");
+    const btnAdminNursesLink = document.getElementById("btnAdminNursesLink");
+
+    async function loadServerPrescribers() {
       try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY_PRESCRIBERS)) || [];
+        const res = await fetch("/api/prescribers");
+        if (res.ok) {
+          cachedPrescribers = await res.json();
+          renderPrescriberDropdown();
+          renderAdminPrescribersTable();
+        }
       } catch (e) {
-        return [];
+        console.warn("Erreur chargement prescripteurs:", e);
       }
     }
 
-    function savePrescribers(list) {
-      localStorage.setItem(STORAGE_KEY_PRESCRIBERS, JSON.stringify(list));
-    }
-
-    function getSavedNurses() {
+    async function loadServerNurses() {
       try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY_NURSES)) || [];
+        const res = await fetch("/api/nurses");
+        if (res.ok) {
+          cachedNurses = await res.json();
+          renderNurseDropdown();
+          renderAdminNursesTable();
+        }
       } catch (e) {
-        return [];
+        console.warn("Erreur chargement préleveurs:", e);
       }
     }
 
-    function saveNurses(list) {
-      localStorage.setItem(STORAGE_KEY_NURSES, JSON.stringify(list));
-    }
-
-    function renderPrescriberOptions(selectedId = null) {
-      const prescribers = getSavedPrescribers();
-      const select = document.getElementById("reqPrescriberSelect");
-      const datalist = document.getElementById("prescribersDatalist");
-      const deleteBtn = document.getElementById("btnDeletePrescriber");
-
-      select.innerHTML = '<option value="">-- Prescripteurs enregistrés --</option>';
-      datalist.innerHTML = '';
-
-      prescribers.forEach(p => {
-        const label = `${p.doctor_name || 'Médecin'}${p.doctor_license ? ` (${p.doctor_license})` : ''}${p.clinic_name ? ` - ${p.clinic_name}` : ''}`;
-        
+    function renderPrescriberDropdown(selectedId = null) {
+      if (!selectedId) selectedId = localStorage.getItem(STORAGE_KEY_ACTIVE_PRESCRIBER);
+      reqPrescriberSelect.innerHTML = '<option value="">-- Prescripteurs enregistrés --</option>';
+      
+      cachedPrescribers.forEach(p => {
         const opt = document.createElement("option");
         opt.value = p.id;
-        opt.textContent = label;
+        const lic = p.doctor_license ? ` (${p.doctor_license})` : "";
+        const cl = p.clinic_name ? ` - ${p.clinic_name}` : "";
+        opt.textContent = `${p.doctor_name || 'Médecin'}${lic}${cl}`;
         if (selectedId && p.id === selectedId) opt.selected = true;
-        select.appendChild(opt);
-
-        const dlOpt = document.createElement("option");
-        dlOpt.value = p.doctor_name;
-        dlOpt.label = `${p.doctor_license || ''} ${p.clinic_name || ''}`;
-        datalist.appendChild(dlOpt);
+        reqPrescriberSelect.appendChild(opt);
       });
 
-      if (selectedId && prescribers.some(p => p.id === selectedId)) {
-        deleteBtn.classList.remove("hidden");
-      } else {
-        deleteBtn.classList.add("hidden");
+      if (adminPrescribersBadge) {
+        adminPrescribersBadge.textContent = cachedPrescribers.length;
       }
     }
 
-    function renderNurseOptions(selectedId = null) {
-      const nurses = getSavedNurses();
-      const select = document.getElementById("reqNurseSelect");
-      const datalist = document.getElementById("nursesDatalist");
-      const deleteBtn = document.getElementById("btnDeleteNurse");
+    function renderNurseDropdown(selectedId = null) {
+      if (!selectedId) selectedId = localStorage.getItem(STORAGE_KEY_ACTIVE_NURSE);
+      reqNurseSelect.innerHTML = '<option value="">-- Préleveurs enregistrés --</option>';
 
-      select.innerHTML = '<option value="">-- Préleveurs enregistrés --</option>';
-      datalist.innerHTML = '';
-
-      nurses.forEach(n => {
-        const label = `${n.nurse_name || 'Préleveur'}${n.sample_location ? ` (${n.sample_location})` : ''}`;
-        
+      cachedNurses.forEach(n => {
         const opt = document.createElement("option");
         opt.value = n.id;
-        opt.textContent = label;
+        const loc = n.sample_location ? ` (${n.sample_location})` : "";
+        opt.textContent = `${n.nurse_name || 'Préleveur'}${loc}`;
         if (selectedId && n.id === selectedId) opt.selected = true;
-        select.appendChild(opt);
-
-        const dlOpt = document.createElement("option");
-        dlOpt.value = n.nurse_name;
-        dlOpt.label = n.sample_location || '';
-        datalist.appendChild(dlOpt);
+        reqNurseSelect.appendChild(opt);
       });
 
-      if (selectedId && nurses.some(n => n.id === selectedId)) {
-        deleteBtn.classList.remove("hidden");
-      } else {
-        deleteBtn.classList.add("hidden");
+      if (adminNursesBadge) {
+        adminNursesBadge.textContent = cachedNurses.length;
       }
     }
 
     function applyPrescriber(p) {
       if (!p) return;
-      document.getElementById("reqDoctorName").value = p.doctor_name || "";
-      document.getElementById("reqDoctorLicense").value = p.doctor_license || "";
-      document.getElementById("reqClinicName").value = p.clinic_name || "";
-      document.getElementById("reqClinicId").value = p.clinic_id || "";
-      document.getElementById("reqDoctorCopy").value = p.doctor_copy || "";
-      document.getElementById("reqDoctorCopyLicense").value = p.doctor_copy_license || "";
-      localStorage.setItem(STORAGE_KEY_ACTIVE_PRESCRIBER, p.id);
-      renderPrescriberOptions(p.id);
+      reqDoctorName.value = p.doctor_name || "";
+      reqDoctorLicense.value = p.doctor_license || "";
+      reqClinicName.value = p.clinic_name || "";
+      reqClinicId.value = p.clinic_id || "";
+      reqDoctorCopy.value = p.doctor_copy || "";
+      reqDoctorCopyLicense.value = p.doctor_copy_license || "";
+      
+      if (p.id) {
+        localStorage.setItem(STORAGE_KEY_ACTIVE_PRESCRIBER, p.id);
+        reqPrescriberSelect.value = p.id;
+      }
     }
 
     function applyNurse(n) {
       if (!n) return;
-      document.getElementById("reqNurseName").value = n.nurse_name || "";
-      document.getElementById("reqSampleLocation").value = n.sample_location || "";
-      localStorage.setItem(STORAGE_KEY_ACTIVE_NURSE, n.id);
-      renderNurseOptions(n.id);
+      reqNurseName.value = n.nurse_name || "";
+      reqSampleLocation.value = n.sample_location || "";
+      
+      if (n.id) {
+        localStorage.setItem(STORAGE_KEY_ACTIVE_NURSE, n.id);
+        reqNurseSelect.value = n.id;
+      }
     }
 
-    function onPrescriberSelectChange(e) {
+    // ==============================================================================
+    // Type-Ahead CMQ & Clinic Search Dropdown
+    // ==============================================================================
+    async function searchPrescribers(query) {
+      const q = query.trim();
+      if (!q) {
+        prescriberSearchDropdown.classList.add("hidden");
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/prescribers/search?q=${encodeURIComponent(q)}`);
+        if (!res.ok) return;
+        prescriberSearchResults = await res.json();
+        renderPrescriberSearchResults();
+      } catch (e) {
+        console.warn("Erreur recherche prescripteurs:", e);
+      }
+    }
+
+    function renderPrescriberSearchResults() {
+      if (!prescriberSearchResults || prescriberSearchResults.length === 0) {
+        prescriberSearchDropdown.innerHTML = `
+          <div class="p-3 text-xs text-slate-400 text-center">
+            Aucun médecin trouvé pour cette recherche.
+          </div>
+        `;
+        prescriberSearchDropdown.classList.remove("hidden");
+        return;
+      }
+
+      prescriberSearchDropdown.innerHTML = "";
+      prescriberHighlightedIndex = -1;
+
+      prescriberSearchResults.forEach((doc, idx) => {
+        const isCmq = doc.source === "cmq";
+        const item = document.createElement("div");
+        item.className = "px-3.5 py-2.5 hover:bg-indigo-50/80 cursor-pointer transition flex items-center justify-between text-xs";
+        
+        const subtitleParts = [];
+        if (doc.doctor_license) subtitleParts.push(`Permis : <span class="font-mono font-semibold">${escapeHtml(doc.doctor_license)}</span>`);
+        if (doc.specialty) subtitleParts.push(escapeHtml(doc.specialty));
+        if (doc.clinic_name) subtitleParts.push(escapeHtml(doc.clinic_name));
+        if (doc.city) subtitleParts.push(escapeHtml(doc.city));
+
+        item.innerHTML = `
+          <div class="min-w-0 pr-2">
+            <div class="font-bold text-slate-800 flex items-center space-x-1.5">
+              <span>${escapeHtml(doc.doctor_name)}</span>
+              <span class="text-[10px] px-1.5 py-0.2 rounded font-medium ${isCmq ? 'bg-sky-100 text-sky-800 border border-sky-200' : 'bg-indigo-100 text-indigo-800 border border-indigo-200'}">
+                ${isCmq ? 'CMQ' : 'Clinique'}
+              </span>
+            </div>
+            <div class="text-[11px] text-slate-500 truncate mt-0.5">
+              ${subtitleParts.join(' • ')}
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-300 text-[10px] flex-shrink-0"></i>
+        `;
+
+        item.addEventListener("click", () => {
+          applyPrescriber(doc);
+          prescriberSearchDropdown.classList.add("hidden");
+        });
+
+        prescriberSearchDropdown.appendChild(item);
+      });
+
+      prescriberSearchDropdown.classList.remove("hidden");
+    }
+
+    // Debounced Search Inputs
+    reqDoctorName.addEventListener("input", (e) => {
+      clearTimeout(prescriberSearchTimer);
+      const val = e.target.value;
+      if (val.length < 2) {
+        prescriberSearchDropdown.classList.add("hidden");
+        return;
+      }
+      prescriberSearchTimer = setTimeout(() => searchPrescribers(val), 140);
+    });
+
+    reqDoctorLicense.addEventListener("input", (e) => {
+      clearTimeout(prescriberSearchTimer);
+      const val = e.target.value;
+      if (val.length < 2) {
+        prescriberSearchDropdown.classList.add("hidden");
+        return;
+      }
+      prescriberSearchTimer = setTimeout(() => searchPrescribers(val), 140);
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!reqDoctorName.contains(e.target) && !reqDoctorLicense.contains(e.target) && !prescriberSearchDropdown.contains(e.target)) {
+        prescriberSearchDropdown.classList.add("hidden");
+      }
+    });
+
+    reqPrescriberSelect.addEventListener("change", (e) => {
       const pId = e.target.value;
-      if (!pId) {
-        document.getElementById("btnDeletePrescriber").classList.add("hidden");
-        return;
-      }
-      const prescribers = getSavedPrescribers();
-      const found = prescribers.find(p => p.id === pId);
-      if (found) applyPrescriber(found);
-    }
-
-    function onDoctorNameInput(e) {
-      const val = e.target.value.trim().toLowerCase();
-      if (!val) return;
-      const prescribers = getSavedPrescribers();
-      const found = prescribers.find(p => (p.doctor_name && p.doctor_name.toLowerCase() === val));
-      if (found) {
-        applyPrescriber(found);
-      }
-    }
-
-    function onDeletePrescriberClick() {
-      const select = document.getElementById("reqPrescriberSelect");
-      const pId = select.value;
       if (!pId) return;
-      if (!confirm("Voulez-vous supprimer ce prescripteur enregistré ?")) return;
+      const found = cachedPrescribers.find(p => p.id === pId);
+      if (found) applyPrescriber(found);
+    });
 
-      let prescribers = getSavedPrescribers().filter(p => p.id !== pId);
-      savePrescribers(prescribers);
-      if (localStorage.getItem(STORAGE_KEY_ACTIVE_PRESCRIBER) === pId) {
-        localStorage.removeItem(STORAGE_KEY_ACTIVE_PRESCRIBER);
+    reqNurseSelect.addEventListener("change", (e) => {
+      const nId = e.target.value;
+      if (!nId) return;
+      const found = cachedNurses.find(n => n.id === nId);
+      if (found) applyNurse(found);
+    });
+
+    // ==============================================================================
+    // Admin Modal Logic
+    // ==============================================================================
+    function openAdminModal(tab = "prescribers") {
+      adminModal.classList.remove("hidden");
+      if (tab === "prescribers") {
+        switchAdminTab("prescribers");
+      } else {
+        switchAdminTab("nurses");
       }
-      renderPrescriberOptions(null);
+      loadServerPrescribers();
+      loadServerNurses();
     }
 
-    function onNurseSelectChange(e) {
-      const nId = e.target.value;
-      if (!nId) {
-        document.getElementById("btnDeleteNurse").classList.add("hidden");
+    function switchAdminTab(tab) {
+      if (tab === "prescribers") {
+        adminTabPrescribers.className = "px-4 py-2 text-xs font-bold rounded-t-lg border-b-2 border-indigo-600 bg-white text-indigo-950 flex items-center space-x-2 shadow-2xs";
+        adminTabNurses.className = "px-4 py-2 text-xs font-semibold rounded-t-lg text-slate-600 hover:text-slate-900 flex items-center space-x-2 transition";
+        adminContentPrescribers.classList.remove("hidden");
+        adminContentNurses.classList.add("hidden");
+      } else {
+        adminTabNurses.className = "px-4 py-2 text-xs font-bold rounded-t-lg border-b-2 border-emerald-600 bg-white text-emerald-950 flex items-center space-x-2 shadow-2xs";
+        adminTabPrescribers.className = "px-4 py-2 text-xs font-semibold rounded-t-lg text-slate-600 hover:text-slate-900 flex items-center space-x-2 transition";
+        adminContentNurses.classList.remove("hidden");
+        adminContentPrescribers.classList.add("hidden");
+      }
+    }
+
+    function renderAdminPrescribersTable() {
+      const q = (adminPrescriberSearch.value || "").trim().toLowerCase();
+      const filtered = cachedPrescribers.filter(p => {
+        if (!q) return true;
+        return (p.doctor_name && p.doctor_name.toLowerCase().includes(q)) ||
+               (p.doctor_license && p.doctor_license.toLowerCase().includes(q)) ||
+               (p.clinic_name && p.clinic_name.toLowerCase().includes(q));
+      });
+
+      adminPrescribersTableBody.innerHTML = "";
+      if (filtered.length === 0) {
+        adminPrescribersEmptyMsg.classList.remove("hidden");
+      } else {
+        adminPrescribersEmptyMsg.classList.add("hidden");
+        filtered.forEach(p => {
+          const tr = document.createElement("tr");
+          tr.className = "hover:bg-slate-50 transition";
+          tr.innerHTML = `
+            <td class="px-3.5 py-2.5 font-bold text-slate-800">${escapeHtml(p.doctor_name || '—')}</td>
+            <td class="px-3.5 py-2.5 font-mono text-indigo-900 font-semibold">${escapeHtml(p.doctor_license || '—')}</td>
+            <td class="px-3.5 py-2.5 text-slate-600 truncate max-w-[180px]">${escapeHtml(p.clinic_name || '—')}</td>
+            <td class="px-3.5 py-2.5 font-mono text-slate-500">${escapeHtml(p.clinic_id || '—')}</td>
+            <td class="px-3.5 py-2.5 text-slate-500">${escapeHtml(p.doctor_copy || '—')}</td>
+            <td class="px-3.5 py-2.5 text-right space-x-1 whitespace-nowrap">
+              <button class="btn-edit-p px-2 py-1 text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded transition" data-id="${escapeHtml(p.id)}">
+                <i class="fa-solid fa-pen mr-1"></i>Modifier
+              </button>
+              <button class="btn-del-p px-2 py-1 text-[11px] bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold rounded transition" data-id="${escapeHtml(p.id)}">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </td>
+          `;
+          adminPrescribersTableBody.appendChild(tr);
+        });
+
+        // Attach action handlers
+        adminPrescribersTableBody.querySelectorAll(".btn-edit-p").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const p = cachedPrescribers.find(x => x.id === btn.dataset.id);
+            if (p) openPrescriberEditModal(p);
+          });
+        });
+
+        adminPrescribersTableBody.querySelectorAll(".btn-del-p").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            if (!confirm("Voulez-vous vraiment supprimer ce prescripteur ?")) return;
+            try {
+              const res = await fetch(`/api/prescribers/${btn.dataset.id}`, { method: "DELETE" });
+              if (res.ok) {
+                await loadServerPrescribers();
+              }
+            } catch (err) {
+              alert("Erreur suppression: " + err);
+            }
+          });
+        });
+      }
+    }
+
+    function renderAdminNursesTable() {
+      const q = (adminNurseSearch.value || "").trim().toLowerCase();
+      const filtered = cachedNurses.filter(n => {
+        if (!q) return true;
+        return (n.nurse_name && n.nurse_name.toLowerCase().includes(q)) ||
+               (n.sample_location && n.sample_location.toLowerCase().includes(q));
+      });
+
+      adminNursesTableBody.innerHTML = "";
+      if (filtered.length === 0) {
+        adminNursesEmptyMsg.classList.remove("hidden");
+      } else {
+        adminNursesEmptyMsg.classList.add("hidden");
+        filtered.forEach(n => {
+          const tr = document.createElement("tr");
+          tr.className = "hover:bg-slate-50 transition";
+          tr.innerHTML = `
+            <td class="px-4 py-2.5 font-bold text-slate-800">${escapeHtml(n.nurse_name || '—')}</td>
+            <td class="px-4 py-2.5 text-slate-600">${escapeHtml(n.sample_location || '—')}</td>
+            <td class="px-4 py-2.5 text-right space-x-1 whitespace-nowrap">
+              <button class="btn-edit-n px-2 py-1 text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded transition" data-id="${escapeHtml(n.id)}">
+                <i class="fa-solid fa-pen mr-1"></i>Modifier
+              </button>
+              <button class="btn-del-n px-2 py-1 text-[11px] bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold rounded transition" data-id="${escapeHtml(n.id)}">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </td>
+          `;
+          adminNursesTableBody.appendChild(tr);
+        });
+
+        adminNursesTableBody.querySelectorAll(".btn-edit-n").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const n = cachedNurses.find(x => x.id === btn.dataset.id);
+            if (n) openNurseEditModal(n);
+          });
+        });
+
+        adminNursesTableBody.querySelectorAll(".btn-del-n").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            if (!confirm("Voulez-vous vraiment supprimer ce préleveur ?")) return;
+            try {
+              const res = await fetch(`/api/nurses/${btn.dataset.id}`, { method: "DELETE" });
+              if (res.ok) {
+                await loadServerNurses();
+              }
+            } catch (err) {
+              alert("Erreur suppression: " + err);
+            }
+          });
+        });
+      }
+    }
+
+    // Modal Edit/Add Prescriber
+    function openPrescriberEditModal(p = null) {
+      if (p) {
+        prescriberEditModalTitle.textContent = "Modifier un Prescripteur";
+        editPrescriberId.value = p.id || "";
+        editDocName.value = p.doctor_name || "";
+        editDocLicense.value = p.doctor_license || "";
+        editDocClinic.value = p.clinic_name || "";
+        editDocClinicId.value = p.clinic_id || "";
+        editDocCopy.value = p.doctor_copy || "";
+        editDocCopyLicense.value = p.doctor_copy_license || "";
+      } else {
+        prescriberEditModalTitle.textContent = "Ajouter un Prescripteur";
+        editPrescriberId.value = "";
+        editDocName.value = "";
+        editDocLicense.value = "";
+        editDocClinic.value = "";
+        editDocClinicId.value = "";
+        editDocCopy.value = "";
+        editDocCopyLicense.value = "";
+      }
+      prescriberEditModal.classList.remove("hidden");
+    }
+
+    async function savePrescriberEdit() {
+      const name = editDocName.value.trim();
+      const lic = editDocLicense.value.trim();
+      if (!name && !lic) {
+        alert("Veuillez saisir au moins le nom du médecin ou son numéro de pratique.");
         return;
       }
-      const nurses = getSavedNurses();
-      const found = nurses.find(n => n.id === nId);
-      if (found) applyNurse(found);
-    }
 
-    function onNurseNameInput(e) {
-      const val = e.target.value.trim().toLowerCase();
-      if (!val) return;
-      const nurses = getSavedNurses();
-      const found = nurses.find(n => (n.nurse_name && n.nurse_name.toLowerCase() === val));
-      if (found) {
-        applyNurse(found);
-      }
-    }
+      const payload = {
+        doctor_name: name,
+        doctor_license: lic,
+        clinic_name: editDocClinic.value.trim(),
+        clinic_id: editDocClinicId.value.trim(),
+        doctor_copy: editDocCopy.value.trim(),
+        doctor_copy_license: editDocCopyLicense.value.trim()
+      };
 
-    function onDeleteNurseClick() {
-      const select = document.getElementById("reqNurseSelect");
-      const nId = select.value;
-      if (!nId) return;
-      if (!confirm("Voulez-vous supprimer ce préleveur enregistré ?")) return;
-
-      let nurses = getSavedNurses().filter(n => n.id !== nId);
-      saveNurses(nurses);
-      if (localStorage.getItem(STORAGE_KEY_ACTIVE_NURSE) === nId) {
-        localStorage.removeItem(STORAGE_KEY_ACTIVE_NURSE);
-      }
-      renderNurseOptions(null);
-    }
-
-    function autoSavePrescriberAndNurse() {
-      const docName = document.getElementById("reqDoctorName").value.trim();
-      const docLicense = document.getElementById("reqDoctorLicense").value.trim();
-      const clinicName = document.getElementById("reqClinicName").value.trim();
-      const clinicId = document.getElementById("reqClinicId").value.trim();
-      const docCopy = document.getElementById("reqDoctorCopy").value.trim();
-      const docCopyLicense = document.getElementById("reqDoctorCopyLicense").value.trim();
-
-      if (docName || docLicense || clinicName) {
-        let prescribers = getSavedPrescribers();
-        const id = docLicense ? `lic_${docLicense}` : `doc_${docName.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
-        const newEntry = {
-          id: id,
-          doctor_name: docName,
-          doctor_license: docLicense,
-          clinic_name: clinicName,
-          clinic_id: clinicId,
-          doctor_copy: docCopy,
-          doctor_copy_license: docCopyLicense
-        };
-
-        const existingIdx = prescribers.findIndex(p => p.id === id || (docLicense && p.doctor_license === docLicense) || (p.doctor_name && p.doctor_name.toLowerCase() === docName.toLowerCase()));
-        if (existingIdx >= 0) {
-          prescribers[existingIdx] = newEntry;
+      const pId = editPrescriberId.value;
+      try {
+        let res;
+        if (pId) {
+          res = await fetch(`/api/prescribers/${pId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
         } else {
-          prescribers.unshift(newEntry);
+          res = await fetch("/api/prescribers", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
         }
-        savePrescribers(prescribers);
-        localStorage.setItem(STORAGE_KEY_ACTIVE_PRESCRIBER, id);
-        renderPrescriberOptions(id);
-      }
 
-      const nurseName = document.getElementById("reqNurseName").value.trim();
-      const sampleLocation = document.getElementById("reqSampleLocation").value.trim();
-
-      if (nurseName || sampleLocation) {
-        let nurses = getSavedNurses();
-        const id = `nurse_${nurseName.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
-        const newEntry = {
-          id: id,
-          nurse_name: nurseName,
-          sample_location: sampleLocation
-        };
-
-        const existingIdx = nurses.findIndex(n => n.id === id || (n.nurse_name && n.nurse_name.toLowerCase() === nurseName.toLowerCase()));
-        if (existingIdx >= 0) {
-          nurses[existingIdx] = newEntry;
+        if (res.ok) {
+          prescriberEditModal.classList.add("hidden");
+          await loadServerPrescribers();
         } else {
-          nurses.unshift(newEntry);
+          alert("Erreur lors de l'enregistrement du prescripteur.");
         }
-        saveNurses(nurses);
-        localStorage.setItem(STORAGE_KEY_ACTIVE_NURSE, id);
-        renderNurseOptions(id);
+      } catch (err) {
+        alert("Erreur réseau: " + err);
       }
     }
+
+    // Modal Edit/Add Nurse
+    function openNurseEditModal(n = null) {
+      if (n) {
+        nurseEditModalTitle.textContent = "Modifier un Préleveur";
+        editNurseId.value = n.id || "";
+        editNurseName.value = n.nurse_name || "";
+        editNurseLocation.value = n.sample_location || "";
+      } else {
+        nurseEditModalTitle.textContent = "Ajouter un Préleveur";
+        editNurseId.value = "";
+        editNurseName.value = "";
+        editNurseLocation.value = "";
+      }
+      nurseEditModal.classList.remove("hidden");
+    }
+
+    async function saveNurseEdit() {
+      const name = editNurseName.value.trim();
+      const loc = editNurseLocation.value.trim();
+      if (!name && !loc) {
+        alert("Veuillez saisir au moins le nom du préleveur.");
+        return;
+      }
+
+      const payload = {
+        nurse_name: name,
+        sample_location: loc
+      };
+
+      const nId = editNurseId.value;
+      try {
+        let res;
+        if (nId) {
+          res = await fetch(`/api/nurses/${nId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+        } else {
+          res = await fetch("/api/nurses", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+        }
+
+        if (res.ok) {
+          nurseEditModal.classList.add("hidden");
+          await loadServerNurses();
+        } else {
+          alert("Erreur lors de l'enregistrement du préleveur.");
+        }
+      } catch (err) {
+        alert("Erreur réseau: " + err);
+      }
+    }
+
+    // JSON / CSV Import
+    btnImportDirectory.addEventListener("click", () => adminImportFileInput.click());
+    adminImportFileInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        try {
+          const content = evt.target.result;
+          let count = 0;
+          if (file.name.endsWith(".json")) {
+            const data = JSON.parse(content);
+            if (Array.isArray(data)) {
+              for (const doc of data) {
+                if (doc.doctor_name || doc.doctor_license || doc.lastname) {
+                  await fetch("/api/prescribers", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      doctor_name: doc.doctor_name || `${doc.firstname || ''} ${doc.lastname || ''}`.trim(),
+                      doctor_license: doc.doctor_license || doc.number || "",
+                      clinic_name: doc.clinic_name || "",
+                      clinic_id: doc.clinic_id || "",
+                      doctor_copy: doc.doctor_copy || "",
+                      doctor_copy_license: doc.doctor_copy_license || ""
+                    })
+                  });
+                  count++;
+                }
+              }
+            }
+          }
+          alert(`Importation réussie : ${count} fiches traitées.`);
+          await loadServerPrescribers();
+        } catch (err) {
+          alert("Erreur lors de la lecture du fichier : " + err.message);
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    // Admin Event Listeners
+    btnOpenAdminModal.addEventListener("click", () => openAdminModal("prescribers"));
+    btnAdminPrescribersLink.addEventListener("click", () => openAdminModal("prescribers"));
+    btnAdminNursesLink.addEventListener("click", () => openAdminModal("nurses"));
+    btnCloseAdminModal.addEventListener("click", () => adminModal.classList.add("hidden"));
+    btnCloseAdminFooterBtn.addEventListener("click", () => adminModal.classList.add("hidden"));
+    adminTabPrescribers.addEventListener("click", () => switchAdminTab("prescribers"));
+    adminTabNurses.addEventListener("click", () => switchAdminTab("nurses"));
+    adminPrescriberSearch.addEventListener("input", renderAdminPrescribersTable);
+    adminNurseSearch.addEventListener("input", renderAdminNursesTable);
+    btnAddPrescriber.addEventListener("click", () => openPrescriberEditModal());
+    btnAddNurse.addEventListener("click", () => openNurseEditModal());
+    btnClosePrescriberEditModal.addEventListener("click", () => prescriberEditModal.classList.add("hidden"));
+    btnCancelPrescriberEdit.addEventListener("click", () => prescriberEditModal.classList.add("hidden"));
+    btnSavePrescriberEdit.addEventListener("click", savePrescriberEdit);
+    btnCloseNurseEditModal.addEventListener("click", () => nurseEditModal.classList.add("hidden"));
+    btnCancelNurseEdit.addEventListener("click", () => nurseEditModal.classList.add("hidden"));
+    btnSaveNurseEdit.addEventListener("click", saveNurseEdit);
+
+    // Initial server profiles load
+    loadServerPrescribers();
+    loadServerNurses();
 
     function collectPatientInfo() {
       const getVal = (id) => {
@@ -1532,9 +2104,6 @@
 
     async function generateAndDownloadPdf(openInNewTab = false) {
       if (selectedAnalyses.size === 0) return;
-
-      // Auto-save prescriber & nurse for future requisitions
-      autoSavePrescriberAndNurse();
 
       const pInfo = collectPatientInfo();
       const chosenSite = pInfo.site || currentSite;
@@ -1573,6 +2142,13 @@
           document.body.removeChild(a);
           setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
         }
+
+        // Refresh server profiles in background to reflect auto-learning
+        setTimeout(() => {
+          loadServerPrescribers();
+          loadServerNurses();
+        }, 500);
+
       } catch (err) {
         alert("Erreur lors de la création du fichier PDF : " + err.message);
       } finally {
