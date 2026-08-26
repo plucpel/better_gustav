@@ -388,16 +388,25 @@
 
           <!-- 2. Section Prescripteur -->
           <div class="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-            <div class="bg-indigo-50/80 px-4 py-2 border-b border-indigo-100 flex items-center justify-between">
+            <div class="bg-indigo-50/80 px-4 py-2 border-b border-indigo-100 flex flex-wrap items-center justify-between gap-2">
               <div class="flex items-center space-x-2">
                 <i class="fa-solid fa-user-doctor text-indigo-700 text-xs"></i>
                 <span class="text-xs font-bold text-indigo-900 uppercase tracking-wider">2. Prescripteur</span>
+              </div>
+              <div class="flex items-center space-x-1.5">
+                <select id="reqPrescriberSelect" class="text-xs bg-white border border-indigo-200 text-indigo-900 font-medium rounded-md px-2 py-1 outline-none focus:ring-1 focus:ring-indigo-400 max-w-[240px] truncate">
+                  <option value="">-- Prescripteurs enregistrés --</option>
+                </select>
+                <button type="button" id="btnDeletePrescriber" title="Supprimer ce prescripteur enregistré" class="hidden text-rose-500 hover:text-rose-700 p-1 text-xs transition">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
               </div>
             </div>
             <div class="p-3.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs bg-white">
               <div class="sm:col-span-2">
                 <label class="block font-semibold text-slate-700 mb-0.5">Nom complet (Médecin)</label>
-                <input type="text" id="reqDoctorName" placeholder="Ex: Dr. Pierre Martin" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none text-xs" />
+                <input type="text" id="reqDoctorName" list="prescribersDatalist" placeholder="Ex: Dr. Pierre Martin" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none text-xs" />
+                <datalist id="prescribersDatalist"></datalist>
               </div>
               <div class="sm:col-span-2">
                 <label class="block font-semibold text-slate-700 mb-0.5">Numéro de pratique</label>
@@ -424,10 +433,18 @@
 
           <!-- 3. Section Préleveur -->
           <div class="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-            <div class="bg-emerald-50/80 px-4 py-2 border-b border-emerald-100 flex items-center justify-between">
+            <div class="bg-emerald-50/80 px-4 py-2 border-b border-emerald-100 flex flex-wrap items-center justify-between gap-2">
               <div class="flex items-center space-x-2">
                 <i class="fa-solid fa-syringe text-emerald-700 text-xs"></i>
                 <span class="text-xs font-bold text-emerald-900 uppercase tracking-wider">3. Préleveur (Prélèvement)</span>
+              </div>
+              <div class="flex items-center space-x-1.5">
+                <select id="reqNurseSelect" class="text-xs bg-white border border-emerald-200 text-emerald-900 font-medium rounded-md px-2 py-1 outline-none focus:ring-1 focus:ring-emerald-400 max-w-[240px] truncate">
+                  <option value="">-- Préleveurs enregistrés --</option>
+                </select>
+                <button type="button" id="btnDeleteNurse" title="Supprimer ce préleveur enregistré" class="hidden text-rose-500 hover:text-rose-700 p-1 text-xs transition">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
               </div>
             </div>
             <div class="p-3.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs bg-white">
@@ -441,7 +458,8 @@
               </div>
               <div>
                 <label class="block font-semibold text-slate-700 mb-0.5">Nom complet (Préleveur)</label>
-                <input type="text" id="reqNurseName" placeholder="Ex: Julie Gagnon, Inf." class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 outline-none text-xs" />
+                <input type="text" id="reqNurseName" list="nursesDatalist" placeholder="Ex: Julie Gagnon, Inf." class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 outline-none text-xs" />
+                <datalist id="nursesDatalist"></datalist>
               </div>
               <div>
                 <label class="block font-semibold text-slate-700 mb-0.5">Lieu du prélèvement</label>
@@ -593,6 +611,19 @@
       });
       previewPdfBtn.addEventListener("click", () => generateAndDownloadPdf(true));
       downloadPdfModalBtn.addEventListener("click", () => generateAndDownloadPdf(false));
+
+      // Prescriber and Nurse Profile Listeners
+      document.getElementById("reqPrescriberSelect").addEventListener("change", onPrescriberSelectChange);
+      document.getElementById("btnDeletePrescriber").addEventListener("click", onDeletePrescriberClick);
+      document.getElementById("reqDoctorName").addEventListener("input", onDoctorNameInput);
+
+      document.getElementById("reqNurseSelect").addEventListener("change", onNurseSelectChange);
+      document.getElementById("btnDeleteNurse").addEventListener("click", onDeleteNurseClick);
+      document.getElementById("reqNurseName").addEventListener("input", onNurseNameInput);
+
+      // Initialize default profiles
+      renderPrescriberOptions(localStorage.getItem(STORAGE_KEY_ACTIVE_PRESCRIBER));
+      renderNurseOptions(localStorage.getItem(STORAGE_KEY_ACTIVE_NURSE));
     }
 
     function escapeHtml(str) {
@@ -1188,7 +1219,266 @@
         reqTimeInput.value = new Date().toTimeString().slice(0, 5);
       }
 
+      // Check if we have active prescriber and nurse in storage to auto-fill
+      const activePrescriberId = localStorage.getItem(STORAGE_KEY_ACTIVE_PRESCRIBER);
+      const prescribers = getSavedPrescribers();
+      renderPrescriberOptions(activePrescriberId);
+      if (activePrescriberId) {
+        const found = prescribers.find(p => p.id === activePrescriberId);
+        if (found && !document.getElementById("reqDoctorName").value) {
+          applyPrescriber(found);
+        }
+      }
+
+      const activeNurseId = localStorage.getItem(STORAGE_KEY_ACTIVE_NURSE);
+      const nurses = getSavedNurses();
+      renderNurseOptions(activeNurseId);
+      if (activeNurseId) {
+        const found = nurses.find(n => n.id === activeNurseId);
+        if (found && !document.getElementById("reqNurseName").value) {
+          applyNurse(found);
+        }
+      }
+
       requisitionModal.classList.remove("hidden");
+    }
+
+    // Profile Management & LocalStorage Persistence
+    const STORAGE_KEY_PRESCRIBERS = "gustav_saved_prescribers";
+    const STORAGE_KEY_NURSES = "gustav_saved_nurses";
+    const STORAGE_KEY_ACTIVE_PRESCRIBER = "gustav_active_prescriber_id";
+    const STORAGE_KEY_ACTIVE_NURSE = "gustav_active_nurse_id";
+
+    function getSavedPrescribers() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY_PRESCRIBERS)) || [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function savePrescribers(list) {
+      localStorage.setItem(STORAGE_KEY_PRESCRIBERS, JSON.stringify(list));
+    }
+
+    function getSavedNurses() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY_NURSES)) || [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveNurses(list) {
+      localStorage.setItem(STORAGE_KEY_NURSES, JSON.stringify(list));
+    }
+
+    function renderPrescriberOptions(selectedId = null) {
+      const prescribers = getSavedPrescribers();
+      const select = document.getElementById("reqPrescriberSelect");
+      const datalist = document.getElementById("prescribersDatalist");
+      const deleteBtn = document.getElementById("btnDeletePrescriber");
+
+      select.innerHTML = '<option value="">-- Prescripteurs enregistrés --</option>';
+      datalist.innerHTML = '';
+
+      prescribers.forEach(p => {
+        const label = `${p.doctor_name || 'Médecin'}${p.doctor_license ? ` (${p.doctor_license})` : ''}${p.clinic_name ? ` - ${p.clinic_name}` : ''}`;
+        
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.textContent = label;
+        if (selectedId && p.id === selectedId) opt.selected = true;
+        select.appendChild(opt);
+
+        const dlOpt = document.createElement("option");
+        dlOpt.value = p.doctor_name;
+        dlOpt.label = `${p.doctor_license || ''} ${p.clinic_name || ''}`;
+        datalist.appendChild(dlOpt);
+      });
+
+      if (selectedId && prescribers.some(p => p.id === selectedId)) {
+        deleteBtn.classList.remove("hidden");
+      } else {
+        deleteBtn.classList.add("hidden");
+      }
+    }
+
+    function renderNurseOptions(selectedId = null) {
+      const nurses = getSavedNurses();
+      const select = document.getElementById("reqNurseSelect");
+      const datalist = document.getElementById("nursesDatalist");
+      const deleteBtn = document.getElementById("btnDeleteNurse");
+
+      select.innerHTML = '<option value="">-- Préleveurs enregistrés --</option>';
+      datalist.innerHTML = '';
+
+      nurses.forEach(n => {
+        const label = `${n.nurse_name || 'Préleveur'}${n.sample_location ? ` (${n.sample_location})` : ''}`;
+        
+        const opt = document.createElement("option");
+        opt.value = n.id;
+        opt.textContent = label;
+        if (selectedId && n.id === selectedId) opt.selected = true;
+        select.appendChild(opt);
+
+        const dlOpt = document.createElement("option");
+        dlOpt.value = n.nurse_name;
+        dlOpt.label = n.sample_location || '';
+        datalist.appendChild(dlOpt);
+      });
+
+      if (selectedId && nurses.some(n => n.id === selectedId)) {
+        deleteBtn.classList.remove("hidden");
+      } else {
+        deleteBtn.classList.add("hidden");
+      }
+    }
+
+    function applyPrescriber(p) {
+      if (!p) return;
+      document.getElementById("reqDoctorName").value = p.doctor_name || "";
+      document.getElementById("reqDoctorLicense").value = p.doctor_license || "";
+      document.getElementById("reqClinicName").value = p.clinic_name || "";
+      document.getElementById("reqClinicId").value = p.clinic_id || "";
+      document.getElementById("reqDoctorCopy").value = p.doctor_copy || "";
+      document.getElementById("reqDoctorCopyLicense").value = p.doctor_copy_license || "";
+      localStorage.setItem(STORAGE_KEY_ACTIVE_PRESCRIBER, p.id);
+      renderPrescriberOptions(p.id);
+    }
+
+    function applyNurse(n) {
+      if (!n) return;
+      document.getElementById("reqNurseName").value = n.nurse_name || "";
+      document.getElementById("reqSampleLocation").value = n.sample_location || "";
+      localStorage.setItem(STORAGE_KEY_ACTIVE_NURSE, n.id);
+      renderNurseOptions(n.id);
+    }
+
+    function onPrescriberSelectChange(e) {
+      const pId = e.target.value;
+      if (!pId) {
+        document.getElementById("btnDeletePrescriber").classList.add("hidden");
+        return;
+      }
+      const prescribers = getSavedPrescribers();
+      const found = prescribers.find(p => p.id === pId);
+      if (found) applyPrescriber(found);
+    }
+
+    function onDoctorNameInput(e) {
+      const val = e.target.value.trim().toLowerCase();
+      if (!val) return;
+      const prescribers = getSavedPrescribers();
+      const found = prescribers.find(p => (p.doctor_name && p.doctor_name.toLowerCase() === val));
+      if (found) {
+        applyPrescriber(found);
+      }
+    }
+
+    function onDeletePrescriberClick() {
+      const select = document.getElementById("reqPrescriberSelect");
+      const pId = select.value;
+      if (!pId) return;
+      if (!confirm("Voulez-vous supprimer ce prescripteur enregistré ?")) return;
+
+      let prescribers = getSavedPrescribers().filter(p => p.id !== pId);
+      savePrescribers(prescribers);
+      if (localStorage.getItem(STORAGE_KEY_ACTIVE_PRESCRIBER) === pId) {
+        localStorage.removeItem(STORAGE_KEY_ACTIVE_PRESCRIBER);
+      }
+      renderPrescriberOptions(null);
+    }
+
+    function onNurseSelectChange(e) {
+      const nId = e.target.value;
+      if (!nId) {
+        document.getElementById("btnDeleteNurse").classList.add("hidden");
+        return;
+      }
+      const nurses = getSavedNurses();
+      const found = nurses.find(n => n.id === nId);
+      if (found) applyNurse(found);
+    }
+
+    function onNurseNameInput(e) {
+      const val = e.target.value.trim().toLowerCase();
+      if (!val) return;
+      const nurses = getSavedNurses();
+      const found = nurses.find(n => (n.nurse_name && n.nurse_name.toLowerCase() === val));
+      if (found) {
+        applyNurse(found);
+      }
+    }
+
+    function onDeleteNurseClick() {
+      const select = document.getElementById("reqNurseSelect");
+      const nId = select.value;
+      if (!nId) return;
+      if (!confirm("Voulez-vous supprimer ce préleveur enregistré ?")) return;
+
+      let nurses = getSavedNurses().filter(n => n.id !== nId);
+      saveNurses(nurses);
+      if (localStorage.getItem(STORAGE_KEY_ACTIVE_NURSE) === nId) {
+        localStorage.removeItem(STORAGE_KEY_ACTIVE_NURSE);
+      }
+      renderNurseOptions(null);
+    }
+
+    function autoSavePrescriberAndNurse() {
+      const docName = document.getElementById("reqDoctorName").value.trim();
+      const docLicense = document.getElementById("reqDoctorLicense").value.trim();
+      const clinicName = document.getElementById("reqClinicName").value.trim();
+      const clinicId = document.getElementById("reqClinicId").value.trim();
+      const docCopy = document.getElementById("reqDoctorCopy").value.trim();
+      const docCopyLicense = document.getElementById("reqDoctorCopyLicense").value.trim();
+
+      if (docName || docLicense || clinicName) {
+        let prescribers = getSavedPrescribers();
+        const id = docLicense ? `lic_${docLicense}` : `doc_${docName.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+        const newEntry = {
+          id: id,
+          doctor_name: docName,
+          doctor_license: docLicense,
+          clinic_name: clinicName,
+          clinic_id: clinicId,
+          doctor_copy: docCopy,
+          doctor_copy_license: docCopyLicense
+        };
+
+        const existingIdx = prescribers.findIndex(p => p.id === id || (docLicense && p.doctor_license === docLicense) || (p.doctor_name && p.doctor_name.toLowerCase() === docName.toLowerCase()));
+        if (existingIdx >= 0) {
+          prescribers[existingIdx] = newEntry;
+        } else {
+          prescribers.unshift(newEntry);
+        }
+        savePrescribers(prescribers);
+        localStorage.setItem(STORAGE_KEY_ACTIVE_PRESCRIBER, id);
+        renderPrescriberOptions(id);
+      }
+
+      const nurseName = document.getElementById("reqNurseName").value.trim();
+      const sampleLocation = document.getElementById("reqSampleLocation").value.trim();
+
+      if (nurseName || sampleLocation) {
+        let nurses = getSavedNurses();
+        const id = `nurse_${nurseName.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+        const newEntry = {
+          id: id,
+          nurse_name: nurseName,
+          sample_location: sampleLocation
+        };
+
+        const existingIdx = nurses.findIndex(n => n.id === id || (n.nurse_name && n.nurse_name.toLowerCase() === nurseName.toLowerCase()));
+        if (existingIdx >= 0) {
+          nurses[existingIdx] = newEntry;
+        } else {
+          nurses.unshift(newEntry);
+        }
+        saveNurses(nurses);
+        localStorage.setItem(STORAGE_KEY_ACTIVE_NURSE, id);
+        renderNurseOptions(id);
+      }
     }
 
     function collectPatientInfo() {
@@ -1221,6 +1511,9 @@
 
     async function generateAndDownloadPdf(openInNewTab = false) {
       if (selectedAnalyses.size === 0) return;
+
+      // Auto-save prescriber & nurse for future requisitions
+      autoSavePrescriberAndNurse();
 
       const pInfo = collectPatientInfo();
       const chosenSite = pInfo.site || currentSite;
