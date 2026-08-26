@@ -30,3 +30,10 @@ Thumbs.db
 # Scratch and temporary debug scripts
 scratch/
 .pytest_cache/
+
+# Runtime and practitioner directory data files
+data/prescribers.json
+data/nurses.json
+data/locations.json
+data/cmq_physicians*.json
+data/*.bak
