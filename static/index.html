@@ -335,69 +335,121 @@
           </div>
         </div>
 
-        <!-- Optional Patient & Prescriber Information Form -->
-        <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-          <div class="bg-slate-100/80 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
-            <div class="flex items-center space-x-2">
-              <i class="fa-solid fa-user-pen text-sky-700 text-xs"></i>
-              <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Renseignements de l'usager &amp; Prescripteur (Optionnel)</span>
+        <!-- Optional Patient, Prescriber & Sample Information Form -->
+        <div class="space-y-4">
+          
+          <!-- 1. Section Usager -->
+          <div class="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+            <div class="bg-sky-50/80 px-4 py-2 border-b border-sky-100 flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-user text-sky-700 text-xs"></i>
+                <span class="text-xs font-bold text-sky-900 uppercase tracking-wider">1. Usager (Patient)</span>
+              </div>
             </div>
-            <span class="text-[11px] text-slate-500 italic">Optionnel • Prêt à imprimer</span>
-          </div>
-
-          <div class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs bg-white">
-            <!-- Patient Name -->
-            <div class="sm:col-span-2">
-              <label class="block font-semibold text-slate-700 mb-1">Nom et prénom de l'usager</label>
-              <input type="text" id="reqPatientName" placeholder="Ex: Tremblay, Jean" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
-            </div>
-
-            <!-- RAMQ -->
-            <div>
-              <label class="block font-semibold text-slate-700 mb-1">Numéro RAMQ</label>
-              <input type="text" id="reqRamq" placeholder="Ex: TREJ 8005 1512" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
-            </div>
-
-            <!-- DOB -->
-            <div>
-              <label class="block font-semibold text-slate-700 mb-1">Date de naissance</label>
-              <input type="date" id="reqDob" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
-            </div>
-
-            <!-- Sex -->
-            <div>
-              <label class="block font-semibold text-slate-700 mb-1">Sexe</label>
-              <select id="reqSex" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs bg-white">
-                <option value="">Non spécifié</option>
-                <option value="M">Masculin (M)</option>
-                <option value="F">Féminin (F)</option>
-              </select>
-            </div>
-
-            <!-- Dossier -->
-            <div>
-              <label class="block font-semibold text-slate-700 mb-1">Numéro de dossier</label>
-              <input type="text" id="reqDossier" placeholder="Ex: 1234567" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
-            </div>
-
-            <!-- Clinical Info -->
-            <div class="sm:col-span-3">
-              <label class="block font-semibold text-slate-700 mb-1">Renseignements cliniques / Diagnostic</label>
-              <input type="text" id="reqClinicalInfo" placeholder="Ex: Bilan pré-opératoire, suspicion DRS..." class="w-full px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
-            </div>
-
-            <!-- Doctor Name -->
-            <div class="sm:col-span-2">
-              <label class="block font-semibold text-slate-700 mb-1">Médecin prescripteur</label>
-              <input type="text" id="reqDoctorName" placeholder="Ex: Dr. Pierre Martin" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
-            </div>
-
-            <!-- Doctor License -->
-            <div>
-              <label class="block font-semibold text-slate-700 mb-1">Numéro de pratique</label>
-              <input type="text" id="reqDoctorLicense" placeholder="Ex: 12345" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+            <div class="p-3.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs bg-white">
+              <div class="sm:col-span-2">
+                <label class="block font-semibold text-slate-700 mb-0.5">Nom et prénom</label>
+                <input type="text" id="reqPatientName" placeholder="Ex: Tremblay, Jean" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-700 mb-0.5">RAMQ</label>
+                <input type="text" id="reqRamq" placeholder="Ex: TREJ 8005 1512" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-700 mb-0.5">Dossier</label>
+                <input type="text" id="reqDossier" placeholder="Ex: 1234567" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-700 mb-0.5">Date de naissance</label>
+                <input type="date" id="reqDob" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-700 mb-0.5">Sexe</label>
+                <select id="reqSex" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs bg-white">
+                  <option value="">Non spécifié</option>
+                  <option value="M">Masculin (M)</option>
+                  <option value="F">Féminin (F)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-700 mb-0.5">Site</label>
+                <input type="text" id="reqSite" placeholder="Ex: Hôpital Enfant-Jésus (HEJ)" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-700 mb-0.5">Nº chambre/civière</label>
+                <input type="text" id="reqRoom" placeholder="Ex: Civière 14" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+              </div>
+              <div class="sm:col-span-2 lg:col-span-4">
+                <label class="block font-semibold text-slate-700 mb-0.5">Renseignements cliniques / Diagnostic</label>
+                <input type="text" id="reqClinicalInfo" placeholder="Ex: Bilan pré-opératoire, suspicion DRS, douleur abdominale..." class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+              </div>
             </div>
           </div>
+
+          <!-- 2. Section Prescripteur -->
+          <div class="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+            <div class="bg-indigo-50/80 px-4 py-2 border-b border-indigo-100 flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-user-doctor text-indigo-700 text-xs"></i>
+                <span class="text-xs font-bold text-indigo-900 uppercase tracking-wider">2. Prescripteur</span>
+              </div>
+            </div>
+            <div class="p-3.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs bg-white">
+              <div class="sm:col-span-2">
+                <label class="block font-semibold text-slate-700 mb-0.5">Nom complet (Médecin)</label>
+                <input type="text" id="reqDoctorName" placeholder="Ex: Dr. Pierre Martin" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none text-xs" />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block font-semibold text-slate-700 mb-0.5">Numéro de pratique</label>
+                <input type="text" id="reqDoctorLicense" placeholder="Ex: 12345" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none text-xs" />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block font-semibold text-slate-700 mb-0.5">Nom de la clinique</label>
+                <input type="text" id="reqClinicName" placeholder="Ex: GMF Clinique Saint-Vallier" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none text-xs" />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block font-semibold text-slate-700 mb-0.5">ID clinique SIL-P</label>
+                <input type="text" id="reqClinicId" placeholder="Ex: SIL-999" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none text-xs" />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block font-semibold text-slate-700 mb-0.5">MD en copie (nom complet)</label>
+                <input type="text" id="reqDoctorCopy" placeholder="Ex: Dr. Sophie Roy" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none text-xs" />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block font-semibold text-slate-700 mb-0.5">Numéro de pratique (Ordre)</label>
+                <input type="text" id="reqDoctorCopyLicense" placeholder="Ex: 67890" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none text-xs" />
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Section Préleveur -->
+          <div class="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+            <div class="bg-emerald-50/80 px-4 py-2 border-b border-emerald-100 flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-syringe text-emerald-700 text-xs"></i>
+                <span class="text-xs font-bold text-emerald-900 uppercase tracking-wider">3. Préleveur (Prélèvement)</span>
+              </div>
+            </div>
+            <div class="p-3.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs bg-white">
+              <div>
+                <label class="block font-semibold text-slate-700 mb-0.5">Date prélèvement</label>
+                <input type="date" id="reqSampleDate" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 outline-none text-xs" />
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-700 mb-0.5">Heure</label>
+                <input type="time" id="reqSampleTime" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 outline-none text-xs" />
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-700 mb-0.5">Nom complet (Préleveur)</label>
+                <input type="text" id="reqNurseName" placeholder="Ex: Julie Gagnon, Inf." class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 outline-none text-xs" />
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-700 mb-0.5">Lieu du prélèvement</label>
+                <input type="text" id="reqSampleLocation" placeholder="Ex: Prélèvements externes HEJ" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500 outline-none text-xs" />
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -1122,29 +1174,61 @@
         reqCheckedList.appendChild(pill);
       });
 
+      // Auto-populate default site, date, time if empty
+      const reqSiteInput = document.getElementById("reqSite");
+      if (!reqSiteInput.value && currentSite !== "Tous les sites") {
+        reqSiteInput.value = currentSite;
+      }
+      const reqDateInput = document.getElementById("reqSampleDate");
+      if (!reqDateInput.value) {
+        reqDateInput.value = new Date().toISOString().slice(0, 10);
+      }
+      const reqTimeInput = document.getElementById("reqSampleTime");
+      if (!reqTimeInput.value) {
+        reqTimeInput.value = new Date().toTimeString().slice(0, 5);
+      }
+
       requisitionModal.classList.remove("hidden");
     }
 
     function collectPatientInfo() {
+      const getVal = (id) => {
+        const el = document.getElementById(id);
+        return el ? el.value.trim() : "";
+      };
+
       return {
-        patient_name: document.getElementById("reqPatientName").value,
-        ramq: document.getElementById("reqRamq").value,
-        dob: document.getElementById("reqDob").value,
-        sex: document.getElementById("reqSex").value,
-        dossier: document.getElementById("reqDossier").value,
-        clinical_info: document.getElementById("reqClinicalInfo").value,
-        doctor_name: document.getElementById("reqDoctorName").value,
-        doctor_license: document.getElementById("reqDoctorLicense").value
+        patient_name: getVal("reqPatientName"),
+        ramq: getVal("reqRamq"),
+        dossier: getVal("reqDossier"),
+        dob: getVal("reqDob"),
+        sex: getVal("reqSex"),
+        site: getVal("reqSite"),
+        room: getVal("reqRoom"),
+        clinical_info: getVal("reqClinicalInfo"),
+        doctor_name: getVal("reqDoctorName"),
+        doctor_license: getVal("reqDoctorLicense"),
+        clinic_name: getVal("reqClinicName"),
+        clinic_id: getVal("reqClinicId"),
+        doctor_copy: getVal("reqDoctorCopy"),
+        doctor_copy_license: getVal("reqDoctorCopyLicense"),
+        sample_date: getVal("reqSampleDate"),
+        sample_time: getVal("reqSampleTime"),
+        nurse_name: getVal("reqNurseName"),
+        sample_location: getVal("reqSampleLocation")
       };
     }
 
     async function generateAndDownloadPdf(openInNewTab = false) {
       if (selectedAnalyses.size === 0) return;
 
+      const pInfo = collectPatientInfo();
+      const chosenSite = pInfo.site || currentSite;
+
       const payload = {
         pids: Array.from(selectedAnalyses),
-        site: currentSite,
-        patient_info: collectPatientInfo()
+        site: chosenSite,
+        patient_info: pInfo
       };
 
       const btn = openInNewTab ? previewPdfBtn : (requisitionModal.classList.contains("hidden") ? quickDownloadPdfBtn : downloadPdfModalBtn);
@@ -1168,7 +1252,7 @@
         } else {
           const a = document.createElement("a");
           a.href = blobUrl;
-          const siteClean = currentSite.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 15);
+          const siteClean = chosenSite.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 15);
           a.download = `Requete_Optilab_${siteClean}_${new Date().toISOString().slice(0,10)}.pdf`;
           document.body.appendChild(a);
           a.click();
