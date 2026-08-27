@@ -334,6 +334,12 @@ def extract_doctor_fields(raw: Dict[str, Any]) -> Optional[Dict[str, str]]:
     )
     clinic_name = str(clinic_name).strip()
 
+    try:
+        from clinics_manager import sanitize_clinic_name, search_clinics
+        clinic_name = sanitize_clinic_name(clinic_name)
+    except Exception:
+        pass
+
     clinic_id = (
         raw.get("clinic_id") or
         raw.get("id_clinique") or
@@ -342,6 +348,16 @@ def extract_doctor_fields(raw: Dict[str, Any]) -> Optional[Dict[str, str]]:
         ""
     )
     clinic_id = str(clinic_id).strip()
+
+    # If clinic_name is provided but clinic_id is missing, auto-resolve from SIL-P registry
+    if clinic_name and not clinic_id:
+        try:
+            from clinics_manager import search_clinics
+            silp_res = search_clinics(clinic_name, limit=1)
+            if silp_res and silp_res.get("clinics"):
+                clinic_id = str(silp_res["clinics"][0].get("id") or "")
+        except Exception:
+            pass
 
     copy_name = raw.get("doctor_copy") or raw.get("medecin_copie") or ""
     copy_lic = raw.get("doctor_copy_license") or raw.get("permis_copie") or ""
