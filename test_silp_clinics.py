@@ -17,6 +17,7 @@ class TestSilpClinics(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.client = TestClient(app)
+        cls.client.post("/api/auth/login", json={"pin": "415263"})
 
     def test_normalize_text(self):
         self.assertEqual(normalize_text("Hôpital Saint-François d'Assise"), "hopital saint francois d assise")

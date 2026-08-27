@@ -160,6 +160,7 @@ class TestRequisitionFiller(unittest.TestCase):
     def test_api_endpoints_integration(self):
         """Test the FastAPI endpoints for inspection and PDF generation."""
         client = TestClient(app)
+        client.post("/api/auth/login", json={"pin": "415263"})
         
         # 1. Test POST /api/requisition/inspect
         payload_inspect = {

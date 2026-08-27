@@ -153,6 +153,7 @@ class TestMultiRequisitions(unittest.TestCase):
 
     def test_api_endpoints_multi_requisition(self):
         client = TestClient(app)
+        client.post("/api/auth/login", json={"pin": "415263"})
         
         # Test inspection endpoint
         res_inspect = client.post("/api/requisition/inspect", json={

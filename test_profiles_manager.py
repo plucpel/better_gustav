@@ -134,6 +134,7 @@ class TestProfilesManager(unittest.TestCase):
 
     def test_api_rest_endpoints(self):
         client = TestClient(app)
+        client.post("/api/auth/login", json={"pin": "415263"})
 
         # 1. Create Prescriber via API
         res = client.post("/api/prescribers", json={
@@ -182,6 +183,7 @@ class TestProfilesManager(unittest.TestCase):
 
     def test_location_crud_and_api(self):
         client = TestClient(app)
+        client.post("/api/auth/login", json={"pin": "415263"})
         
         # 1. Add Location
         loc1 = upsert_location({

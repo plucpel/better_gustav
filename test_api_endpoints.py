@@ -5,13 +5,36 @@ from app import app
 client = TestClient(app)
 
 def test_app():
-    print("=== 1. Testing GET / ===")
+    print("=== 0. Testing PIN & Session Authentication Flow ===")
+    # 0a. Initial unauthenticated access
+    r_unauth = client.get("/")
+    assert r_unauth.status_code == 200
+    assert "Authentification requise" in r_unauth.text
+    print("  -> Unauthenticated GET / serves PIN login page correctly.")
+
+    r_api_unauth = client.get("/api/panels")
+    assert r_api_unauth.status_code == 401
+    print("  -> Unauthenticated API request blocked with 401 Unauthorized.")
+
+    # 0b. Invalid PIN attempt
+    r_bad_login = client.post("/api/auth/login", json={"pin": "000000"})
+    assert r_bad_login.status_code == 401
+    print("  -> Invalid PIN rejected with 401.")
+
+    # 0c. Valid PIN attempt
+    r_good_login = client.post("/api/auth/login", json={"pin": "415263"})
+    assert r_good_login.status_code == 200
+    assert "gustav_session" in client.cookies
+    print("  -> Valid PIN accepted with 200 and session cookie established.")
+
+    print("\n=== 1. Testing GET / (Authenticated) ===")
     r = client.get("/")
     assert r.status_code == 200
     assert "GUSTAV" in r.text
-    print("  -> UI served successfully.")
+    assert "Manuel des prélèvements" in r.text
+    print("  -> Authenticated UI served successfully.")
 
-    print("\n=== 2. Testing GET /api/panels ===")
+    print("\n=== 2. Testing GET /api/panels (Authenticated) ===")
     r = client.get("/api/panels")
     assert r.status_code == 200
     panels = r.json()
@@ -92,7 +115,14 @@ def test_app():
     assert acuri_data["tubes"][0]["category_key"] == "HEPARINE_LITHIUM"
     print(f"  -> Verified Acide urique (sang): 1 Tube {acuri_data['tubes'][0]['name']} ({acuri_data['tubes'][0]['cap_color_name']}), 0 urine containers.")
 
-    print("\n ALL API & CALCULATION TESTS PASSED PERFECTLY!")
+    print("\n=== 10. Testing POST /api/auth/logout ===")
+    r_logout = client.post("/api/auth/logout")
+    assert r_logout.status_code == 200
+    r_after_logout = client.get("/api/panels")
+    assert r_after_logout.status_code == 401
+    print("  -> Session successfully cleared after logout.")
+
+    print("\n ALL API, AUTH & CALCULATION TESTS PASSED PERFECTLY!")
 
 if __name__ == "__main__":
     test_app()

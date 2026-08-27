@@ -1,4 +1,7 @@
 import os
+import hmac
+import hashlib
+import secrets
 import uvicorn
 from fastapi import FastAPI, Query, Path, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse
@@ -20,9 +23,41 @@ app = FastAPI(
     redoc_url=None
 )
 
-# Security Headers Middleware
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+os.makedirs(STATIC_DIR, exist_ok=True)
+INDEX_HTML = os.path.join(STATIC_DIR, "index.html")
+LOGIN_HTML = os.path.join(STATIC_DIR, "login.html")
+
+# Security & Authentication Configuration
+GUSTAV_PIN = os.getenv("GUSTAV_PIN", "415263")
+GUSTAV_SECRET_KEY = os.getenv("GUSTAV_SECRET_KEY", secrets.token_hex(32))
+COOKIE_NAME = "gustav_session"
+
+def generate_session_token() -> str:
+    return hmac.new(GUSTAV_SECRET_KEY.encode(), (GUSTAV_PIN or "").encode(), hashlib.sha256).hexdigest()
+
+def is_authenticated(request: Request) -> bool:
+    if not GUSTAV_PIN:  # If PIN is empty or disabled
+        return True
+    session_cookie = request.cookies.get(COOKIE_NAME)
+    if not session_cookie:
+        return False
+    expected_token = generate_session_token()
+    return secrets.compare_digest(session_cookie, expected_token)
+
+# Security & Authentication Middleware
 @app.middleware("http")
-async def add_security_headers(request: Request, call_next):
+async def security_and_auth_middleware(request: Request, call_next):
+    # Intercept protected API endpoints (except /api/auth/*)
+    path = request.url.path
+    if path.startswith("/api/") and not path.startswith("/api/auth/"):
+        if not is_authenticated(request):
+            return Response(
+                content='{"detail": "Non authentifié"}',
+                status_code=401,
+                media_type="application/json"
+            )
+
     response: Response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
@@ -30,9 +65,34 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     return response
 
-STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
-os.makedirs(STATIC_DIR, exist_ok=True)
-INDEX_HTML = os.path.join(STATIC_DIR, "index.html")
+class LoginRequest(BaseModel):
+    pin: Annotated[str, Field(max_length=50)]
+
+@app.post("/api/auth/login")
+async def api_auth_login(req: LoginRequest, response: Response):
+    """Vérifier le code PIN et émettre un cookie de session temporaire."""
+    if not GUSTAV_PIN or secrets.compare_digest(req.pin.strip(), GUSTAV_PIN):
+        token = generate_session_token()
+        # Session cookie: no max_age or expires -> automatically destroyed when tab/browser closes
+        response.set_cookie(
+            key=COOKIE_NAME,
+            value=token,
+            httponly=True,
+            samesite="lax"
+        )
+        return {"status": "success", "message": "Authentifié"}
+    raise HTTPException(status_code=401, detail="Code PIN incorrect")
+
+@app.post("/api/auth/logout")
+async def api_auth_logout(response: Response):
+    """Verrouiller la session en supprimant le cookie."""
+    response.delete_cookie(COOKIE_NAME)
+    return {"status": "success", "message": "Déconnecté"}
+
+@app.get("/api/auth/status")
+async def api_auth_status(request: Request):
+    """Vérifier l'état d'authentification."""
+    return {"authenticated": is_authenticated(request)}
 
 class CalculateRequest(BaseModel):
     pids: List[Annotated[str, Field(max_length=64)]] = Field(..., max_length=100)
@@ -64,7 +124,13 @@ class RequisitionRequest(BaseModel):
     patient_info: Optional[PatientInfo] = None
 
 @app.get("/")
-async def serve_index():
+async def serve_index(request: Request):
+    if not is_authenticated(request):
+        if os.path.exists(LOGIN_HTML):
+            with open(LOGIN_HTML, "r", encoding="utf-8") as f:
+                return HTMLResponse(content=f.read(), media_type="text/html; charset=utf-8")
+        return HTMLResponse(content="<h1>Accès sécurisé requis</h1>", media_type="text/html; charset=utf-8")
+
     if os.path.exists(INDEX_HTML):
         with open(INDEX_HTML, "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read(), media_type="text/html; charset=utf-8")

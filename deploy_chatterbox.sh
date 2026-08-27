@@ -15,7 +15,7 @@ ssh "$HOST" "mkdir -p $TARGET_DIR/data $TARGET_DIR/static"
 echo "[2/4] Copie des fichiers d'application et de données..."
 scp -r app.py tube_calculator.py medical_dictionary.py requisition_filler.py profiles_manager.py clinics_manager.py requirements.txt gustav.service "$HOST:$TARGET_DIR/"
 scp -r data/* "$HOST:$TARGET_DIR/data/"
-scp -r static/index.html "$HOST:$TARGET_DIR/static/"
+scp -r static/* "$HOST:$TARGET_DIR/static/"
 
 echo "[3/4] Configuration de l'environnement Python et des dépendances..."
 ssh "$HOST" "

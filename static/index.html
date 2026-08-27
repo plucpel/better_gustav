@@ -82,6 +82,12 @@
           <i class="fa-solid fa-address-book text-sky-300"></i>
           <span>Répertoire &amp; Admin</span>
         </button>
+
+        <!-- Lock / Logout Session Button -->
+        <button id="btnLockApp" class="flex items-center space-x-1.5 bg-white/10 hover:bg-rose-500/20 hover:border-rose-400/30 transition-all rounded-lg px-3 py-1.5 border border-white/15 text-xs sm:text-sm font-medium" title="Verrouiller la session (retour à l'écran PIN)">
+          <i class="fa-solid fa-lock text-sky-300"></i>
+          <span>Verrouiller</span>
+        </button>
       </div>
     </div>
   </header>
@@ -1877,6 +1883,7 @@
 
     // DOM References for Profiles & Admin
     const btnOpenAdminModal = document.getElementById("btnOpenAdminModal");
+    const btnLockApp = document.getElementById("btnLockApp");
     const adminModal = document.getElementById("adminModal");
     const btnCloseAdminModal = document.getElementById("btnCloseAdminModal");
     const btnCloseAdminFooterBtn = document.getElementById("btnCloseAdminFooterBtn");
@@ -2598,6 +2605,16 @@
 
     // Admin Event Listeners
     btnOpenAdminModal.addEventListener("click", () => openAdminModal("prescribers"));
+    if (btnLockApp) {
+      btnLockApp.addEventListener("click", async () => {
+        try {
+          await fetch("/api/auth/logout", { method: "POST" });
+        } catch (e) {
+          console.error("Erreur lors de la déconnexion", e);
+        }
+        window.location.reload();
+      });
+    }
     btnAdminPrescribersLink.addEventListener("click", () => openAdminModal("prescribers"));
     btnAdminNursesLink.addEventListener("click", () => openAdminModal("nurses"));
     btnAdminLocationsLink.addEventListener("click", () => openAdminModal("locations"));
