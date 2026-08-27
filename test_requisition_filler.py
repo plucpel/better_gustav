@@ -228,5 +228,28 @@ class TestRequisitionFiller(unittest.TestCase):
         self.assertEqual(data_img["dob"], "1981-11-09")
         self.assertEqual(data_img["sex"], "M")
 
+        # 6. Test format_requisition_pdf_filename
+        from requisition_filler import format_requisition_pdf_filename
+        self.assertEqual(
+            format_requisition_pdf_filename({"patient_name": "Tremblay, Jean", "ramq": "TREJ 8005 1512"}),
+            "Tremblay, Jean - TREJ 8005 1512.pdf"
+        )
+        self.assertEqual(
+            format_requisition_pdf_filename({"patient_name": "Bélanger, Éloïse", "ramq": "BELE 9257 1500"}),
+            "Bélanger, Éloïse - BELE 9257 1500.pdf"
+        )
+        self.assertEqual(
+            format_requisition_pdf_filename({"ramq": "TREJ 8005 1512"}),
+            "TREJ 8005 1512.pdf"
+        )
+        self.assertEqual(
+            format_requisition_pdf_filename({}),
+            "Requete_Optilab.pdf"
+        )
+
+        # Verify Content-Disposition header in POST /api/requisition/pdf
+        self.assertIn("Tremblay", res_pdf.headers.get("content-disposition", ""))
+        self.assertIn("TREJ 8005 1512", res_pdf.headers.get("content-disposition", ""))
+
 if __name__ == "__main__":
     unittest.main()

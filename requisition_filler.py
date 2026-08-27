@@ -1126,6 +1126,29 @@ def generate_multi_form_requisition_pdf(pids: List[str], site: str = "Tous les s
 
     return output_stream.getvalue()
 
+def format_requisition_pdf_filename(patient_info: Optional[Dict[str, Any]] = None) -> str:
+    """
+    Constructs a clean PDF filename based on: 'patient name - RAMQ.pdf'
+    """
+    if not patient_info:
+        return "Requete_Optilab.pdf"
+    
+    pname = str(patient_info.get("patient_name") or "").strip()
+    ramq = str(patient_info.get("ramq") or "").strip()
+    
+    parts = []
+    if pname:
+        parts.append(pname)
+    if ramq:
+        parts.append(ramq)
+        
+    if not parts:
+        return "Requete_Optilab.pdf"
+        
+    base_name = " - ".join(parts)
+    safe_name = re.sub(r'[\\/*?:"<>|]', '_', base_name).strip()
+    return f"{safe_name}.pdf"
+
 # Backward compatible aliases
 CHECKBOX_METADATA = {k: {"field_name": v} for k, v in REQUISITION_FORMS["general"]["checkboxes"].items()}
 
