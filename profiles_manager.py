@@ -219,24 +219,88 @@ def upsert_prescriber(data: Dict[str, Any]) -> Dict[str, Any]:
             return new_item
 
 def update_prescriber(prescriber_id: str, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """Updates an existing prescriber by ID."""
+    """
+    Updates an existing prescriber by ID, license, or name.
+    Sanitizes clinic name and auto-resolves SIL-P ID if omitted.
+    """
     with _file_lock:
         prescribers = _load_json(PRESCRIBERS_FILE)
-        for i, p in enumerate(prescribers):
-            if p.get("id") == prescriber_id:
-                for k in ["doctor_name", "doctor_license", "clinic_name", "clinic_id", "doctor_copy", "doctor_copy_license"]:
-                    if k in data:
-                        p[k] = str(data[k]).strip()
-                _save_json(PRESCRIBERS_FILE, prescribers)
-                return p
-    return None
+        unquoted_id = unicodedata.normalize("NFKD", str(prescriber_id)).strip()
+        
+        target = None
+        # 1. Exact ID match
+        for p in prescribers:
+            p_id = str(p.get("id", "")).strip()
+            if p_id == prescriber_id or p_id == unquoted_id:
+                target = p
+                break
+                
+        # 2. Match by license
+        if not target and unquoted_id:
+            for p in prescribers:
+                p_lic = str(p.get("doctor_license", "")).strip()
+                if p_lic and (p_lic == unquoted_id or p_lic.replace(" ", "").replace("-", "") == unquoted_id.replace(" ", "").replace("-", "")):
+                    target = p
+                    break
+
+        # 3. Match by incoming data license or name
+        if not target:
+            new_lic = str(data.get("doctor_license", "")).strip().replace(" ", "").replace("-", "")
+            new_name_norm = normalize_text(data.get("doctor_name", ""))
+            if new_lic:
+                for p in prescribers:
+                    if str(p.get("doctor_license", "")).strip().replace(" ", "").replace("-", "") == new_lic:
+                        target = p
+                        break
+            if not target and new_name_norm:
+                for p in prescribers:
+                    if normalize_text(p.get("doctor_name", "")) == new_name_norm:
+                        target = p
+                        break
+
+        # Prepare sanitized clinic info
+        clinic_name = str(data.get("clinic_name", "")).strip()
+        clinic_id = str(data.get("clinic_id", "")).strip()
+        try:
+            from clinics_manager import sanitize_clinic_name, search_clinics
+            if clinic_name:
+                clinic_name = sanitize_clinic_name(clinic_name)
+                if not clinic_id:
+                    silp_res = search_clinics(clinic_name, limit=1)
+                    if silp_res and silp_res.get("clinics"):
+                        clinic_id = str(silp_res["clinics"][0].get("id") or "")
+        except Exception:
+            pass
+
+        if target:
+            target["doctor_name"] = str(data.get("doctor_name", target.get("doctor_name", ""))).strip()
+            if "doctor_license" in data:
+                target["doctor_license"] = str(data["doctor_license"]).strip()
+            target["clinic_name"] = clinic_name
+            target["clinic_id"] = clinic_id
+            if "doctor_copy" in data:
+                target["doctor_copy"] = str(data["doctor_copy"]).strip()
+            if "doctor_copy_license" in data:
+                target["doctor_copy_license"] = str(data["doctor_copy_license"]).strip()
+            target["updated_at"] = uuid.uuid4().hex[:8]
+            _save_json(PRESCRIBERS_FILE, prescribers)
+            return target
+            
+    # Fallback: if not found, upsert as new record
+    return upsert_prescriber({**data, "clinic_name": clinic_name, "clinic_id": clinic_id})
 
 def delete_prescriber(prescriber_id: str) -> bool:
-    """Deletes a prescriber by ID."""
+    """Deletes a prescriber by ID or license."""
     with _file_lock:
         prescribers = _load_json(PRESCRIBERS_FILE)
         initial_len = len(prescribers)
-        prescribers = [p for p in prescribers if p.get("id") != prescriber_id]
+        unquoted_id = str(prescriber_id).strip()
+        prescribers = [
+            p for p in prescribers
+            if str(p.get("id")) != prescriber_id and
+               str(p.get("id")) != unquoted_id and
+               str(p.get("doctor_license", "")).strip() != unquoted_id
+        ]
         if len(prescribers) < initial_len:
             _save_json(PRESCRIBERS_FILE, prescribers)
             return True

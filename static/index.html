@@ -710,7 +710,7 @@
   </div>
 
   <!-- Sub-Modal: Add / Edit Prescriber -->
-  <div id="prescriberEditModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-60 hidden flex items-center justify-center p-4">
+  <div id="prescriberEditModal" style="z-index: 9999;" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[9999] hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden p-5 space-y-4">
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
         <h4 id="prescriberEditModalTitle" class="text-sm font-bold text-slate-800">Ajouter un Prescripteur</h4>
@@ -759,7 +759,7 @@
   </div>
 
   <!-- Sub-Modal: Add / Edit Nurse -->
-  <div id="nurseEditModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-60 hidden flex items-center justify-center p-4">
+  <div id="nurseEditModal" style="z-index: 9999;" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[9999] hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden p-5 space-y-4">
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
         <h4 id="nurseEditModalTitle" class="text-sm font-bold text-slate-800">Ajouter un Préleveur</h4>
@@ -782,7 +782,7 @@
   </div>
 
   <!-- Sub-Modal: Add / Edit Location -->
-  <div id="locationEditModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-60 hidden flex items-center justify-center p-4">
+  <div id="locationEditModal" style="z-index: 9999;" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[9999] hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden p-5 space-y-4">
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
         <h4 id="locationEditModalTitle" class="text-sm font-bold text-slate-800">Ajouter un Lieu de prélèvement</h4>
@@ -2438,17 +2438,24 @@
       const payload = {
         doctor_name: name,
         doctor_license: lic,
-        clinic_name: editDocClinic.value.trim(),
+        clinic_name: sanitizeClinicName(editDocClinic.value.trim()),
         clinic_id: editDocClinicId.value.trim(),
         doctor_copy: editDocCopy.value.trim(),
         doctor_copy_license: editDocCopyLicense.value.trim()
       };
 
-      const pId = editPrescriberId.value;
+      const btnSave = document.getElementById("btnSavePrescriberEdit");
+      const origText = btnSave ? btnSave.innerHTML : "Enregistrer";
+      if (btnSave) {
+        btnSave.disabled = true;
+        btnSave.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i>Enregistrement...`;
+      }
+
+      const pId = editPrescriberId.value ? editPrescriberId.value.trim() : "";
       try {
         let res;
         if (pId) {
-          res = await fetch(`/api/prescribers/${pId}`, {
+          res = await fetch(`/api/prescribers/${encodeURIComponent(pId)}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
@@ -2461,14 +2468,24 @@
           });
         }
 
+        if (btnSave) {
+          btnSave.disabled = false;
+          btnSave.innerHTML = origText;
+        }
+
         if (res.ok) {
           prescriberEditModal.classList.add("hidden");
           await loadServerPrescribers();
         } else {
-          alert("Erreur lors de l'enregistrement du prescripteur.");
+          const errData = await res.json().catch(() => ({}));
+          alert(`Erreur lors de l'enregistrement : ${errData.detail || 'Erreur serveur'}`);
         }
       } catch (err) {
-        alert("Erreur réseau: " + err);
+        if (btnSave) {
+          btnSave.disabled = false;
+          btnSave.innerHTML = origText;
+        }
+        alert("Erreur réseau: " + err.message);
       }
     }
 
