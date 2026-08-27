@@ -115,7 +115,38 @@ def test_app():
     assert acuri_data["tubes"][0]["category_key"] == "HEPARINE_LITHIUM"
     print(f"  -> Verified Acide urique (sang): 1 Tube {acuri_data['tubes'][0]['name']} ({acuri_data['tubes'][0]['cap_color_name']}), 0 urine containers.")
 
-    print("\n=== 10. Testing POST /api/auth/logout ===")
+    print("\n=== 10. Testing POST /api/prescribers/bulk and Search ===")
+    # Login again for authenticated test
+    client.post("/api/auth/login", json={"pin": "415263"})
+    
+    test_docs = [
+        {"doctor_name": "Alexandra Lambert", "doctor_license": "16350", "clinic_name": "Clinique Saint-Vallier"},
+        {"firstname": "Jean", "lastname": "Tremblay", "number": "99887", "clinic": "GMF Lebourgneuf"}
+    ]
+    r_bulk = client.post("/api/prescribers/bulk", json=test_docs)
+    assert r_bulk.status_code == 200
+    bulk_data = r_bulk.json()
+    assert bulk_data["status"] == "success"
+    assert bulk_data["added"] >= 1 or bulk_data["updated"] >= 1
+    print(f"  -> Bulk import successful: {bulk_data}")
+
+    # Search by license
+    r_search_lic = client.get("/api/prescribers/search?q=16350")
+    assert r_search_lic.status_code == 200
+    found_lic = r_search_lic.json()
+    assert len(found_lic) > 0
+    assert "16350" in found_lic[0]["doctor_license"]
+    print(f"  -> Search by license '16350' found: {found_lic[0]['doctor_name']} ({found_lic[0]['doctor_license']})")
+
+    # Search by inverted name order
+    r_search_rev = client.get("/api/prescribers/search?q=Lambert+Alexandra")
+    assert r_search_rev.status_code == 200
+    found_rev = r_search_rev.json()
+    assert len(found_rev) > 0
+    assert "Lambert" in found_rev[0]["doctor_name"]
+    print(f"  -> Inverted name search 'Lambert Alexandra' found: {found_rev[0]['doctor_name']}")
+
+    print("\n=== 11. Testing POST /api/auth/logout ===")
     r_logout = client.post("/api/auth/logout")
     assert r_logout.status_code == 200
     r_after_logout = client.get("/api/panels")

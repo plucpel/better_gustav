@@ -2571,33 +2571,58 @@
       reader.onload = async (evt) => {
         try {
           const content = evt.target.result;
-          let count = 0;
-          if (file.name.endsWith(".json")) {
-            const data = JSON.parse(content);
-            if (Array.isArray(data)) {
-              for (const doc of data) {
-                if (doc.doctor_name || doc.doctor_license || doc.lastname) {
-                  await fetch("/api/prescribers", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      doctor_name: doc.doctor_name || `${doc.firstname || ''} ${doc.lastname || ''}`.trim(),
-                      doctor_license: doc.doctor_license || doc.number || "",
-                      clinic_name: doc.clinic_name || "",
-                      clinic_id: doc.clinic_id || "",
-                      doctor_copy: doc.doctor_copy || "",
-                      doctor_copy_license: doc.doctor_copy_license || ""
-                    })
-                  });
-                  count++;
-                }
+          let items = [];
+          
+          if (file.name.toLowerCase().endsWith(".json")) {
+            const parsed = JSON.parse(content);
+            if (Array.isArray(parsed)) {
+              items = parsed;
+            } else if (parsed && typeof parsed === "object") {
+              items = parsed.physicians || parsed.doctors || parsed.prescribers || parsed.medecins || parsed.data || [];
+            }
+          } else if (file.name.toLowerCase().endsWith(".csv")) {
+            const lines = content.split(/\r?\n/).filter(l => l.trim());
+            if (lines.length > 1) {
+              const headers = lines[0].split(/[;,,\t]/).map(h => h.trim().replace(/^["']|["']$/g, ""));
+              for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(/[;,,\t]/).map(v => v.trim().replace(/^["']|["']$/g, ""));
+                const row = {};
+                headers.forEach((h, idx) => { row[h] = values[idx] || ""; });
+                items.push(row);
               }
             }
           }
-          alert(`Importation réussie : ${count} fiches traitées.`);
-          await loadServerPrescribers();
+
+          if (!items || items.length === 0) {
+            alert("Aucune fiche trouvée dans le fichier importé.");
+            return;
+          }
+
+          btnImportDirectory.disabled = true;
+          const origHtml = btnImportDirectory.innerHTML;
+          btnImportDirectory.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i>Importation (${items.length.toLocaleString('fr-CA')})...`;
+
+          const res = await fetch("/api/prescribers/bulk", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(items)
+          });
+
+          btnImportDirectory.disabled = false;
+          btnImportDirectory.innerHTML = origHtml;
+
+          if (res.ok) {
+            const resData = await res.json();
+            alert(`Importation réussie !\n\n• ${resData.added || 0} nouveaux médecins ajoutés\n• ${resData.updated || 0} fiches mises à jour\n• Total dans le répertoire : ${(resData.total_records || 0).toLocaleString('fr-CA')}`);
+            await loadServerPrescribers();
+          } else {
+            alert("Erreur lors de l'importation sur le serveur.");
+          }
         } catch (err) {
+          btnImportDirectory.disabled = false;
           alert("Erreur lors de la lecture du fichier : " + err.message);
+        } finally {
+          adminImportFileInput.value = "";
         }
       };
       reader.readAsText(file);
@@ -3621,8 +3646,22 @@
         } else {
           const a = document.createElement("a");
           a.href = blobUrl;
-          const siteClean = chosenSite.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 15);
-          a.download = `Requete_Optilab_${siteClean}_${new Date().toISOString().slice(0,10)}.pdf`;
+          
+          let pdfFilename = "Requete_Optilab.pdf";
+          const pName = (pInfo.patient_name || "").trim();
+          const ramq = (pInfo.ramq || "").trim();
+          const parts = [];
+          if (pName) parts.push(pName);
+          if (ramq) parts.push(ramq);
+          if (parts.length > 0) {
+            const baseName = parts.join(" - ");
+            pdfFilename = `${baseName.replace(/[\\/*?:"<>|]/g, "_")}.pdf`;
+          } else if (chosenSite && chosenSite !== "Tous les sites") {
+            const siteClean = chosenSite.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 15);
+            pdfFilename = `Requete_Optilab_${siteClean}_${new Date().toISOString().slice(0,10)}.pdf`;
+          }
+
+          a.download = pdfFilename;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);

@@ -2,16 +2,18 @@ import os
 import hmac
 import hashlib
 import secrets
+import urllib.parse
 import uvicorn
 from fastapi import FastAPI, Query, Path, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
-from typing import List, Optional, Annotated
+from typing import List, Optional, Annotated, Dict, Any
 
 from tube_calculator import search_analyses, calculate_tubes, load_catalog
 from medical_dictionary import CLINICAL_PANELS
 from requisition_filler import (
     generate_filled_requisition_pdf,
+    format_requisition_pdf_filename,
     inspect_requisition_selection,
     parse_ramq_barcode_payload
 )
@@ -167,6 +169,7 @@ async def api_calculate(req: CalculateRequest):
 from profiles_manager import (
     get_all_prescribers,
     upsert_prescriber,
+    bulk_import_prescribers,
     update_prescriber,
     delete_prescriber,
     get_all_nurses,
@@ -213,6 +216,11 @@ async def api_get_prescribers():
 async def api_create_prescriber(req: PrescriberModel):
     """Create or upsert a clinic prescriber."""
     return upsert_prescriber(req.model_dump())
+
+@app.post("/api/prescribers/bulk")
+async def api_bulk_import_prescribers(items: List[Dict[str, Any]]):
+    """High-performance bulk import of multiple prescribers in a single atomic operation."""
+    return bulk_import_prescribers(items)
 
 @app.put("/api/prescribers/{prescriber_id}")
 async def api_update_prescriber(prescriber_id: str, req: PrescriberModel):
@@ -374,11 +382,15 @@ async def api_requisition_pdf_post(req: RequisitionRequest):
         site=req.site or "Tous les sites",
         patient_info=patient_dict
     )
+    filename = format_requisition_pdf_filename(patient_dict)
+    ascii_safe_name = filename.encode("ascii", "ignore").decode("ascii").strip() or "Requete_Optilab.pdf"
+    encoded_filename = urllib.parse.quote(filename)
+
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": 'inline; filename="requete_analyses_optilab.pdf"',
+            "Content-Disposition": f'inline; filename="{ascii_safe_name}"; filename*=UTF-8\'\'{encoded_filename}',
             "Content-Type": "application/pdf"
         }
     )
@@ -399,7 +411,7 @@ async def api_requisition_pdf_get(
         content=pdf_bytes,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": 'inline; filename="requete_analyses_optilab.pdf"',
+            "Content-Disposition": 'inline; filename="Requete_Optilab.pdf"; filename*=UTF-8\'\'Requete_Optilab.pdf',
             "Content-Type": "application/pdf"
         }
     )
