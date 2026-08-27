@@ -2613,7 +2613,8 @@
 
           if (res.ok) {
             const resData = await res.json();
-            alert(`Importation réussie !\n\n• ${resData.added || 0} nouveaux médecins ajoutés\n• ${resData.updated || 0} fiches mises à jour\n• Total dans le répertoire : ${(resData.total_records || 0).toLocaleString('fr-CA')}`);
+            const skippedMsg = resData.skipped_inactive ? `\n• ${resData.skipped_inactive.toLocaleString('fr-CA')} ex-médecins / inactifs ignorés` : "";
+            alert(`Importation réussie !\n\n• ${resData.added || 0} nouveaux médecins actifs ajoutés\n• ${resData.updated || 0} fiches mises à jour${skippedMsg}\n• Total des médecins actifs : ${(resData.total_records || 0).toLocaleString('fr-CA')}`);
             await loadServerPrescribers();
           } else {
             alert("Erreur lors de l'importation sur le serveur.");

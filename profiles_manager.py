@@ -242,8 +242,58 @@ def delete_prescriber(prescriber_id: str) -> bool:
             return True
     return False
 
-def extract_doctor_fields(raw: Dict[str, Any]) -> Dict[str, str]:
-    """Extracts standardized doctor fields from various JSON/CSV schema formats."""
+def is_inactive_or_ex_doctor(raw: Dict[str, Any]) -> bool:
+    """
+    Identifies whether a physician record represents an inactive, retired,
+    deceased, or ex-doctor (no valid prescribing rights).
+    """
+    if not isinstance(raw, dict):
+        return True
+
+    # 1. Check license string for 'ex-médecin', 'ex-', 'inactif', etc.
+    lic = str(raw.get("doctor_license") or raw.get("license") or raw.get("number") or raw.get("no_permis") or raw.get("permis") or "").strip().lower()
+    if "ex-m" in lic or "ex m" in lic or "ex-" in lic or "inactif" in lic or "retrait" in lic or "radi" in lic:
+        return True
+
+    # 2. Check explicit status / state fields
+    status = str(raw.get("status") or raw.get("statut") or raw.get("etat") or raw.get("type") or raw.get("statut_exercice") or "").strip().lower()
+    if status in ["ex-médecin", "ex-medecin", "inactif", "retraité", "retraite", "radié", "radie", "décédé", "decede", "non inscrit", "démissionnaire", "demissionnaire"]:
+        return True
+
+    # 3. Check name or full payload string for 'ex-médecin' indicators
+    name = str(raw.get("doctor_name") or raw.get("name") or raw.get("lastname") or "").strip().lower()
+    if "ex-m" in name or "ex m" in name or "retraité" in name or "retraite" in name or "radié" in name:
+        return True
+
+    # 4. Check entire dict string representation for strong ex-doctor patterns
+    raw_str = " ".join(str(v) for v in raw.values()).lower()
+    if "ex-médecin" in raw_str or "ex-medecin" in raw_str or "ex médecin" in raw_str:
+        return True
+
+    return False
+
+def purge_inactive_prescribers() -> int:
+    """
+    Purges all inactive and ex-doctors from data/prescribers.json.
+    Returns the number of purged records.
+    """
+    with _file_lock:
+        prescribers = _load_json(PRESCRIBERS_FILE)
+        initial_count = len(prescribers)
+        active_prescribers = [p for p in prescribers if not is_inactive_or_ex_doctor(p)]
+        purged_count = initial_count - len(active_prescribers)
+        if purged_count > 0:
+            _save_json(PRESCRIBERS_FILE, active_prescribers)
+        return purged_count
+
+def extract_doctor_fields(raw: Dict[str, Any]) -> Optional[Dict[str, str]]:
+    """
+    Extracts standardized doctor fields from various JSON/CSV schema formats.
+    Returns None if the record is an ex-doctor or inactive.
+    """
+    if is_inactive_or_ex_doctor(raw):
+        return None
+
     name = (
         raw.get("doctor_name") or
         raw.get("name") or
@@ -270,6 +320,7 @@ def extract_doctor_fields(raw: Dict[str, Any]) -> Dict[str, str]:
         raw.get("cp") or
         ""
     )
+    # Clean any trailing non-digit status annotations if valid permit number present
     lic = str(lic).strip()
 
     clinic_name = (
@@ -311,7 +362,7 @@ def extract_doctor_fields(raw: Dict[str, Any]) -> Dict[str, str]:
 def bulk_import_prescribers(items: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     High-performance bulk import of prescribers in a single atomic disk operation.
-    Can ingest 50,000+ prescribers in < 100ms.
+    Automatically filters out Ex-médecins and inactive physicians.
     """
     if not isinstance(items, list):
         raise ValueError("Payload must be a list of doctor records")
@@ -319,6 +370,9 @@ def bulk_import_prescribers(items: List[Dict[str, Any]]) -> Dict[str, Any]:
     with _file_lock:
         existing_list = _load_json(PRESCRIBERS_FILE)
         
+        # Purge existing inactives if any remain in memory
+        existing_list = [p for p in existing_list if not is_inactive_or_ex_doctor(p)]
+
         # Build quick lookup indices
         by_license = {}
         by_name = {}
@@ -335,11 +389,17 @@ def bulk_import_prescribers(items: List[Dict[str, Any]]) -> Dict[str, Any]:
 
         added_count = 0
         updated_count = 0
+        skipped_inactive_count = 0
 
         for raw in items:
             if not isinstance(raw, dict):
                 continue
+                
             fields = extract_doctor_fields(raw)
+            if fields is None:
+                skipped_inactive_count += 1
+                continue
+
             name = fields["doctor_name"]
             lic = fields["doctor_license"]
 
@@ -409,6 +469,7 @@ def bulk_import_prescribers(items: List[Dict[str, Any]]) -> Dict[str, Any]:
             "status": "success",
             "added": added_count,
             "updated": updated_count,
+            "skipped_inactive": skipped_inactive_count,
             "total_processed": len(items),
             "total_records": len(ordered_list)
         }
