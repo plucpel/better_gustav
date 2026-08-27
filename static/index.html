@@ -2793,6 +2793,7 @@
           ? `<span class="text-[11px] text-slate-600 truncate block" title="${escapeHtml(c.site)}">${escapeHtml(c.site)}</span>`
           : `<span class="text-slate-400 text-[10px] italic">Externe</span>`;
 
+        const cleanName = sanitizeClinicName(c.name_sanitized || c.name || 'Clinique sans nom');
         tr.innerHTML = `
           <td class="px-4 py-2.5 font-mono font-bold text-indigo-700 whitespace-nowrap">
             <span class="bg-indigo-50 text-indigo-800 border border-indigo-200 px-2 py-0.5 rounded-md text-xs group-hover:bg-indigo-100">
@@ -2800,7 +2801,7 @@
             </span>
           </td>
           <td class="px-4 py-2.5">
-            <div class="font-bold text-slate-900 text-xs">${escapeHtml(c.name || 'Clinique sans nom')}</div>
+            <div class="font-bold text-slate-900 text-xs" title="${escapeHtml(c.name || '')}">${escapeHtml(cleanName)}</div>
             ${addressLine}
           </td>
           <td class="px-4 py-2.5 text-xs text-slate-600 whitespace-nowrap">
@@ -2829,14 +2830,33 @@
       });
     }
 
+    function sanitizeClinicName(name) {
+      if (!name) return "";
+      let cleaned = String(name).trim();
+      // 1. Abbreviate 'centre hospitalier' / 'ctre hospitalier' (case-insensitive)
+      cleaned = cleaned.replace(/\b(centre|ctre)\s+hospitalier\b/gi, "CH");
+      // 2. Repeatedly remove trailing parentheses: e.g. ' ( LEBOURGNEUF)' -> ''
+      while (/\s*\([^)]*\)\s*$/.test(cleaned)) {
+        cleaned = cleaned.replace(/\s*\([^)]*\)\s*$/, "").trim();
+      }
+      // 3. Clean any dangling trailing punctuation like ' -' or ' ,' or ' /'
+      cleaned = cleaned.replace(/[\s\-,/]+$/, "").trim();
+      // 4. Normalize spaces
+      cleaned = cleaned.replace(/\s+/g, " ").trim();
+      return cleaned;
+    }
+
     function selectSilpClinic(clinic) {
       if (!clinic) return;
+      const cleanName = sanitizeClinicName(clinic.name_sanitized || clinic.name || "");
       if (silpTargetContext === "requisition") {
         if (reqClinicId) reqClinicId.value = clinic.id || "";
-        if (reqClinicName) reqClinicName.value = clinic.name || "";
+        if (reqClinicName) reqClinicName.value = cleanName;
+        if (reqClinicId) reqClinicId.dispatchEvent(new Event("input"));
+        if (reqClinicName) reqClinicName.dispatchEvent(new Event("input"));
       } else if (silpTargetContext === "prescriber_edit") {
         if (editDocClinicId) editDocClinicId.value = clinic.id || "";
-        if (editDocClinic) editDocClinic.value = clinic.name || "";
+        if (editDocClinic) editDocClinic.value = cleanName;
       }
       closeSilpModal();
     }
@@ -2880,12 +2900,13 @@
           if (c.address) addrParts.push(escapeHtml(c.address));
           if (c.city) addrParts.push(escapeHtml(c.city));
           if (c.postal_code) addrParts.push(escapeHtml(c.postal_code));
+          const cleanName = sanitizeClinicName(c.name_sanitized || c.name || "");
 
           item.innerHTML = `
             <div class="min-w-0 pr-2">
               <div class="font-bold text-slate-800 flex items-center space-x-2">
                 <span class="bg-indigo-100 text-indigo-800 font-mono text-[10px] font-bold px-1.5 py-0.2 rounded border border-indigo-200">${escapeHtml(c.id)}</span>
-                <span class="truncate">${escapeHtml(c.name)}</span>
+                <span class="truncate" title="${escapeHtml(c.name)}">${escapeHtml(cleanName)}</span>
               </div>
               <div class="text-[10px] text-slate-500 truncate mt-0.5">
                 ${addrParts.join(' • ')}

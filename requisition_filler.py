@@ -44,6 +44,31 @@ def format_dob_str(raw_dob: Any) -> str:
         return f"{int(m.group(1)):04d}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
     return s
 
+def sanitize_clinic_name(name: Optional[str]) -> str:
+    """
+    Sanitizes and shortens a clinic name for high legibility on forms:
+    1. Abbreviates 'Centre hospitalier' / 'Ctre hospitalier' to 'CH'.
+    2. Strips trailing parentheses and their content (e.g. ' ( LEBOURGNEUF)' -> '').
+    3. Cleans trailing punctuation and normalizes spacing.
+    """
+    if not name:
+        return ""
+    cleaned = str(name).strip()
+
+    # 1. Abbreviate 'centre hospitalier' / 'ctre hospitalier' (case-insensitive)
+    cleaned = re.sub(r'(?i)\b(centre|ctre)\s+hospitalier\b', 'CH', cleaned)
+
+    # 2. Repeatedly remove trailing parentheses: e.g. '( LEBOURGNEUF)' or '(QUEBEC)'
+    while re.search(r'\s*\([^)]*\)\s*$', cleaned):
+        cleaned = re.sub(r'\s*\([^)]*\)\s*$', '', cleaned).strip()
+
+    # 3. Clean any dangling trailing punctuation like ' -' or ' ,' or ' /'
+    cleaned = re.sub(r'[\s\-,/]+$', '', cleaned).strip()
+
+    # 4. Normalize spaces
+    cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+    return cleaned
+
 def extract_ramq_info(ramq_str: Any) -> Dict[str, str]:
     """Extracts date of birth (YYYY-MM-DD) and sex (M/F) from Quebec RAMQ format."""
     if not ramq_str:
@@ -961,7 +986,7 @@ def _fill_single_form_page(form_config: Dict[str, Any], matched_cbs: List[str], 
     if patient_dict.get("doctor_license") and "doctor_license" in headers:
         text_values_to_set[headers["doctor_license"]] = str(patient_dict["doctor_license"]).strip()
     if patient_dict.get("clinic_name") and "clinic_name" in headers:
-        text_values_to_set[headers["clinic_name"]] = str(patient_dict["clinic_name"]).strip()
+        text_values_to_set[headers["clinic_name"]] = sanitize_clinic_name(patient_dict["clinic_name"])
     if patient_dict.get("clinic_id") and "clinic_id" in headers:
         text_values_to_set[headers["clinic_id"]] = str(patient_dict["clinic_id"]).strip()
     if patient_dict.get("doctor_copy") and "doctor_copy" in headers:
@@ -969,7 +994,7 @@ def _fill_single_form_page(form_config: Dict[str, Any], matched_cbs: List[str], 
     if patient_dict.get("doctor_copy_license") and "doctor_copy_license" in headers:
         text_values_to_set[headers["doctor_copy_license"]] = str(patient_dict["doctor_copy_license"]).strip()
     if patient_dict.get("clinic_copy_name") and "clinic_copy_name" in headers:
-        text_values_to_set[headers["clinic_copy_name"]] = str(patient_dict["clinic_copy_name"]).strip()
+        text_values_to_set[headers["clinic_copy_name"]] = sanitize_clinic_name(patient_dict["clinic_copy_name"])
     if patient_dict.get("prescriber_clinical_info") and "prescriber_clinical_info" in headers:
         text_values_to_set[headers["prescriber_clinical_info"]] = str(patient_dict["prescriber_clinical_info"]).strip()
 
@@ -1033,6 +1058,14 @@ def _fill_single_form_page(form_config: Dict[str, Any], matched_cbs: List[str], 
                         widget.text_fontsize = 6.8
                     else:
                         widget.text_fontsize = 7.5
+                elif ("clinic_name" in headers and fname == headers["clinic_name"]) or ("clinic_copy_name" in headers and fname == headers.get("clinic_copy_name")):
+                    # Default font size is 8.0. Allow font reduction up to 15% (down to 6.8pt) if text length requires it
+                    if len(val_str) > 36:
+                        widget.text_fontsize = 6.8 # 15% reduction
+                    elif len(val_str) > 26:
+                        widget.text_fontsize = 7.2 # 10% reduction
+                    else:
+                        widget.text_fontsize = 8.0
                 else:
                     widget.text_fontsize = 8.0
                 widget.update()

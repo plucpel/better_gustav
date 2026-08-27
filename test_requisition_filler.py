@@ -128,6 +128,35 @@ class TestRequisitionFiller(unittest.TestCase):
         self.assertIn("CORT", other_content.upper())
         self.assertIn("VITD", other_content.upper())
 
+    def test_clinic_name_sanitization_and_font_scaling(self):
+        """Verify that clinic names with 'Centre hospitalier' and trailing parentheses are sanitized on the PDF."""
+        patient_info = {
+            "doctor_name": "Dr. Jean Gagnon",
+            "doctor_license": "54321",
+            "clinic_name": "CENTRE HOSPITALIER DE L'UNIVERSITE LAVAL ( 101)",
+            "clinic_id": "031000176"
+        }
+        pdf_bytes = generate_filled_requisition_pdf(
+            pids=["fsc"],
+            site="Tous les sites",
+            patient_info=patient_info
+        )
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        page = doc[0]
+        text_values = {}
+        text_fontsizes = {}
+        for w in page.widgets():
+            if w.field_type_string == "Text" and w.field_value:
+                text_values[w.field_name] = w.field_value
+                text_fontsizes[w.field_name] = w.text_fontsize
+
+        # Text8 is clinic_name in general requisition
+        self.assertEqual(text_values.get("Text8"), "CH DE L'UNIVERSITE LAVAL")
+        self.assertEqual(text_values.get("Text9"), "031000176")
+        # Ensure fontsize is scaled appropriately (between 6.8 and 8.0)
+        self.assertLessEqual(text_fontsizes.get("Text8"), 8.0)
+        self.assertGreaterEqual(text_fontsizes.get("Text8"), 6.8)
+
     def test_api_endpoints_integration(self):
         """Test the FastAPI endpoints for inspection and PDF generation."""
         client = TestClient(app)

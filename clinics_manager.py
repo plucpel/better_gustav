@@ -10,6 +10,7 @@ Provides:
 
 import os
 import json
+import re
 import unicodedata
 import threading
 from typing import List, Dict, Any, Optional
@@ -36,6 +37,31 @@ TYPE_DESCRIPTIONS: Dict[str, str] = {
     "Y": "Y - Inscrits - Urgent sans ADT",
     "Z": "Z - Services vendus"
 }
+
+def sanitize_clinic_name(name: Optional[str]) -> str:
+    """
+    Sanitizes and shortens a clinic name for high legibility on forms:
+    1. Abbreviates 'Centre hospitalier' / 'Ctre hospitalier' to 'CH'.
+    2. Strips trailing parentheses and their content (e.g. ' ( LEBOURGNEUF)' -> '').
+    3. Cleans trailing punctuation and normalizes spacing.
+    """
+    if not name:
+        return ""
+    cleaned = str(name).strip()
+
+    # 1. Abbreviate 'centre hospitalier' / 'ctre hospitalier' (case-insensitive)
+    cleaned = re.sub(r'(?i)\b(centre|ctre)\s+hospitalier\b', 'CH', cleaned)
+
+    # 2. Repeatedly remove trailing parentheses: e.g. '( LEBOURGNEUF)' or '(QUEBEC)'
+    while re.search(r'\s*\([^)]*\)\s*$', cleaned):
+        cleaned = re.sub(r'\s*\([^)]*\)\s*$', '', cleaned).strip()
+
+    # 3. Clean any dangling trailing punctuation like ' -' or ' ,' or ' /'
+    cleaned = re.sub(r'[\s\-,/]+$', '', cleaned).strip()
+
+    # 4. Normalize spaces
+    cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+    return cleaned
 
 def normalize_text(text: Optional[str]) -> str:
     """Normalize text by lowercasing, removing accents, punctuation, and multiple spaces."""
@@ -266,9 +292,11 @@ def search_clinics(
 
 def _clean_clinic_response(c: Dict[str, Any]) -> Dict[str, Any]:
     """Returns a public representation of the clinic record without internal indexing keys."""
+    raw_name = c["name"]
     return {
         "id": c["id"],
-        "name": c["name"],
+        "name": raw_name,
+        "name_sanitized": sanitize_clinic_name(raw_name),
         "site": c["site"],
         "city": c["city"],
         "postal_code": c["postal_code"],

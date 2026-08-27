@@ -23,6 +23,37 @@ class TestSilpClinics(unittest.TestCase):
         self.assertEqual(normalize_text("Éléphant & Co."), "elephant co")
         self.assertEqual(normalize_text(""), "")
 
+    def test_sanitize_clinic_name(self):
+        from clinics_manager import sanitize_clinic_name
+        self.assertEqual(
+            sanitize_clinic_name("PHARM. UNIPRIX SANTE N.D.L.B. ( LEBOURGNEUF)"),
+            "PHARM. UNIPRIX SANTE N.D.L.B."
+        )
+        self.assertEqual(
+            sanitize_clinic_name("CENTRE HOSPITALIER DE L'UNIVERSITE LAVAL ( 101)"),
+            "CH DE L'UNIVERSITE LAVAL"
+        )
+        self.assertEqual(
+            sanitize_clinic_name("CENTRE HOSPITALIER REGIONAL DU GRAND-PORTAGE"),
+            "CH REGIONAL DU GRAND-PORTAGE"
+        )
+        self.assertEqual(
+            sanitize_clinic_name("GMF MACLINIQUE LEBOURGNEUF 2 ( RESEAU)"),
+            "GMF MACLINIQUE LEBOURGNEUF 2"
+        )
+        self.assertEqual(
+            sanitize_clinic_name("SOINS INFIRMIERS ISABELLE DESCHENES - RESEAU INFIRMIA ( BEAUPORT)"),
+            "SOINS INFIRMIERS ISABELLE DESCHENES - RESEAU INFIRMIA"
+        )
+        self.assertEqual(
+            sanitize_clinic_name("Centre Hospitalier Universitaire"),
+            "CH Universitaire"
+        )
+        self.assertEqual(
+            sanitize_clinic_name("Ctre Hospitalier de Granby ( 012)"),
+            "CH de Granby"
+        )
+
     def test_dataset_loaded(self):
         sites = get_available_sites()
         self.assertGreater(len(sites), 10)
