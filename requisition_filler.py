@@ -9,12 +9,191 @@ Supports all 4 official CHU de Québec / Optilab requisition forms:
 
 import os
 import io
+import re
+from datetime import datetime
 import fitz  # PyMuPDF
 from typing import List, Dict, Any, Optional, Set
 from tube_calculator import load_catalog, normalize_str
 from medical_dictionary import CLINICAL_PANELS, SYNONYMS_TO_PID
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+
+def format_dob_str(raw_dob: Any) -> str:
+    """Standardizes various date of birth formats to YYYY-MM-DD."""
+    if not raw_dob:
+        return ""
+    s = str(raw_dob).strip()
+    # YYYY-MM-DD or YYYY/MM/DD
+    m = re.match(r"^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$", s)
+    if m:
+        return f"{int(m.group(1)):04d}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
+    # DD-MM-YYYY or DD/MM/YYYY
+    m = re.match(r"^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$", s)
+    if m:
+        return f"{int(m.group(3)):04d}-{int(m.group(2)):02d}-{int(m.group(1)):02d}"
+    # YYMMDD (6 digits)
+    m = re.match(r"^(\d{2})(\d{2})(\d{2})$", s)
+    if m:
+        yy, mm, dd = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        curr_yy = int(datetime.now().strftime("%y"))
+        full_yr = 2000 + yy if yy <= curr_yy else 1900 + yy
+        return f"{full_yr:04d}-{mm:02d}-{dd:02d}"
+    # YYYYMMDD (8 digits)
+    m = re.match(r"^(\d{4})(\d{2})(\d{2})$", s)
+    if m:
+        return f"{int(m.group(1)):04d}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
+    return s
+
+def extract_ramq_info(ramq_str: Any) -> Dict[str, str]:
+    """Extracts date of birth (YYYY-MM-DD) and sex (M/F) from Quebec RAMQ format."""
+    if not ramq_str:
+        return {}
+    clean = re.sub(r"[^A-Za-z0-9]", "", str(ramq_str)).upper()
+    if len(clean) >= 10 and clean[:4].isalpha() and clean[4:10].isdigit():
+        yy = int(clean[4:6])
+        mm_raw = int(clean[6:8])
+        dd = int(clean[8:10])
+        is_female = mm_raw > 50
+        mm = mm_raw - 50 if is_female else mm_raw
+        curr_yy = int(datetime.now().strftime("%y"))
+        full_year = 2000 + yy if yy <= curr_yy else 1900 + yy
+        if 1 <= mm <= 12 and 1 <= dd <= 31:
+            return {
+                "dob": f"{full_year:04d}-{mm:02d}-{dd:02d}",
+                "sex": "F" if is_female else "M"
+            }
+    return {}
+
+def parse_ramq_barcode_payload(payload_str: Any) -> Dict[str, Any]:
+    """Decodes 1D (Code 128 / Code 39) or 2D (DataMatrix / PDF417) barcode payload from Quebec RAMQ card."""
+    if not payload_str:
+        return {}
+    raw = str(payload_str).strip()
+
+    # 1. Check for AAMVA tags (e.g. DCS, DAC, DAQ, DBB, DBC)
+    aamva_last = re.search(r'(?:DCS|DAB|DCSLAST)[:\s]*([A-Za-zÀ-ÿ\-]+)', raw, re.IGNORECASE)
+    aamva_first = re.search(r'(?:DAC|DAD|DCSFIRST)[:\s]*([A-Za-zÀ-ÿ\-]+)', raw, re.IGNORECASE)
+    aamva_ramq = re.search(r'(?:DAQ|NAM|RAMQ)[:\s]*([A-Za-z]{4}\s?\d{2}\s?\d{2}\s?\d{2}\s?\d{2}?)', raw, re.IGNORECASE)
+    aamva_dob = re.search(r'(?:DBB|DBA)[:\s]*(\d{8}|\d{4}[-/.]\d{2}[-/.]\d{2})', raw, re.IGNORECASE)
+    aamva_sex = re.search(r'(?:DBC)[:\s]*([12MF])', raw, re.IGNORECASE)
+    
+    # 2. Extract RAMQ pattern (4 letters + 6 or 8 digits)
+    ramq_raw = ""
+    ramq_clean = ""
+
+    if aamva_ramq:
+        clean_daq = re.sub(r'[^A-Za-z0-9]', '', aamva_ramq.group(1)).upper()
+        if len(clean_daq) >= 10:
+            ramq_raw = clean_daq.ljust(12, '0')
+            ramq_clean = f'{ramq_raw[:4]} {ramq_raw[4:8]} {ramq_raw[8:12]}'
+    else:
+        ramq_candidates = re.findall(r'([A-Za-z]{4})\s?(\d{2})\s?(\d{2})\s?(\d{2})\s?(\d{2})?', raw)
+        for r in ramq_candidates:
+            letters = r[0].upper()
+            if letters not in ['ANSI', 'AAMV', 'CARD', 'CARTE', 'QUEB', 'QC']:
+                p1, p2, p3 = r[1], r[2], r[3]
+                p4 = r[4] or '00'
+                ramq_raw = f"{letters}{p1}{p2}{p3}{p4}"
+                ramq_clean = f"{letters} {p1}{p2} {p3}{p4}"
+                break
+        if not ramq_raw:
+            m10 = re.search(r'([A-Za-z]{4})\s?(\d{6})', raw)
+            if m10 and m10.group(1).upper() not in ['ANSI', 'AAMV']:
+                letters = m10.group(1).upper()
+                digits = m10.group(2)
+                ramq_raw = f"{letters}{digits}00"
+                ramq_clean = f"{letters} {digits[:4]} {digits[4:]}00"
+
+    dob = ""
+    sex = ""
+    last_prefix = ""
+    first_prefix = ""
+    if ramq_raw and len(ramq_raw) >= 10:
+        last_prefix = ramq_raw[:3]
+        first_prefix = ramq_raw[3]
+        yy = int(ramq_raw[4:6])
+        mm_raw = int(ramq_raw[6:8])
+        dd = int(ramq_raw[8:10])
+        is_female = mm_raw > 50
+        mm = mm_raw - 50 if is_female else mm_raw
+        curr_yy = int(datetime.now().strftime("%y"))
+        full_year = 2000 + yy if yy <= curr_yy else 1900 + yy
+        if 1 <= mm <= 12 and 1 <= dd <= 31:
+            dob = f"{full_year:04d}-{mm:02d}-{dd:02d}"
+            sex = "F" if is_female else "M"
+
+    # Explicit DOB override
+    if aamva_dob:
+        s_dob = re.sub(r'[^0-9]', '', aamva_dob.group(1))
+        if len(s_dob) == 8:
+            dob = f"{s_dob[:4]}-{s_dob[4:6]}-{s_dob[6:]}"
+
+    # Explicit Sex override
+    if aamva_sex:
+        s_sex = aamva_sex.group(1).upper()
+        if s_sex in ['1', 'M']:
+            sex = 'M'
+        elif s_sex in ['2', 'F']:
+            sex = 'F'
+
+    # 3. Extract Name
+    last_name = ""
+    first_name = ""
+
+    if aamva_last:
+        last_name = aamva_last.group(1).capitalize()
+    if aamva_first:
+        first_name = aamva_first.group(1).capitalize()
+
+    if not last_name or not first_name:
+        # Split tokens (delimiters: newline, pipe, caret, comma, semicolon, tab, slash)
+        tokens = [t.strip() for t in re.split(r"[\r\n|^,;\t/]+", raw) if t.strip()]
+        clean_ramq_full = re.sub(r"[^A-Z0-9]", "", ramq_raw)
+        
+        candidates = []
+        for t in tokens:
+            clean_t = re.sub(r"[^A-Za-zÀ-ÿ\-]", "", t).strip()
+            if not clean_t or len(clean_t) < 2:
+                continue
+            upper_t = clean_t.upper()
+            
+            # Skip if token is the RAMQ or part of RAMQ or metadata keyword
+            if upper_t == ramq_raw[:4] or upper_t == clean_ramq_full:
+                continue
+            if len(upper_t) <= 4 and (upper_t == ramq_raw[:3] or upper_t == ramq_raw[:4]):
+                continue
+            if upper_t in ["RAMQ", "QC", "QUEBEC", "EXP", "NAM", "CARD", "CARTE", "HOMME", "FEMME", "ANSI", "AAMVA"]:
+                continue
+                
+            candidates.append(clean_t)
+
+        # Match candidates with last_prefix and first_prefix
+        for c in candidates:
+            c_upper = c.upper()
+            if last_prefix and c_upper.startswith(last_prefix) and not last_name:
+                last_name = c.capitalize()
+            elif first_prefix and c_upper.startswith(first_prefix) and not first_name:
+                first_name = c.capitalize()
+            elif not last_name:
+                last_name = c.capitalize()
+            elif not first_name and c.capitalize() != last_name:
+                first_name = c.capitalize()
+
+    patient_name = ""
+    if last_name and first_name:
+        patient_name = f"{last_name}, {first_name}"
+    elif last_name:
+        patient_name = last_name
+
+    return {
+        "ramq": ramq_clean,
+        "patient_name": patient_name,
+        "last_name": last_name,
+        "first_name": first_name,
+        "dob": dob,
+        "sex": sex,
+        "raw": raw
+    }
 
 # ==============================================================================
 # FORM DEFINITIONS & TEMPLATES
@@ -408,6 +587,53 @@ REQUISITION_FORMS = {
             "parat": "PARAT Multiplex parasite par TAAN 4 cibles G lamblia",
             "paras": "PARAS Parasitologie intestinale parmicroscopie"
         }
+    },
+
+    "banque_sang": {
+        "id": "banque_sang",
+        "title": "Requête de Banque de Sang (Immuno-hématologie)",
+        "pdf_path": os.path.join(DATA_DIR, "requete_banque_de_sang.pdf"),
+        "headers": {
+            "sample_date": "sample_date",
+            "sample_time": "sample_time",
+            "nurse_name": "nurse_name",
+            "sample_location": "sample_location",
+            "doctor_name": "doctor_name",
+            "doctor_license": "doctor_license",
+            "clinic_name": "clinic_name",
+            "doctor_copy": "doctor_copy",
+            "doctor_copy_license": "doctor_copy_license",
+            "clinic_copy_name": "clinic_copy_name",
+            "prescriber_clinical_info": "prescriber_clinical_info",
+            "ramq": "ramq",
+            "dossier": "dossier",
+            "site": "site",
+            "dob": "dob",
+            "patient_name": "patient_name",
+            "patient_firstname": "patient_firstname",
+            "clinical_info": "diagnostic",
+            "mother_name": "mother_name",
+            "address_street": "address_street",
+            "address_apt": "address_apt",
+            "postal_code": "postal_code",
+            "phone": "phone",
+            "sex_m": "Sexe_M",
+            "sex_f": "Sexe_F",
+            "other_analyses": "AUTRES ANALYSES OU DEMANDES SPÉCIALES"
+        },
+        "checkboxes": {
+            "bds003": "GROUPE SANGUIN ET RECHERCHE D’ANTICORPS",
+            "typage_depistage": "GROUPE SANGUIN ET RECHERCHE D’ANTICORPS",
+            "bds008": "2e DÉTERMINATION ABO Rh",
+            "bds002": "GROUPE SANGUIN (ABO Rh)",
+            "bds001": "COOMBS DIRECT",
+            "bds007": "INVESTIGATION RÉACTION TRANSFUSIONNELLE",
+            "bds006": "TITRAGE D’ANTICORPS IMMUNS",
+            "bds006_immuns": "TITRAGE D’ANTICORPS IMMUNS",
+            "bds006_naturels": "TITRAGE D’ANTICORPS NATURELS (anti-A, anti-B)",
+            "bds005": "TITRAGE AGGLUTININES FROIDES",
+            "bds004": "PHÉNOTYPES ÉRYTHROCYTAIRES"
+        }
     }
 }
 
@@ -479,20 +705,37 @@ def inspect_multi_requisitions(input_pids: Optional[List[str]] = None, site: str
         "general": [],
         "spec_multi": [],
         "micro_gen": [],
-        "micro_mol": []
+        "micro_mol": [],
+        "banque_sang": []
     }
     form_seen_fields: Dict[str, Set[str]] = {
         "general": set(),
         "spec_multi": set(),
         "micro_gen": set(),
-        "micro_mol": set()
+        "micro_mol": set(),
+        "banque_sang": set()
     }
     
     handled_pids: Set[str] = set()
 
-    # Priority 1: Check Specialized Multidisciplinary (spec_multi)
+    # Priority 1: Check Blood Bank (banque_sang)
     for pid in expanded_pids:
-        if pid in REQUISITION_FORMS["spec_multi"]["checkboxes"]:
+        if pid in REQUISITION_FORMS["banque_sang"]["checkboxes"]:
+            cb_field = REQUISITION_FORMS["banque_sang"]["checkboxes"][pid]
+            cat_entry = catalog.get(pid, {})
+            name = cat_entry.get("name", pid.upper())
+            if cb_field not in form_seen_fields["banque_sang"]:
+                form_seen_fields["banque_sang"].add(cb_field)
+                form_matched_map["banque_sang"].append({
+                    "pid": pid,
+                    "field_name": cb_field,
+                    "name": name
+                })
+            handled_pids.add(pid)
+
+    # Priority 2: Check Specialized Multidisciplinary (spec_multi)
+    for pid in expanded_pids:
+        if pid not in handled_pids and pid in REQUISITION_FORMS["spec_multi"]["checkboxes"]:
             cb_field = REQUISITION_FORMS["spec_multi"]["checkboxes"][pid]
             cat_entry = catalog.get(pid, {})
             name = cat_entry.get("name", pid.upper())
@@ -505,9 +748,9 @@ def inspect_multi_requisitions(input_pids: Optional[List[str]] = None, site: str
                 })
             handled_pids.add(pid)
 
-    # Priority 2: Check Molecular Microbiology (micro_mol)
+    # Priority 3: Check Molecular Microbiology (micro_mol)
     for pid in expanded_pids:
-        if pid in REQUISITION_FORMS["micro_mol"]["checkboxes"]:
+        if pid not in handled_pids and pid in REQUISITION_FORMS["micro_mol"]["checkboxes"]:
             cb_field = REQUISITION_FORMS["micro_mol"]["checkboxes"][pid]
             cat_entry = catalog.get(pid, {})
             name = cat_entry.get("name", pid.upper())
@@ -520,7 +763,7 @@ def inspect_multi_requisitions(input_pids: Optional[List[str]] = None, site: str
                 })
             handled_pids.add(pid)
 
-    # Priority 3: Check General Microbiology (micro_gen)
+    # Priority 4: Check General Microbiology (micro_gen)
     for pid in expanded_pids:
         if pid not in handled_pids and pid in REQUISITION_FORMS["micro_gen"]["checkboxes"]:
             cb_field = REQUISITION_FORMS["micro_gen"]["checkboxes"][pid]
@@ -539,7 +782,7 @@ def inspect_multi_requisitions(input_pids: Optional[List[str]] = None, site: str
     is_hej_site = any(s in site.upper() for s in ["HEJ", "ENFANT-JÉSUS", "ENFANT-JESUS", "HDQ", "HÔTEL-DIEU", "HOTEL-DIEU"])
     tropo_field_pref = "TTROP" if is_hej_site else "ITROP"
 
-    # Priority 4: Check General Requisition (general)
+    # Priority 5: Check General Requisition (general)
     for pid in expanded_pids:
         if pid not in handled_pids and pid in REQUISITION_FORMS["general"]["checkboxes"]:
             cb_field = REQUISITION_FORMS["general"]["checkboxes"][pid]
@@ -574,7 +817,7 @@ def inspect_multi_requisitions(input_pids: Optional[List[str]] = None, site: str
     all_matched_checkboxes = []
 
     # If general has matches OR if unmapped analyses exist (and no other form claimed them), include general
-    if form_matched_map["general"] or (other_analyses and not any(len(form_matched_map[k]) > 0 for k in ["spec_multi", "micro_gen", "micro_mol"])):
+    if form_matched_map["general"] or (other_analyses and not any(len(form_matched_map[k]) > 0 for k in ["banque_sang", "spec_multi", "micro_gen", "micro_mol"])):
         f_info = REQUISITION_FORMS["general"]
         active_forms.append({
             "form_id": "general",
@@ -586,7 +829,7 @@ def inspect_multi_requisitions(input_pids: Optional[List[str]] = None, site: str
         })
         all_matched_checkboxes.extend(form_matched_map["general"])
 
-    for form_id in ["spec_multi", "micro_gen", "micro_mol"]:
+    for form_id in ["banque_sang", "spec_multi", "micro_gen", "micro_mol"]:
         if form_matched_map[form_id]:
             f_info = REQUISITION_FORMS[form_id]
             # If general wasn't added and other_analyses exist, attach them to the first active form
@@ -662,12 +905,56 @@ def _fill_single_form_page(form_config: Dict[str, Any], matched_cbs: List[str], 
         text_values_to_set[headers["dossier"]] = str(patient_dict["dossier"]).strip()
     if patient_dict.get("room") and "room" in headers:
         text_values_to_set[headers["room"]] = str(patient_dict["room"]).strip()
-    if patient_dict.get("patient_name") and "patient_name" in headers:
+
+    # Fallback extraction from RAMQ
+    ramq_val = str(patient_dict.get("ramq", "")).strip()
+    ramq_info = extract_ramq_info(ramq_val)
+
+    # Patient name handling (combined vs separated Nom / Prénom)
+    if "patient_firstname" in headers and "patient_name" in headers:
+        raw_pname = str(patient_dict.get("patient_name", "")).strip()
+        raw_fname = str(patient_dict.get("patient_firstname", "")).strip()
+        if raw_fname:
+            text_values_to_set[headers["patient_name"]] = raw_pname
+            text_values_to_set[headers["patient_firstname"]] = raw_fname
+        elif "," in raw_pname:
+            parts = [p.strip() for p in raw_pname.split(",", 1)]
+            text_values_to_set[headers["patient_name"]] = parts[0]
+            text_values_to_set[headers["patient_firstname"]] = parts[1]
+        elif " " in raw_pname:
+            parts = raw_pname.rsplit(" ", 1)
+            text_values_to_set[headers["patient_name"]] = parts[1]
+            text_values_to_set[headers["patient_firstname"]] = parts[0]
+        elif raw_pname:
+            text_values_to_set[headers["patient_name"]] = raw_pname
+    elif patient_dict.get("patient_name") and "patient_name" in headers:
         text_values_to_set[headers["patient_name"]] = str(patient_dict["patient_name"]).strip()
-    if patient_dict.get("dob") and "dob" in headers:
-        text_values_to_set[headers["dob"]] = str(patient_dict["dob"]).strip()
+
+    # DOB resolution (any field alias or RAMQ fallback)
+    raw_dob = (
+        patient_dict.get("dob")
+        or patient_dict.get("date_naissance")
+        or patient_dict.get("birth_date")
+        or patient_dict.get("birthdate")
+        or patient_dict.get("patient_dob")
+        or ramq_info.get("dob")
+    )
+    formatted_dob = format_dob_str(raw_dob)
+    if formatted_dob and "dob" in headers:
+        text_values_to_set[headers["dob"]] = formatted_dob
+
     if patient_dict.get("clinical_info") and "clinical_info" in headers:
         text_values_to_set[headers["clinical_info"]] = str(patient_dict["clinical_info"]).strip()
+    if patient_dict.get("mother_name") and "mother_name" in headers:
+        text_values_to_set[headers["mother_name"]] = str(patient_dict["mother_name"]).strip()
+    if patient_dict.get("address_street") and "address_street" in headers:
+        text_values_to_set[headers["address_street"]] = str(patient_dict["address_street"]).strip()
+    if patient_dict.get("address_apt") and "address_apt" in headers:
+        text_values_to_set[headers["address_apt"]] = str(patient_dict["address_apt"]).strip()
+    if patient_dict.get("postal_code") and "postal_code" in headers:
+        text_values_to_set[headers["postal_code"]] = str(patient_dict["postal_code"]).strip()
+    if patient_dict.get("phone") and "phone" in headers:
+        text_values_to_set[headers["phone"]] = str(patient_dict["phone"]).strip()
 
     if patient_dict.get("doctor_name") and "doctor_name" in headers:
         text_values_to_set[headers["doctor_name"]] = str(patient_dict["doctor_name"]).strip()
@@ -681,6 +968,10 @@ def _fill_single_form_page(form_config: Dict[str, Any], matched_cbs: List[str], 
         text_values_to_set[headers["doctor_copy"]] = str(patient_dict["doctor_copy"]).strip()
     if patient_dict.get("doctor_copy_license") and "doctor_copy_license" in headers:
         text_values_to_set[headers["doctor_copy_license"]] = str(patient_dict["doctor_copy_license"]).strip()
+    if patient_dict.get("clinic_copy_name") and "clinic_copy_name" in headers:
+        text_values_to_set[headers["clinic_copy_name"]] = str(patient_dict["clinic_copy_name"]).strip()
+    if patient_dict.get("prescriber_clinical_info") and "prescriber_clinical_info" in headers:
+        text_values_to_set[headers["prescriber_clinical_info"]] = str(patient_dict["prescriber_clinical_info"]).strip()
 
     if patient_dict.get("sample_date") and "sample_date" in headers:
         text_values_to_set[headers["sample_date"]] = str(patient_dict["sample_date"]).strip()
@@ -694,8 +985,13 @@ def _fill_single_form_page(form_config: Dict[str, Any], matched_cbs: List[str], 
     if other_text and "other_analyses" in headers:
         text_values_to_set[headers["other_analyses"]] = other_text
 
-    sex_val = patient_dict.get("sex", "").strip().upper()
+    sex_val = str(patient_dict.get("sex") or ramq_info.get("sex") or "").strip().upper()
     checked_set = set(matched_cbs)
+
+    if "sex_m" in headers and sex_val in ["M", "MASCULIN", "HOMME"]:
+        checked_set.add(headers["sex_m"])
+    if "sex_f" in headers and sex_val in ["F", "FEMININ", "FEMME"]:
+        checked_set.add(headers["sex_f"])
 
     for widget in page.widgets():
         fname = widget.field_name
@@ -704,7 +1000,17 @@ def _fill_single_form_page(form_config: Dict[str, Any], matched_cbs: List[str], 
         if ftype == "CheckBox":
             if fname in checked_set:
                 widget.field_value = "Yes"
+                widget.button_caption = "8" # ZapfDingbats '8' = 'X'
                 widget.update()
+                # If this is a sex checkbox (e.g. Banque de sang), draw a crisp vector 'X'
+                if ("sex_m" in headers and fname == headers["sex_m"]) or ("sex_f" in headers and fname == headers["sex_f"]):
+                    r = widget.rect
+                    cx = (r.x0 + r.x1) / 2.0
+                    cy = (r.y0 + r.y1) / 2.0
+                    hw, hh = 3.8, 3.8
+                    box = fitz.Rect(cx - hw, cy - hh, cx + hw, cy + hh)
+                    page.draw_line(box.tl, box.br, color=(0, 0, 0), width=1.2)
+                    page.draw_line(box.bl, box.tr, color=(0, 0, 0), width=1.2)
             else:
                 widget.field_value = "Off"
                 widget.update()
@@ -735,6 +1041,19 @@ def _fill_single_form_page(form_config: Dict[str, Any], matched_cbs: List[str], 
             if sex_val in ["M", "F"]:
                 if widget.on_state() == sex_val:
                     widget.field_value = sex_val
+                    widget.button_caption = "8" # ZapfDingbats cross 'X'
+                    widget.update()
+                    
+                    # Draw a crisp, high-contrast vector 'X' for clear printing
+                    r = widget.rect
+                    cx = (r.x0 + r.x1) / 2.0
+                    cy = (r.y0 + r.y1) / 2.0
+                    hw, hh = 3.6, 3.6
+                    box = fitz.Rect(cx - hw, cy - hh, cx + hw, cy + hh)
+                    page.draw_line(box.tl, box.br, color=(0, 0, 0), width=1.2)
+                    page.draw_line(box.bl, box.tr, color=(0, 0, 0), width=1.2)
+                else:
+                    widget.field_value = "Off"
                     widget.update()
 
     return doc

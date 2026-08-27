@@ -82,6 +82,16 @@ def test_app():
     for t in u_data["tubes"]:
         print(f"     • {t['tube_count']}x {t['name']} ({t['cap_color_name']})")
 
+    print("\n=== 9. Testing Acide urique (sang) -> Blood tube (Menthe), NOT Urine ===")
+    acuri_payload = {"pids": ["acuri"]}
+    r = client.post("/api/calculate", json=acuri_payload)
+    assert r.status_code == 200
+    acuri_data = r.json()
+    assert acuri_data["total_tubes"] == 1, f"Acide urique (sang) must require 1 blood tube, got {acuri_data['total_tubes']}"
+    assert acuri_data["total_urine"] == 0, f"Acide urique (sang) must NOT require a urine container, got {acuri_data['total_urine']}"
+    assert acuri_data["tubes"][0]["category_key"] == "HEPARINE_LITHIUM"
+    print(f"  -> Verified Acide urique (sang): 1 Tube {acuri_data['tubes'][0]['name']} ({acuri_data['tubes'][0]['cap_color_name']}), 0 urine containers.")
+
     print("\n ALL API & CALCULATION TESTS PASSED PERFECTLY!")
 
 if __name__ == "__main__":

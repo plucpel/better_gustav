@@ -4,9 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gustav - Calculateur de Tubes de Prélèvement | CHU de Québec</title>
-  <!-- Tailwind CSS & FontAwesome -->
+  <!-- Tailwind CSS & FontAwesome & ZXing Barcode Library -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -346,15 +347,21 @@
           
           <!-- 1. Section Usager -->
           <div class="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-            <div class="bg-sky-50/80 px-4 py-2 border-b border-sky-100 flex items-center justify-between">
+            <div class="bg-sky-50/80 px-4 py-2 border-b border-sky-100 flex items-center justify-between flex-wrap gap-2">
               <div class="flex items-center space-x-2">
                 <i class="fa-solid fa-user text-sky-700 text-xs"></i>
                 <span class="text-xs font-bold text-sky-900 uppercase tracking-wider">1. Usager (Patient)</span>
               </div>
-              <button type="button" id="btnClearPatient" class="text-[11px] text-slate-500 hover:text-rose-600 transition flex items-center space-x-1 font-medium" title="Effacer les champs de l'usager">
-                <i class="fa-solid fa-eraser text-[10px]"></i>
-                <span>Effacer</span>
-              </button>
+              <div class="flex items-center space-x-2">
+                <button type="button" id="btnOpenRamqScanner" class="text-xs bg-sky-600 hover:bg-sky-700 active:scale-95 text-white px-2.5 py-1 rounded-lg font-semibold flex items-center space-x-1.5 transition shadow-xs cursor-pointer">
+                  <i class="fa-solid fa-camera text-[11px]"></i>
+                  <span>Scanner carte RAMQ</span>
+                </button>
+                <button type="button" id="btnClearPatient" class="text-[11px] text-slate-500 hover:text-rose-600 transition flex items-center space-x-1 font-medium" title="Effacer les champs de l'usager">
+                  <i class="fa-solid fa-eraser text-[10px]"></i>
+                  <span>Effacer</span>
+                </button>
+              </div>
             </div>
             <div class="p-3.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs bg-white" autocomplete="off">
               <div class="sm:col-span-2">
@@ -371,7 +378,7 @@
               </div>
               <div>
                 <label class="block font-semibold text-slate-700 mb-0.5">Date de naissance</label>
-                <input type="date" id="reqDob" name="patient_dob_text" autocomplete="off" data-lpignore="true" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+                <input type="text" id="reqDob" name="patient_dob_text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="AAAA-MM-JJ" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
               </div>
               <div>
                 <label class="block font-semibold text-slate-700 mb-0.5">Sexe</label>
@@ -427,13 +434,29 @@
                 <label class="block font-semibold text-slate-700 mb-0.5">Numéro de pratique (Permis CMQ)</label>
                 <input type="text" id="reqDoctorLicense" autocomplete="off" placeholder="Ex: 12345" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none text-xs font-mono" />
               </div>
-              <div class="sm:col-span-2">
-                <label class="block font-semibold text-slate-700 mb-0.5">Nom de la clinique</label>
-                <input type="text" id="reqClinicName" placeholder="Ex: GMF Clinique Saint-Vallier" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none text-xs" />
+              <div class="sm:col-span-2 relative">
+                <div class="flex items-center justify-between mb-0.5">
+                  <label class="block font-semibold text-slate-700">Nom de la clinique</label>
+                  <button type="button" id="btnOpenSilpModalReq" class="text-[10px] text-indigo-700 hover:text-indigo-900 font-semibold bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded border border-indigo-200 flex items-center space-x-1 cursor-pointer transition">
+                    <i class="fa-solid fa-hospital text-[9px]"></i>
+                    <span>Choisir (SIL-P)</span>
+                  </button>
+                </div>
+                <input type="text" id="reqClinicName" autocomplete="off" placeholder="Ex: GMF Clinique Saint-Vallier" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none text-xs" />
+                <div id="clinicSearchDropdown" class="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-2xl border border-indigo-100 max-h-60 overflow-y-auto custom-scrollbar z-50 hidden divide-y divide-slate-100"></div>
               </div>
-              <div class="sm:col-span-2">
-                <label class="block font-semibold text-slate-700 mb-0.5">ID clinique SIL-P</label>
-                <input type="text" id="reqClinicId" placeholder="Ex: SIL-999" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none text-xs font-mono" />
+              <div class="sm:col-span-2 relative">
+                <div class="flex items-center justify-between mb-0.5">
+                  <label class="block font-semibold text-slate-700">ID clinique SIL-P</label>
+                  <span class="text-[10px] text-indigo-600 font-medium cursor-pointer hover:underline" id="btnOpenSilpModalReqHint">19 600+ cliniques</span>
+                </div>
+                <div class="relative flex items-center">
+                  <input type="text" id="reqClinicId" autocomplete="off" placeholder="Ex: 031000176 ou SIL-1234" class="w-full pl-2.5 pr-8 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none text-xs font-mono" />
+                  <button type="button" id="btnOpenSilpModalReqId" title="Ouvrir le sélecteur SIL-P" class="absolute right-1.5 text-indigo-600 hover:text-indigo-800 p-1 rounded hover:bg-indigo-50 transition cursor-pointer">
+                    <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                  </button>
+                </div>
+                <div id="clinicIdSearchDropdown" class="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-2xl border border-indigo-100 max-h-60 overflow-y-auto custom-scrollbar z-50 hidden divide-y divide-slate-100"></div>
               </div>
               <div class="sm:col-span-2">
                 <label class="block font-semibold text-slate-700 mb-0.5">MD en copie (nom complet)</label>
@@ -698,13 +721,19 @@
           <label class="block font-semibold text-slate-700 mb-0.5">Numéro de pratique (Permis CMQ) *</label>
           <input type="text" id="editDocLicense" placeholder="Ex: 12345" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 outline-none text-xs font-mono" />
         </div>
-        <div>
-          <label class="block font-semibold text-slate-700 mb-0.5">Nom de la clinique</label>
+        <div class="relative">
+          <div class="flex items-center justify-between mb-0.5">
+            <label class="block font-semibold text-slate-700">Nom de la clinique</label>
+            <button type="button" id="btnOpenSilpModalEdit" class="text-[10px] text-indigo-700 hover:text-indigo-900 font-semibold bg-indigo-50 hover:bg-indigo-100 px-1.5 py-0.5 rounded border border-indigo-200 flex items-center space-x-1 cursor-pointer transition">
+              <i class="fa-solid fa-hospital text-[9px]"></i>
+              <span>Choisir SIL-P</span>
+            </button>
+          </div>
           <input type="text" id="editDocClinic" placeholder="Ex: GMF Clinique Saint-Vallier" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 outline-none text-xs" />
         </div>
         <div>
           <label class="block font-semibold text-slate-700 mb-0.5">ID clinique SIL-P</label>
-          <input type="text" id="editDocClinicId" placeholder="Ex: SIL-999" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 outline-none text-xs font-mono" />
+          <input type="text" id="editDocClinicId" placeholder="Ex: 031000176 ou SIL-999" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-200 outline-none text-xs font-mono" />
         </div>
         <div>
           <label class="block font-semibold text-slate-700 mb-0.5">MD en copie (nom complet)</label>
@@ -765,6 +794,243 @@
         <button id="btnCancelLocationEdit" class="px-3 py-1.5 text-xs text-slate-600 font-semibold hover:bg-slate-100 rounded-lg">Annuler</button>
         <button id="btnSaveLocationEdit" class="px-4 py-1.5 text-xs bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg shadow">Enregistrer</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Modal: RAMQ Card Camera Barcode Scanner -->
+  <div id="ramqScannerModal" style="z-index: 9999;" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[9999] hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-slate-900 rounded-2xl shadow-2xl border border-slate-700/80 max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh]">
+      <!-- Header -->
+      <div class="px-4 py-3 bg-slate-800/90 border-b border-slate-700/80 flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-7 h-7 rounded-lg bg-sky-500/20 border border-sky-400/30 flex items-center justify-center text-sky-400">
+            <i class="fa-solid fa-camera text-xs"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">Scanner la carte RAMQ</h3>
+            <p class="text-[11px] text-slate-400">Code-barres matriciel 2D ou 1D au dos de la carte</p>
+          </div>
+        </div>
+        <button id="btnCloseRamqScanner" class="text-slate-400 hover:text-white text-base p-1.5 transition rounded-lg hover:bg-slate-700 cursor-pointer">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+
+      <!-- Viewfinder Body -->
+      <div class="p-4 space-y-3 flex-1 flex flex-col items-center justify-center bg-slate-950">
+        <div class="relative w-full aspect-4/3 max-h-[320px] bg-black rounded-xl overflow-hidden flex items-center justify-center border border-slate-800 shadow-inner">
+          <video id="ramqScannerVideo" playsinline autoplay muted style="transform: scaleX(-1);" class="w-full h-full object-cover transition-transform duration-200"></video>
+          
+          <!-- Scanning Reticle / Card Frame -->
+          <div id="ramqReticle" class="absolute inset-x-4 inset-y-10 sm:inset-x-8 sm:inset-y-12 border-2 border-dashed border-sky-400/80 rounded-xl pointer-events-none flex flex-col items-center justify-between p-2 transition-all duration-300 shadow-[0_0_25px_rgba(56,189,248,0.35)] bg-sky-950/15">
+            <div class="w-full flex justify-between text-[10px] text-sky-300 font-mono select-none">
+              <span>┌ CADREZ LE CODE-BARRES ICI</span>
+              <span>┐</span>
+            </div>
+            <!-- Animated Laser Bar -->
+            <div id="ramqLaserBar" class="w-full h-0.5 bg-gradient-to-r from-transparent via-sky-400 to-transparent shadow-[0_0_12px_#38bdf8] animate-pulse"></div>
+            <div class="w-full flex justify-between text-[10px] text-sky-300 font-mono select-none">
+              <span>└</span>
+              <span>┘</span>
+            </div>
+          </div>
+
+          <!-- Loading / Status Overlay -->
+          <div id="ramqScannerLoading" class="absolute inset-0 bg-slate-900/95 flex flex-col items-center justify-center space-y-2.5 p-4 text-center">
+            <i class="fa-solid fa-spinner fa-spin text-sky-400 text-2xl"></i>
+            <span id="ramqLoadingText" class="text-xs text-slate-200 font-medium">Activation de la caméra...</span>
+          </div>
+        </div>
+
+        <!-- Scanner Mode Selector Tabs -->
+        <div class="w-full flex items-center justify-center p-1 bg-slate-800/90 rounded-xl border border-slate-700/80 gap-1 text-xs">
+          <button type="button" id="btnModeAll" class="flex-1 py-1.5 px-3 rounded-lg font-bold transition flex items-center justify-center space-x-1.5 bg-sky-600 text-white shadow-xs cursor-pointer">
+            <i class="fa-solid fa-barcode text-xs"></i>
+            <span>Tous les codes (1D/2D)</span>
+          </button>
+          <button type="button" id="btnMode2D" class="flex-1 py-1.5 px-3 rounded-lg font-semibold transition flex items-center justify-center space-x-1.5 text-slate-400 hover:text-white hover:bg-slate-700/50 cursor-pointer">
+            <i class="fa-solid fa-qrcode text-xs"></i>
+            <span>Code 2D PDF417 (Nom)</span>
+          </button>
+        </div>
+
+        <!-- Camera Status & Controls -->
+        <div class="w-full flex items-center justify-between gap-1.5 text-xs">
+          <div class="flex items-center space-x-1.5 flex-1 min-w-0">
+            <i class="fa-solid fa-video text-slate-400 text-xs"></i>
+            <select id="ramqCameraSelect" class="bg-slate-800 text-slate-200 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-sky-500 w-full truncate cursor-pointer"></select>
+          </div>
+          <!-- Digital Zoom Selector -->
+          <div class="flex items-center space-x-1 bg-slate-800 p-0.5 rounded-lg border border-slate-700">
+            <button type="button" id="btnZoom1x" class="px-2 py-1 text-[11px] font-bold rounded text-white bg-sky-600 cursor-pointer">1x</button>
+            <button type="button" id="btnZoom2x" class="px-2 py-1 text-[11px] font-bold rounded text-slate-400 hover:text-white cursor-pointer">2x</button>
+            <button type="button" id="btnZoom3x" class="px-2 py-1 text-[11px] font-bold rounded text-slate-400 hover:text-white cursor-pointer">3x</button>
+          </div>
+          <button id="btnToggleMirror" title="Inverser l'effet miroir" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-sky-400 rounded-lg border border-slate-700 text-xs transition flex items-center space-x-1 cursor-pointer">
+            <i class="fa-solid fa-arrows-left-right"></i>
+            <span class="hidden sm:inline">Miroir</span>
+          </button>
+          <button id="btnToggleTorch" class="hidden px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 text-xs transition items-center space-x-1 cursor-pointer">
+            <i class="fa-solid fa-lightbulb"></i>
+            <span>Flash</span>
+          </button>
+        </div>
+
+        <!-- Guidance Banner for Webcams -->
+        <div class="w-full bg-sky-950/70 border border-sky-500/40 rounded-xl p-2.5 text-[11px] text-sky-200 flex items-start space-x-2 shadow-inner">
+          <i class="fa-solid fa-circle-info text-sky-400 mt-0.5 shrink-0 text-xs"></i>
+          <div>
+            <strong>Distance optimale :</strong> Tenez la carte à <strong>30–40 cm</strong> (longueur de bras). Les webcams d'ordinateurs portables ont un focus fixe et deviennent floues si la carte est trop près. Utilisez le zoom <strong>2x / 3x</strong> si nécessaire.
+          </div>
+        </div>
+
+        <!-- Status Message Banner -->
+        <div id="ramqScannerStatus" class="w-full text-center text-xs text-slate-300 bg-slate-800/80 py-2 px-3 rounded-lg border border-slate-700/60 transition-colors duration-300">
+          Pointez le code-barres au dos de la carte vers la caméra
+        </div>
+
+        <!-- Manual text barcode paste fallback -->
+        <details class="w-full text-xs text-slate-400">
+          <summary class="cursor-pointer hover:text-slate-200 select-none py-1 flex items-center space-x-1.5">
+            <i class="fa-solid fa-keyboard text-[10px]"></i>
+            <span>Saisie / Coller manuellement un code brut</span>
+          </summary>
+          <div class="mt-2 space-y-2">
+            <textarea id="ramqManualPayload" rows="2" placeholder="Coller le texte du code-barres ou le numéro RAMQ ici..." class="w-full p-2 bg-slate-800 text-slate-100 border border-slate-700 rounded-lg text-xs font-mono outline-none focus:border-sky-500"></textarea>
+            <button id="btnProcessManualPayload" class="w-full py-1.5 bg-sky-600 hover:bg-sky-500 text-white font-semibold rounded-lg text-xs transition cursor-pointer">Appliquer le code</button>
+          </div>
+        </details>
+      </div>
+
+      <!-- Footer -->
+      <div class="px-4 py-2.5 bg-slate-800/90 border-t border-slate-700/80 flex justify-end">
+        <button id="btnCancelRamqScanner" class="px-4 py-1.5 text-xs text-slate-300 hover:text-white font-semibold hover:bg-slate-700 rounded-lg transition cursor-pointer">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================================== -->
+  <!-- MODAL: Sélecteur d'ID Clinique SIL-P (Dataset Microsoft Fabric / Power BI) -->
+  <!-- ============================================================================== -->
+  <div id="silpClinicModal" style="z-index: 9998;" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[9998] hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-3.5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300 shadow-inner">
+            <i class="fa-solid fa-hospital-user text-base"></i>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h3 class="text-base font-bold text-white">Répertoire des Cliniques &amp; Établissements SIL-P</h3>
+              <span class="bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 text-[10px] px-2 py-0.5 rounded-full font-bold">19 626 établissements</span>
+            </div>
+            <p class="text-xs text-indigo-200/80">Base officielle MSSS / OPTILAB • Recherche d'identifiants SIL-P pour la requête d'analyses</p>
+          </div>
+        </div>
+        <button id="btnCloseSilpModal" class="text-slate-400 hover:text-white transition p-1.5 rounded-lg hover:bg-white/10 cursor-pointer">
+          <i class="fa-solid fa-times text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Filters Bar -->
+      <div class="p-4 bg-slate-50 border-b border-slate-200/80 space-y-3">
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+          <!-- Search Input -->
+          <div class="sm:col-span-6 relative">
+            <div class="relative flex items-center">
+              <input
+                type="text"
+                id="silpSearchInput"
+                placeholder="Rechercher par nom de clinique, ID SIL-P, ville, code postal ou adresse..."
+                class="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none text-xs font-medium bg-white transition shadow-xs"
+                autocomplete="off"
+              />
+              <i class="fa-solid fa-search absolute left-3 text-slate-400 text-xs pointer-events-none"></i>
+              <button id="silpClearSearchBtn" class="absolute right-2.5 text-slate-400 hover:text-slate-600 hidden cursor-pointer">
+                <i class="fa-solid fa-times-circle text-xs"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Site Filter -->
+          <div class="sm:col-span-3">
+            <select id="silpSiteFilter" class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none text-xs bg-white text-slate-700 font-medium cursor-pointer">
+              <option value="all">Tous les sites de rattachement</option>
+            </select>
+          </div>
+
+          <!-- Type Filter -->
+          <div class="sm:col-span-3">
+            <select id="silpTypeFilter" class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none text-xs bg-white text-slate-700 font-medium cursor-pointer">
+              <option value="all">Tous les types d'inscription</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Quick filter chips / Status info -->
+        <div class="flex flex-wrap items-center justify-between text-xs gap-2 pt-1">
+          <div class="flex items-center space-x-2">
+            <span class="text-slate-500 font-medium" id="silpResultsSummary">Chargement du répertoire...</span>
+            <span id="silpLoadingSpinner" class="hidden text-indigo-600 text-xs"><i class="fa-solid fa-spinner fa-spin"></i></span>
+          </div>
+          <div class="flex items-center space-x-1.5 text-[11px] text-slate-500">
+            <i class="fa-solid fa-circle-info text-indigo-500"></i>
+            <span>Double-cliquez sur une ligne ou cliquez sur « Sélectionner » pour insérer l'ID et le nom.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table Body -->
+      <div class="flex-1 overflow-y-auto custom-scrollbar p-0 bg-white">
+        <table class="w-full text-left text-xs divide-y divide-slate-200">
+          <thead class="bg-slate-100 text-slate-600 font-semibold uppercase text-[10px] tracking-wider sticky top-0 z-10 shadow-2xs">
+            <tr>
+              <th class="px-4 py-2.5 w-28">ID SIL-P</th>
+              <th class="px-4 py-2.5">Établissement / Clinique</th>
+              <th class="px-4 py-2.5 w-44">Ville &amp; Code Postal</th>
+              <th class="px-4 py-2.5 w-48">Site / Établissement</th>
+              <th class="px-4 py-2.5 w-28 text-center">Type</th>
+              <th class="px-4 py-2.5 w-24 text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody id="silpTableBody" class="divide-y divide-slate-100">
+            <!-- Dynamic Rows -->
+          </tbody>
+        </table>
+
+        <!-- Empty State -->
+        <div id="silpEmptyMsg" class="hidden p-12 text-center text-slate-400 space-y-2">
+          <i class="fa-solid fa-hospital-slash text-3xl text-slate-300"></i>
+          <p class="text-xs font-medium text-slate-600">Aucun établissement ou clinique correspondant.</p>
+          <p class="text-[11px] text-slate-400">Essayez de modifier votre terme de recherche ou de réinitialiser les filtres.</p>
+        </div>
+      </div>
+
+      <!-- Pagination & Footer -->
+      <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <!-- Pagination Controls -->
+        <div class="flex items-center space-x-2">
+          <button id="silpPrevPageBtn" class="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-200 text-slate-700 font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center space-x-1 cursor-pointer">
+            <i class="fa-solid fa-chevron-left text-[10px]"></i>
+            <span>Précédent</span>
+          </button>
+          <span id="silpPageIndicator" class="text-slate-600 font-medium px-2">Page 1 / 1</span>
+          <button id="silpNextPageBtn" class="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-200 text-slate-700 font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center space-x-1 cursor-pointer">
+            <span>Suivant</span>
+            <i class="fa-solid fa-chevron-right text-[10px]"></i>
+          </button>
+        </div>
+
+        <!-- Close button -->
+        <div class="flex items-center space-x-2">
+          <button id="btnCloseSilpFooterBtn" class="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-lg transition cursor-pointer">
+            Fermer
+          </button>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -891,6 +1157,34 @@
       downloadPdfModalBtn.addEventListener("click", () => generateAndDownloadPdf(false));
 
       document.getElementById("btnClearPatient").addEventListener("click", clearPatientFields);
+
+      // Auto-extract Date of Birth and Sex from RAMQ when entered
+      const reqRamqInput = document.getElementById("reqRamq");
+      const reqDobInput = document.getElementById("reqDob");
+      const reqSexSelect = document.getElementById("reqSex");
+
+      reqRamqInput.addEventListener("input", (e) => {
+        const raw = e.target.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+        if (raw.length >= 10 && /^[A-Z]{4}\d{6}/.test(raw)) {
+          const yy = parseInt(raw.slice(4, 6), 10);
+          const mmRaw = parseInt(raw.slice(6, 8), 10);
+          const dd = parseInt(raw.slice(8, 10), 10);
+          const isFemale = mmRaw > 50;
+          const mm = isFemale ? mmRaw - 50 : mmRaw;
+          const currYy = parseInt(new Date().getFullYear().toString().slice(-2), 10);
+          const fullYear = yy <= currYy ? 2000 + yy : 1900 + yy;
+
+          if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) {
+            const isoDob = `${fullYear}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+            if (!reqDobInput.value) {
+              reqDobInput.value = isoDob;
+            }
+            if (!reqSexSelect.value) {
+              reqSexSelect.value = isFemale ? "F" : "M";
+            }
+          }
+        }
+      });
     }
 
     function escapeHtml(str) {
@@ -1476,6 +1770,7 @@
           if (form.form_id === "micro_gen") formBadgeColor = "bg-emerald-100 text-emerald-900 border-emerald-200";
           else if (form.form_id === "micro_mol") formBadgeColor = "bg-purple-100 text-purple-900 border-purple-200";
           else if (form.form_id === "spec_multi") formBadgeColor = "bg-sky-100 text-sky-900 border-sky-200";
+          else if (form.form_id === "banque_sang") formBadgeColor = "bg-rose-100 text-rose-900 border-rose-200";
 
           groupContainer.innerHTML = `
             <div class="text-[11px] font-bold text-slate-700 mb-1.5 flex items-center justify-between">
@@ -2331,6 +2626,901 @@
     loadServerPrescribers();
     loadServerNurses();
     loadServerLocations();
+
+    // ==============================================================================
+    // SIL-P CLINICS SELECTOR (Dataset Microsoft Fabric / Power BI - 19 626 établissements)
+    // ==============================================================================
+    const silpClinicModal = document.getElementById("silpClinicModal");
+    const btnCloseSilpModal = document.getElementById("btnCloseSilpModal");
+    const btnCloseSilpFooterBtn = document.getElementById("btnCloseSilpFooterBtn");
+    const silpSearchInput = document.getElementById("silpSearchInput");
+    const silpClearSearchBtn = document.getElementById("silpClearSearchBtn");
+    const silpSiteFilter = document.getElementById("silpSiteFilter");
+    const silpTypeFilter = document.getElementById("silpTypeFilter");
+    const silpTableBody = document.getElementById("silpTableBody");
+    const silpEmptyMsg = document.getElementById("silpEmptyMsg");
+    const silpResultsSummary = document.getElementById("silpResultsSummary");
+    const silpLoadingSpinner = document.getElementById("silpLoadingSpinner");
+    const silpPrevPageBtn = document.getElementById("silpPrevPageBtn");
+    const silpNextPageBtn = document.getElementById("silpNextPageBtn");
+    const silpPageIndicator = document.getElementById("silpPageIndicator");
+
+    const btnOpenSilpModalReq = document.getElementById("btnOpenSilpModalReq");
+    const btnOpenSilpModalReqHint = document.getElementById("btnOpenSilpModalReqHint");
+    const btnOpenSilpModalReqId = document.getElementById("btnOpenSilpModalReqId");
+    const btnOpenSilpModalEdit = document.getElementById("btnOpenSilpModalEdit");
+    const clinicSearchDropdown = document.getElementById("clinicSearchDropdown");
+    const clinicIdSearchDropdown = document.getElementById("clinicIdSearchDropdown");
+
+    let silpTargetContext = "requisition"; // "requisition" or "prescriber_edit"
+    let silpCurrentPage = 1;
+    const silpPageLimit = 30;
+    let silpTotalCount = 0;
+    let silpSearchTimer = null;
+    let silpQuickSearchTimer = null;
+    let silpFiltersLoaded = false;
+    let activeClinicsData = [];
+
+    async function loadSilpFilters() {
+      if (silpFiltersLoaded) return;
+      try {
+        const [sitesRes, typesRes] = await Promise.all([
+          fetch("/api/clinics/sites"),
+          fetch("/api/clinics/types")
+        ]);
+        if (sitesRes.ok) {
+          const sites = await sitesRes.json();
+          silpSiteFilter.innerHTML = '<option value="all">Tous les sites de rattachement</option>';
+          sites.forEach(s => {
+            const opt = document.createElement("option");
+            opt.value = s.site;
+            opt.textContent = `${s.site} (${s.count.toLocaleString('fr-CA')})`;
+            silpSiteFilter.appendChild(opt);
+          });
+        }
+        if (typesRes.ok) {
+          const types = await typesRes.json();
+          silpTypeFilter.innerHTML = '<option value="all">Tous les types d\'inscription</option>';
+          types.forEach(t => {
+            const opt = document.createElement("option");
+            opt.value = t.type;
+            opt.textContent = `${t.label} (${t.count.toLocaleString('fr-CA')})`;
+            silpTypeFilter.appendChild(opt);
+          });
+        }
+        silpFiltersLoaded = true;
+      } catch (e) {
+        console.warn("Erreur chargement filtres SIL-P:", e);
+      }
+    }
+
+    function openSilpModal(targetContext = "requisition") {
+      silpTargetContext = targetContext;
+      silpClinicModal.classList.remove("hidden");
+      loadSilpFilters();
+
+      // Seed search with current field value if available
+      let seedQuery = "";
+      if (targetContext === "requisition") {
+        seedQuery = (reqClinicName ? reqClinicName.value.trim() : "") || (reqClinicId ? reqClinicId.value.trim() : "");
+      } else if (targetContext === "prescriber_edit") {
+        seedQuery = (editDocClinic ? editDocClinic.value.trim() : "") || (editDocClinicId ? editDocClinicId.value.trim() : "");
+      }
+
+      silpSearchInput.value = seedQuery;
+      silpClearSearchBtn.classList.toggle("hidden", !seedQuery);
+      silpCurrentPage = 1;
+      fetchSilpClinics(1);
+
+      setTimeout(() => {
+        silpSearchInput.focus();
+        if (seedQuery) silpSearchInput.select();
+      }, 50);
+    }
+
+    function closeSilpModal() {
+      silpClinicModal.classList.add("hidden");
+    }
+
+    async function fetchSilpClinics(page = 1) {
+      silpCurrentPage = page;
+      silpLoadingSpinner.classList.remove("hidden");
+      silpResultsSummary.textContent = "Recherche en cours...";
+
+      const q = silpSearchInput.value.trim();
+      const site = silpSiteFilter.value;
+      const type = silpTypeFilter.value;
+      const offset = (page - 1) * silpPageLimit;
+
+      const params = new URLSearchParams({
+        q: q,
+        limit: silpPageLimit,
+        offset: offset
+      });
+      if (site && site !== "all") params.append("site", site);
+      if (type && type !== "all") params.append("type", type);
+
+      try {
+        const res = await fetch(`/api/clinics/search?${params.toString()}`);
+        if (!res.ok) throw new Error("Erreur de recherche");
+        const data = await res.json();
+        activeClinicsData = data.clinics || [];
+        silpTotalCount = data.total || 0;
+        renderSilpTable(data);
+      } catch (e) {
+        console.warn("Erreur requête SIL-P:", e);
+        silpTableBody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-rose-500 text-xs">Erreur lors de la récupération des cliniques.</td></tr>`;
+      } finally {
+        silpLoadingSpinner.classList.add("hidden");
+      }
+    }
+
+    function renderSilpTable(data) {
+      const clinics = data.clinics || [];
+      const total = data.total || 0;
+      const totalPages = Math.max(1, Math.ceil(total / silpPageLimit));
+
+      silpResultsSummary.textContent = total > 0 
+        ? `${total.toLocaleString('fr-CA')} établissement${total > 1 ? 's' : ''} trouvé${total > 1 ? 's' : ''}`
+        : "Aucun résultat";
+
+      silpPageIndicator.textContent = `Page ${silpCurrentPage} / ${totalPages}`;
+      silpPrevPageBtn.disabled = (silpCurrentPage <= 1);
+      silpNextPageBtn.disabled = (silpCurrentPage >= totalPages);
+
+      if (clinics.length === 0) {
+        silpTableBody.innerHTML = "";
+        silpEmptyMsg.classList.remove("hidden");
+        return;
+      }
+
+      silpEmptyMsg.classList.add("hidden");
+      silpTableBody.innerHTML = "";
+
+      clinics.forEach(c => {
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-indigo-50/70 transition cursor-pointer select-none group";
+
+        const typeBadge = c.type 
+          ? `<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200" title="${escapeHtml(c.type_label || c.type)}">${escapeHtml(c.type)}</span>`
+          : `<span class="text-slate-400 text-[10px]">-</span>`;
+
+        const addressLine = c.address 
+          ? `<div class="text-[11px] text-slate-400 truncate flex items-center space-x-1"><i class="fa-solid fa-location-dot text-[9px] text-slate-400"></i><span>${escapeHtml(c.address)}</span></div>`
+          : "";
+
+        const siteLine = c.site 
+          ? `<span class="text-[11px] text-slate-600 truncate block" title="${escapeHtml(c.site)}">${escapeHtml(c.site)}</span>`
+          : `<span class="text-slate-400 text-[10px] italic">Externe</span>`;
+
+        tr.innerHTML = `
+          <td class="px-4 py-2.5 font-mono font-bold text-indigo-700 whitespace-nowrap">
+            <span class="bg-indigo-50 text-indigo-800 border border-indigo-200 px-2 py-0.5 rounded-md text-xs group-hover:bg-indigo-100">
+              ${escapeHtml(c.id)}
+            </span>
+          </td>
+          <td class="px-4 py-2.5">
+            <div class="font-bold text-slate-900 text-xs">${escapeHtml(c.name || 'Clinique sans nom')}</div>
+            ${addressLine}
+          </td>
+          <td class="px-4 py-2.5 text-xs text-slate-600 whitespace-nowrap">
+            <div class="font-medium">${escapeHtml(c.city || '-')}</div>
+            <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(c.postal_code || '')}</div>
+          </td>
+          <td class="px-4 py-2.5 text-xs">
+            ${siteLine}
+          </td>
+          <td class="px-4 py-2.5 text-center">
+            ${typeBadge}
+          </td>
+          <td class="px-4 py-2.5 text-right whitespace-nowrap">
+            <button type="button" class="btnSelectSilpRow px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition shadow-xs flex items-center space-x-1 ml-auto cursor-pointer">
+              <i class="fa-solid fa-check text-[10px]"></i>
+              <span>Choisir</span>
+            </button>
+          </td>
+        `;
+
+        // Click row / button to select
+        tr.addEventListener("click", () => selectSilpClinic(c));
+        tr.addEventListener("dblclick", () => selectSilpClinic(c));
+
+        silpTableBody.appendChild(tr);
+      });
+    }
+
+    function selectSilpClinic(clinic) {
+      if (!clinic) return;
+      if (silpTargetContext === "requisition") {
+        if (reqClinicId) reqClinicId.value = clinic.id || "";
+        if (reqClinicName) reqClinicName.value = clinic.name || "";
+      } else if (silpTargetContext === "prescriber_edit") {
+        if (editDocClinicId) editDocClinicId.value = clinic.id || "";
+        if (editDocClinic) editDocClinic.value = clinic.name || "";
+      }
+      closeSilpModal();
+    }
+
+    // Quick Type-Ahead autocomplete directly in inputs
+    async function searchQuickClinics(query, dropdownEl, fillTarget) {
+      const q = (query || "").trim();
+      if (q.length < 2) {
+        dropdownEl.classList.add("hidden");
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/clinics/search?q=${encodeURIComponent(q)}&limit=8`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const clinics = data.clinics || [];
+
+        if (clinics.length === 0) {
+          dropdownEl.innerHTML = `
+            <div class="p-3 text-xs text-slate-400 text-center flex items-center justify-center space-x-2">
+              <i class="fa-solid fa-hospital-slash text-slate-300"></i>
+              <span>Aucune clinique trouvée.</span>
+              <button type="button" class="text-indigo-600 hover:underline font-semibold text-[11px] cursor-pointer" id="btnOpenSilpModalFromEmpty">Ouvrir le répertoire</button>
+            </div>
+          `;
+          const btnEmpty = dropdownEl.querySelector("#btnOpenSilpModalFromEmpty");
+          if (btnEmpty) btnEmpty.addEventListener("click", () => {
+            dropdownEl.classList.add("hidden");
+            openSilpModal("requisition");
+          });
+          dropdownEl.classList.remove("hidden");
+          return;
+        }
+
+        dropdownEl.innerHTML = "";
+        clinics.forEach(c => {
+          const item = document.createElement("div");
+          item.className = "px-3.5 py-2 hover:bg-indigo-50/90 cursor-pointer transition flex items-center justify-between text-xs";
+          const addrParts = [];
+          if (c.address) addrParts.push(escapeHtml(c.address));
+          if (c.city) addrParts.push(escapeHtml(c.city));
+          if (c.postal_code) addrParts.push(escapeHtml(c.postal_code));
+
+          item.innerHTML = `
+            <div class="min-w-0 pr-2">
+              <div class="font-bold text-slate-800 flex items-center space-x-2">
+                <span class="bg-indigo-100 text-indigo-800 font-mono text-[10px] font-bold px-1.5 py-0.2 rounded border border-indigo-200">${escapeHtml(c.id)}</span>
+                <span class="truncate">${escapeHtml(c.name)}</span>
+              </div>
+              <div class="text-[10px] text-slate-500 truncate mt-0.5">
+                ${addrParts.join(' • ')}
+              </div>
+            </div>
+            <i class="fa-solid fa-arrow-turn-down text-indigo-400 text-[10px] flex-shrink-0"></i>
+          `;
+
+          item.addEventListener("click", () => {
+            selectSilpClinic(c);
+            dropdownEl.classList.add("hidden");
+          });
+
+          dropdownEl.appendChild(item);
+        });
+
+        // Add footer link to full modal
+        const footerLink = document.createElement("div");
+        footerLink.className = "p-2 bg-slate-50 border-t border-slate-100 text-center text-[11px] text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer flex items-center justify-center space-x-1";
+        footerLink.innerHTML = `<i class="fa-solid fa-magnifying-glass text-[10px]"></i><span>Voir tous les résultats dans le répertoire (${data.total.toLocaleString('fr-CA')})</span>`;
+        footerLink.addEventListener("click", () => {
+          dropdownEl.classList.add("hidden");
+          openSilpModal("requisition");
+        });
+        dropdownEl.appendChild(footerLink);
+
+        dropdownEl.classList.remove("hidden");
+      } catch (e) {
+        console.warn("Erreur recherche rapide clinique:", e);
+      }
+    }
+
+    // Event Listeners for SIL-P
+    if (btnOpenSilpModalReq) btnOpenSilpModalReq.addEventListener("click", () => openSilpModal("requisition"));
+    if (btnOpenSilpModalReqHint) btnOpenSilpModalReqHint.addEventListener("click", () => openSilpModal("requisition"));
+    if (btnOpenSilpModalReqId) btnOpenSilpModalReqId.addEventListener("click", () => openSilpModal("requisition"));
+    if (btnOpenSilpModalEdit) btnOpenSilpModalEdit.addEventListener("click", () => openSilpModal("prescriber_edit"));
+
+    if (btnCloseSilpModal) btnCloseSilpModal.addEventListener("click", closeSilpModal);
+    if (btnCloseSilpFooterBtn) btnCloseSilpFooterBtn.addEventListener("click", closeSilpModal);
+
+    if (silpSearchInput) {
+      silpSearchInput.addEventListener("input", (e) => {
+        const val = e.target.value;
+        silpClearSearchBtn.classList.toggle("hidden", !val);
+        clearTimeout(silpSearchTimer);
+        silpSearchTimer = setTimeout(() => fetchSilpClinics(1), 150);
+      });
+      silpSearchInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          if (activeClinicsData.length > 0) {
+            selectSilpClinic(activeClinicsData[0]);
+          }
+        } else if (e.key === "Escape") {
+          closeSilpModal();
+        }
+      });
+    }
+
+    if (silpClearSearchBtn) {
+      silpClearSearchBtn.addEventListener("click", () => {
+        silpSearchInput.value = "";
+        silpClearSearchBtn.classList.add("hidden");
+        fetchSilpClinics(1);
+        silpSearchInput.focus();
+      });
+    }
+
+    if (silpSiteFilter) silpSiteFilter.addEventListener("change", () => fetchSilpClinics(1));
+    if (silpTypeFilter) silpTypeFilter.addEventListener("change", () => fetchSilpClinics(1));
+
+    if (silpPrevPageBtn) silpPrevPageBtn.addEventListener("click", () => {
+      if (silpCurrentPage > 1) fetchSilpClinics(silpCurrentPage - 1);
+    });
+    if (silpNextPageBtn) silpNextPageBtn.addEventListener("click", () => {
+      fetchSilpClinics(silpCurrentPage + 1);
+    });
+
+    // Quick Type-Ahead inputs
+    if (reqClinicName) {
+      reqClinicName.addEventListener("input", (e) => {
+        clearTimeout(silpQuickSearchTimer);
+        silpQuickSearchTimer = setTimeout(() => {
+          searchQuickClinics(e.target.value, clinicSearchDropdown, "name");
+        }, 150);
+      });
+    }
+
+    if (reqClinicId) {
+      reqClinicId.addEventListener("input", (e) => {
+        clearTimeout(silpQuickSearchTimer);
+        silpQuickSearchTimer = setTimeout(() => {
+          searchQuickClinics(e.target.value, clinicIdSearchDropdown, "id");
+        }, 150);
+      });
+    }
+
+    document.addEventListener("click", (e) => {
+      if (clinicSearchDropdown && reqClinicName && !reqClinicName.contains(e.target) && !clinicSearchDropdown.contains(e.target)) {
+        clinicSearchDropdown.classList.add("hidden");
+      }
+      if (clinicIdSearchDropdown && reqClinicId && !reqClinicId.contains(e.target) && !clinicIdSearchDropdown.contains(e.target)) {
+        clinicIdSearchDropdown.classList.add("hidden");
+      }
+    });
+
+    // ==============================================================================
+    // RAMQ Card Camera Barcode Scanner (1D Code 128 / 2D PDF417)
+    // ==============================================================================
+    const btnOpenRamqScanner = document.getElementById("btnOpenRamqScanner");
+    const ramqScannerModal = document.getElementById("ramqScannerModal");
+    const btnCloseRamqScanner = document.getElementById("btnCloseRamqScanner");
+    const btnCancelRamqScanner = document.getElementById("btnCancelRamqScanner");
+    const ramqScannerVideo = document.getElementById("ramqScannerVideo");
+    const ramqScannerLoading = document.getElementById("ramqScannerLoading");
+    const ramqLoadingText = document.getElementById("ramqLoadingText");
+    const ramqScannerStatus = document.getElementById("ramqScannerStatus");
+    const ramqCameraSelect = document.getElementById("ramqCameraSelect");
+    const btnToggleMirror = document.getElementById("btnToggleMirror");
+    const btnToggleTorch = document.getElementById("btnToggleTorch");
+    const ramqReticle = document.getElementById("ramqReticle");
+    const ramqManualPayload = document.getElementById("ramqManualPayload");
+    const btnProcessManualPayload = document.getElementById("btnProcessManualPayload");
+    const btnMode2D = document.getElementById("btnMode2D");
+    const btnModeAll = document.getElementById("btnModeAll");
+    const btnZoom1x = document.getElementById("btnZoom1x");
+    const btnZoom2x = document.getElementById("btnZoom2x");
+    const btnZoom3x = document.getElementById("btnZoom3x");
+
+    let scannerMediaStream = null;
+    let scannerScanInterval = null;
+    let zxingCodeReader = null;
+    let isScannerActive = false;
+    let isServerScanning = false;
+    let torchTrack = null;
+    let isTorchActive = false;
+    let isMirrored = true;
+    let currentZoom = 1.0;
+    let availableVideoDevices = [];
+    let scannerMode = "all"; // 'all' (scans 1D and 2D) or '2d'
+
+    const scanCanvas = document.createElement("canvas");
+    const scanCtx = scanCanvas.getContext("2d");
+
+    function updateVideoTransform() {
+      const mirrorPart = isMirrored ? "scaleX(-1)" : "";
+      const zoomPart = currentZoom > 1.0 ? `scale(${currentZoom})` : "";
+      ramqScannerVideo.style.transform = `${mirrorPart} ${zoomPart}`.trim() || "none";
+    }
+
+    function applyZoom(level) {
+      currentZoom = level;
+      const zoomBtns = [
+        { btn: btnZoom1x, level: 1.0 },
+        { btn: btnZoom2x, level: 2.0 },
+        { btn: btnZoom3x, level: 3.0 }
+      ];
+      zoomBtns.forEach(item => {
+        if (item.level === level) {
+          item.btn.className = "px-2 py-1 text-[11px] font-bold rounded text-white bg-sky-600 cursor-pointer";
+        } else {
+          item.btn.className = "px-2 py-1 text-[11px] font-bold rounded text-slate-400 hover:text-white cursor-pointer";
+        }
+      });
+      updateVideoTransform();
+    }
+
+    // Mode Buttons
+    btnMode2D.addEventListener("click", () => {
+      scannerMode = "2d";
+      btnMode2D.className = "flex-1 py-1.5 px-3 rounded-lg font-bold transition flex items-center justify-center space-x-1.5 bg-sky-600 text-white shadow-xs cursor-pointer";
+      btnModeAll.className = "flex-1 py-1.5 px-3 rounded-lg font-semibold transition flex items-center justify-center space-x-1.5 text-slate-400 hover:text-white hover:bg-slate-700/50 cursor-pointer";
+      ramqScannerStatus.innerText = "Mode 2D actif : cadrez le code PDF417 pour importer Nom + RAMQ";
+    });
+
+    btnModeAll.addEventListener("click", () => {
+      scannerMode = "all";
+      btnModeAll.className = "flex-1 py-1.5 px-3 rounded-lg font-bold transition flex items-center justify-center space-x-1.5 bg-sky-600 text-white shadow-xs cursor-pointer";
+      btnMode2D.className = "flex-1 py-1.5 px-3 rounded-lg font-semibold transition flex items-center justify-center space-x-1.5 text-slate-400 hover:text-white hover:bg-slate-700/50 cursor-pointer";
+      ramqScannerStatus.innerText = "Mode Tous codes : 1D ou 2D accepté";
+    });
+
+    function playSuccessBeep() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(880, ctx.currentTime); // Note La5 (880Hz)
+        gain.gain.setValueAtTime(0.18, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.15);
+      } catch (e) {}
+    }
+
+    function parseRamqBarcodeClient(raw) {
+      if (!raw) return null;
+      const s = String(raw).trim();
+
+      // 1. Check for AAMVA tags (e.g. DCS, DAC, DAQ, DBB, DBC)
+      const aamvaLast = s.match(/(?:DCS|DAB|DCSLAST)[:\s]*([A-Za-zÀ-ÿ\-]+)/i);
+      const aamvaFirst = s.match(/(?:DAC|DAD|DCSFIRST)[:\s]*([A-Za-zÀ-ÿ\-]+)/i);
+      const aamvaRamq = s.match(/(?:DAQ|NAM|RAMQ)[:\s]*([A-Za-z]{4}\s?\d{2}\s?\d{2}\s?\d{2}\s?\d{2}?)/i);
+      const aamvaDob = s.match(/(?:DBB|DBA)[:\s]*(\d{8}|\d{4}[-/.]\d{2}[-/.]\d{2})/i);
+      const aamvaSex = s.match(/(?:DBC)[:\s]*([12MF])/i);
+
+      // 2. Extract RAMQ pattern (4 letters + 8 digits or 6 digits)
+      let ramqRaw = "";
+      let ramqClean = "";
+
+      if (aamvaRamq) {
+        const cleanDaq = aamvaRamq[1].replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+        if (cleanDaq.length >= 10) {
+          ramqRaw = cleanDaq.padEnd(12, "0");
+          ramqClean = `${ramqRaw.slice(0,4)} ${ramqRaw.slice(4,8)} ${ramqRaw.slice(8,12)}`;
+        }
+      } else {
+        const allRamqs = Array.from(s.matchAll(/([A-Za-z]{4})\s?(\d{2})\s?(\d{2})\s?(\d{2})\s?(\d{2})?/gi));
+        for (const m of allRamqs) {
+          const letters = m[1].toUpperCase();
+          if (!['ANSI', 'AAMV', 'CARD', 'CARTE', 'QUEB', 'QC'].includes(letters)) {
+            const p1 = m[2];
+            const p2 = m[3];
+            const p3 = m[4];
+            const p4 = m[5] || "00";
+            ramqRaw = `${letters}${p1}${p2}${p3}${p4}`;
+            ramqClean = `${letters} ${p1}${p2} ${p3}${p4}`;
+            break;
+          }
+        }
+        if (!ramqRaw) {
+          const m10 = s.match(/([A-Za-z]{4})\s?(\d{6})/i);
+          if (m10 && !['ANSI', 'AAMV'].includes(m10[1].toUpperCase())) {
+            const letters = m10[1].toUpperCase();
+            const digits = m10[2];
+            ramqRaw = `${letters}${digits}00`;
+            ramqClean = `${letters} ${digits.slice(0,4)} ${digits.slice(4)}00`;
+          }
+        }
+      }
+
+      let dob = "";
+      let sex = "";
+      let lastPrefix = "";
+      let firstPrefix = "";
+      if (ramqRaw && ramqRaw.length >= 10) {
+        lastPrefix = ramqRaw.slice(0, 3);
+        firstPrefix = ramqRaw.slice(3, 4);
+        const yy = parseInt(ramqRaw.slice(4, 6), 10);
+        const mmRaw = parseInt(ramqRaw.slice(6, 8), 10);
+        const dd = parseInt(ramqRaw.slice(8, 10), 10);
+        const isFemale = mmRaw > 50;
+        const mm = isFemale ? mmRaw - 50 : mmRaw;
+        const currYy = parseInt(new Date().getFullYear().toString().slice(-2), 10);
+        const fullYear = yy <= currYy ? 2000 + yy : 1900 + yy;
+        if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) {
+          dob = `${fullYear}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+          sex = isFemale ? "F" : "M";
+        }
+      }
+
+      // Explicit DOB override
+      if (aamvaDob) {
+        const sDob = aamvaDob[1].replace(/[^0-9]/g, "");
+        if (sDob.length === 8) {
+          dob = `${sDob.slice(0,4)}-${sDob.slice(4,6)}-${sDob.slice(6)}`;
+        }
+      }
+
+      // Explicit Sex override
+      if (aamvaSex) {
+        const sSex = aamvaSex[1].toUpperCase();
+        if (['1', 'M'].includes(sSex)) sex = 'M';
+        else if (['2', 'F'].includes(sSex)) sex = 'F';
+      }
+
+      // 3. Extract Name
+      let lastName = "";
+      let firstName = "";
+
+      if (aamvaLast) lastName = aamvaLast[1].charAt(0).toUpperCase() + aamvaLast[1].slice(1).toLowerCase();
+      if (aamvaFirst) firstName = aamvaFirst[1].charAt(0).toUpperCase() + aamvaFirst[1].slice(1).toLowerCase();
+
+      if (!lastName || !firstName) {
+        // Split tokens (delimiters: newline, pipe, caret, comma, semicolon, tab, slash)
+        const tokens = s.split(/[\r\n|^,;\t/]+/).map(t => t.trim()).filter(Boolean);
+        const cleanRamqFull = ramqRaw.replace(/[^A-Z0-9]/g, "");
+        const candidates = [];
+
+        for (const t of tokens) {
+          const cleanT = t.replace(/[^A-Za-zÀ-ÿ\-]/g, "").trim();
+          if (!cleanT || cleanT.length < 2) continue;
+          const upper = cleanT.toUpperCase();
+          // Never consider the RAMQ prefix or RAMQ string as a name!
+          if (upper === ramqRaw.slice(0, 4) || upper === cleanRamqFull) continue;
+          if (upper.length <= 4 && (upper === ramqRaw.slice(0, 3) || upper === ramqRaw.slice(0, 4))) continue;
+          if (["RAMQ", "QC", "QUEBEC", "EXP", "NAM", "CARD", "CARTE", "HOMME", "FEMME", "ANSI", "AAMVA"].includes(upper)) continue;
+          candidates.append ? candidates.append(cleanT) : candidates.push(cleanT);
+        }
+
+        // Match candidates with lastPrefix and firstPrefix
+        for (const c of candidates) {
+          const cUpper = c.toUpperCase();
+          if (lastPrefix && cUpper.startsWith(lastPrefix) && !lastName) {
+            lastName = c.charAt(0).toUpperCase() + c.slice(1).toLowerCase();
+          } else if (firstPrefix && cUpper.startsWith(firstPrefix) && !firstName) {
+            firstName = c.charAt(0).toUpperCase() + c.slice(1).toLowerCase();
+          } else if (!lastName) {
+            lastName = c.charAt(0).toUpperCase() + c.slice(1).toLowerCase();
+          } else if (!firstName && c.toLowerCase() !== lastName.toLowerCase()) {
+            firstName = c.charAt(0).toUpperCase() + c.slice(1).toLowerCase();
+          }
+        }
+      }
+
+      let patientName = "";
+      if (lastName && firstName) {
+        patientName = `${lastName}, ${firstName}`;
+      } else if (lastName) {
+        patientName = lastName;
+      }
+
+      if (!ramqClean && !patientName) return null;
+
+      return {
+        ramq: ramqClean,
+        patient_name: patientName,
+        last_name: lastName,
+        first_name: firstName,
+        dob: dob,
+        sex: sex,
+        raw: s
+      };
+    }
+
+    async function handleSuccessfulScan(payloadText, formatName = "") {
+      if (!isScannerActive) return;
+      
+      const parsed = parseRamqBarcodeClient(payloadText);
+      if (!parsed) {
+        ramqScannerStatus.innerText = "⚠️ Code non reconnu comme une carte RAMQ";
+        ramqScannerStatus.className = "w-full text-center text-xs text-amber-300 bg-amber-900/40 py-2 px-3 rounded-lg border border-amber-700/60";
+        return;
+      }
+
+      // If in 2D mode, but only 1D RAMQ was found without full name:
+      if (scannerMode === "2d" && !parsed.patient_name) {
+        ramqScannerStatus.innerText = "⚠️ Code 1D détecté. Veuillez pointer vers le code matriciel 2D (rectangle).";
+        ramqScannerStatus.className = "w-full text-center text-xs text-amber-300 bg-amber-900/40 py-2 px-3 rounded-lg border border-amber-700/60";
+        return;
+      }
+
+      isScannerActive = false;
+      playSuccessBeep();
+
+      // Visual feedback on reticle
+      ramqReticle.classList.remove("border-sky-400/70", "shadow-[0_0_25px_rgba(56,189,248,0.25)]");
+      ramqReticle.classList.add("border-emerald-400", "bg-emerald-500/20", "shadow-[0_0_35px_rgba(52,211,153,0.6)]");
+      
+      const identityLabel = parsed.patient_name ? `${parsed.patient_name} (${parsed.ramq})` : parsed.ramq;
+      ramqScannerStatus.innerText = `✅ Identité détectée : ${identityLabel}`;
+      ramqScannerStatus.className = "w-full text-center text-xs text-emerald-300 bg-emerald-900/60 py-2 px-3 rounded-lg border border-emerald-600/80 font-bold";
+
+      // Populate Requisition Form Fields
+      if (parsed.ramq) document.getElementById("reqRamq").value = parsed.ramq;
+      if (parsed.patient_name) document.getElementById("reqPatientName").value = parsed.patient_name;
+      if (parsed.dob) document.getElementById("reqDob").value = parsed.dob;
+      if (parsed.sex) document.getElementById("reqSex").value = parsed.sex;
+
+      // Close scanner modal after brief confirmation pause
+      setTimeout(() => {
+        stopRamqScanner();
+      }, 750);
+    }
+
+    async function captureAndScanServerFrame(isManual = false) {
+      if (!isScannerActive || (isServerScanning && !isManual) || !ramqScannerVideo) return;
+      if (ramqScannerVideo.readyState < 2 || ramqScannerVideo.videoWidth === 0) return;
+
+      const vw = ramqScannerVideo.videoWidth;
+      const vh = ramqScannerVideo.videoHeight;
+      scanCanvas.width = vw;
+      scanCanvas.height = vh;
+
+      // Draw un-mirrored frame onto canvas
+      scanCtx.save();
+      scanCtx.drawImage(ramqScannerVideo, 0, 0, vw, vh);
+      scanCtx.restore();
+
+      const base64Data = scanCanvas.toDataURL("image/jpeg", 0.90);
+      isServerScanning = true;
+
+      if (isManual) {
+        ramqScannerStatus.innerText = "🔍 Analyse de l'image en cours...";
+        ramqScannerStatus.className = "w-full text-center text-xs text-sky-300 bg-sky-900/60 py-2 px-3 rounded-lg border border-sky-600/80 font-bold animate-pulse";
+      }
+
+      try {
+        const res = await fetch("/api/ramq/scan_image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image_base64: base64Data })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.success && isScannerActive) {
+            handleSuccessfulScan(data.raw || data.ramq, data.format || "PDF417");
+            return;
+          } else if (isManual && !data.success) {
+            ramqScannerStatus.innerText = "⚠️ Aucun code PDF417 détecté. Rapprochez la carte ou ajustez la lumière.";
+            ramqScannerStatus.className = "w-full text-center text-xs text-amber-300 bg-amber-900/50 py-2 px-3 rounded-lg border border-amber-700/60";
+          }
+        }
+      } catch (e) {
+      } finally {
+        isServerScanning = false;
+      }
+    }
+
+    function restartDetectionLoop() {
+      if (scannerScanInterval) {
+        clearTimeout(scannerScanInterval);
+        scannerScanInterval = null;
+      }
+      if (zxingCodeReader) {
+        try { zxingCodeReader.reset(); } catch (e) {}
+      }
+      startDetectionEngine();
+    }
+
+    function startDetectionEngine() {
+      if (!isScannerActive || !ramqScannerVideo) return;
+
+      // 1. Continuous Server-Assisted Frame Scanner (Multi-pass C++ zxing-cpp filters)
+      const runServerScanLoop = async () => {
+        if (!isScannerActive) return;
+        await captureAndScanServerFrame();
+        if (isScannerActive) {
+          scannerScanInterval = setTimeout(runServerScanLoop, 300);
+        }
+      };
+      runServerScanLoop();
+
+      // 2. Client-side ZXing (BrowserPDF417Reader & MultiFormat)
+      if (window.ZXing) {
+        try {
+          if (scannerMode === "2d" && window.ZXing.BrowserPDF417Reader) {
+            zxingCodeReader = new ZXing.BrowserPDF417Reader();
+          } else if (window.ZXing.BrowserMultiFormatReader) {
+            zxingCodeReader = new ZXing.BrowserMultiFormatReader();
+          }
+          if (zxingCodeReader) {
+            zxingCodeReader.decodeFromVideoElement(ramqScannerVideo, (result, err) => {
+              if (result && isScannerActive) {
+                handleSuccessfulScan(result.getText());
+              }
+            });
+          }
+        } catch (e) {
+          console.warn("ZXing client decode error:", e);
+        }
+      }
+
+      // 3. Native BarcodeDetector (if supported by browser)
+      if ('BarcodeDetector' in window) {
+        try {
+          const formats2D = ['pdf417', 'data_matrix', 'qr_code'];
+          const formatsAll = ['pdf417', 'data_matrix', 'qr_code', 'code_128', 'code_39'];
+          const barcodeDetector = new BarcodeDetector({ formats: scannerMode === "2d" ? formats2D : formatsAll });
+
+          const detectNativeFrame = async () => {
+            if (!isScannerActive) return;
+            try {
+              if (ramqScannerVideo.readyState >= 2) {
+                const barcodes = await barcodeDetector.detect(ramqScannerVideo);
+                if (barcodes && barcodes.length > 0) {
+                  for (const b of barcodes) {
+                    if (b.rawValue && isScannerActive) {
+                      if (scannerMode === "2d" && ['code_128', 'code_39'].includes(b.format)) continue;
+                      handleSuccessfulScan(b.rawValue, b.format);
+                      return;
+                    }
+                  }
+                }
+              }
+            } catch (err) {}
+            if (isScannerActive) {
+              setTimeout(detectNativeFrame, 100);
+            }
+          };
+          detectNativeFrame();
+        } catch (e) {}
+      }
+    }
+
+    async function startRamqScanner(deviceId = null) {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("Votre navigateur ne supporte pas l'accès à la caméra.");
+        return;
+      }
+
+      ramqScannerModal.classList.remove("hidden");
+      ramqScannerLoading.classList.remove("hidden");
+      ramqLoadingText.innerText = "Activation de la caméra...";
+      ramqReticle.classList.remove("border-emerald-400", "bg-emerald-500/20", "shadow-[0_0_35px_rgba(52,211,153,0.6)]");
+      ramqReticle.classList.add("border-sky-400/80", "shadow-[0_0_25px_rgba(56,189,248,0.35)]");
+      ramqScannerStatus.innerText = scannerMode === "2d"
+        ? "Mode 2D : Pointez la caméra vers le code-barres PDF417 au dos de la carte"
+        : "Pointez la caméra vers le code-barres (1D ou 2D)";
+      ramqScannerStatus.className = "w-full text-center text-xs text-slate-300 bg-slate-800/80 py-2 px-3 rounded-lg border border-slate-700/60";
+
+      // Enumerate cameras
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        availableVideoDevices = devices.filter(d => d.kind === "videoinput");
+        ramqCameraSelect.innerHTML = "";
+        availableVideoDevices.forEach((dev, idx) => {
+          const opt = document.createElement("option");
+          opt.value = dev.deviceId;
+          opt.text = dev.label || `Caméra ${idx + 1}`;
+          if (deviceId && dev.deviceId === deviceId) opt.selected = true;
+          ramqCameraSelect.appendChild(opt);
+        });
+      } catch (e) {}
+
+      const constraints = {
+        video: {
+          deviceId: deviceId ? { exact: deviceId } : undefined,
+          facingMode: deviceId ? undefined : "environment",
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        }
+      };
+
+      try {
+        if (scannerMediaStream) {
+          scannerMediaStream.getTracks().forEach(t => t.stop());
+        }
+
+        scannerMediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        ramqScannerVideo.srcObject = scannerMediaStream;
+        await ramqScannerVideo.play();
+        ramqScannerLoading.classList.add("hidden");
+        isScannerActive = true;
+
+        // Check Torch capability
+        torchTrack = scannerMediaStream.getVideoTracks()[0];
+        if (torchTrack && torchTrack.getCapabilities && torchTrack.getCapabilities().torch) {
+          btnToggleTorch.classList.remove("hidden");
+          btnToggleTorch.classList.add("flex");
+        } else {
+          btnToggleTorch.classList.add("hidden");
+          btnToggleTorch.classList.remove("flex");
+        }
+
+        startDetectionEngine();
+
+      } catch (err) {
+        ramqLoadingText.innerText = "Erreur caméra : " + (err.message || "Accès refusé");
+        ramqScannerStatus.innerText = "⚠️ Impossible d'accéder à la caméra. Vérifiez les permissions.";
+        ramqScannerStatus.className = "w-full text-center text-xs text-rose-300 bg-rose-900/50 py-2 px-3 rounded-lg border border-rose-700/60";
+      }
+    }
+
+    function stopRamqScanner() {
+      isScannerActive = false;
+      if (scannerScanInterval) {
+        clearTimeout(scannerScanInterval);
+        scannerScanInterval = null;
+      }
+      if (zxingCodeReader) {
+        try { zxingCodeReader.reset(); } catch (e) {}
+      }
+      if (scannerMediaStream) {
+        scannerMediaStream.getTracks().forEach(t => t.stop());
+        scannerMediaStream = null;
+      }
+      if (ramqScannerVideo) {
+        ramqScannerVideo.srcObject = null;
+      }
+      ramqScannerModal.classList.add("hidden");
+    }
+
+    // Camera Switcher
+    ramqCameraSelect.addEventListener("change", (e) => {
+      if (e.target.value) {
+        startRamqScanner(e.target.value);
+      }
+    });
+
+    // Zoom button listeners
+    btnZoom1x.addEventListener("click", () => applyZoom(1.0));
+    btnZoom2x.addEventListener("click", () => applyZoom(2.0));
+    btnZoom3x.addEventListener("click", () => applyZoom(3.0));
+
+    // Mirror Flip Toggle
+    btnToggleMirror.addEventListener("click", () => {
+      isMirrored = !isMirrored;
+      updateVideoTransform();
+      btnToggleMirror.classList.toggle("text-sky-400", isMirrored);
+      btnToggleMirror.classList.toggle("text-slate-400", !isMirrored);
+    });
+
+    // Torch Toggle
+    btnToggleTorch.addEventListener("click", async () => {
+      if (!torchTrack) return;
+      try {
+        isTorchActive = !isTorchActive;
+        await torchTrack.applyConstraints({ advanced: [{ torch: isTorchActive }] });
+        btnToggleTorch.classList.toggle("bg-amber-600", isTorchActive);
+        btnToggleTorch.classList.toggle("text-white", isTorchActive);
+      } catch (e) {}
+    });
+
+    // Manual Barcode Input button
+    btnProcessManualPayload.addEventListener("click", () => {
+      const val = ramqManualPayload.value.trim();
+      if (val) {
+        handleSuccessfulScan(val);
+      }
+    });
+
+    // Scanner Modal open/close listeners
+    btnOpenRamqScanner.addEventListener("click", () => startRamqScanner());
+    btnCloseRamqScanner.addEventListener("click", stopRamqScanner);
+    btnCancelRamqScanner.addEventListener("click", stopRamqScanner);
+    ramqScannerModal.addEventListener("click", (e) => {
+      if (e.target === ramqScannerModal) stopRamqScanner();
+    });
 
     function collectPatientInfo() {
       const getVal = (id) => {

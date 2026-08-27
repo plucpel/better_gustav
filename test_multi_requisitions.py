@@ -176,5 +176,75 @@ class TestMultiRequisitions(unittest.TestCase):
         doc = fitz.open(stream=res_pdf.content, filetype="pdf")
         self.assertEqual(len(doc), 3)
 
+    def test_banque_de_sang_form_checkboxes(self):
+        pids = [
+            "bds001",  # Coombs direct
+            "bds002",  # Groupe sanguin
+            "bds003",  # Groupe sanguin et recherche d'anticorps
+            "bds004",  # Phénotype érythrocytaire
+            "bds005",  # Titrage agglutinines froides
+            "bds006",  # Titrage d'anticorps immuns
+            "bds007",  # Investigation réaction transfusionnelle
+            "bds008"   # 2e détermination ABO Rh
+        ]
+        inspection = inspect_multi_requisitions(pids)
+        self.assertEqual(inspection["total_pages"], 1)
+        self.assertEqual(inspection["active_forms"][0]["form_id"], "banque_sang")
+        self.assertEqual(inspection["active_forms"][0]["matched_count"], 8)
+
+        pdf_bytes = generate_multi_form_requisition_pdf(pids, patient_info=self.patient_info)
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        self.assertEqual(len(doc), 1)
+
+        page = doc[0]
+        fields = {w.field_name: w.field_value for w in page.widgets() if w.field_value and str(w.field_value) not in ["Off", ""]}
+        
+        # Verify checkable analyses are checked
+        self.assertEqual(fields.get("COOMBS DIRECT"), "Yes")
+        self.assertEqual(fields.get("GROUPE SANGUIN (ABO Rh)"), "Yes")
+        self.assertEqual(fields.get("GROUPE SANGUIN ET RECHERCHE D’ANTICORPS"), "Yes")
+        self.assertEqual(fields.get("PHÉNOTYPES ÉRYTHROCYTAIRES"), "Yes")
+        self.assertEqual(fields.get("TITRAGE AGGLUTININES FROIDES"), "Yes")
+        self.assertEqual(fields.get("TITRAGE D’ANTICORPS IMMUNS"), "Yes")
+        self.assertEqual(fields.get("INVESTIGATION RÉACTION TRANSFUSIONNELLE"), "Yes")
+        self.assertEqual(fields.get("2e DÉTERMINATION ABO Rh"), "Yes")
+
+        # Verify headers
+        self.assertIn("Gagnon", fields.get("doctor_name", ""))
+        self.assertEqual(fields.get("doctor_license"), "77889")
+        self.assertIn("2111799", fields.get("nurse_name", ""))
+        self.assertIn("Lebourgneuf", fields.get("sample_location", ""))
+        self.assertEqual(fields.get("ramq"), "BELE 1234 5678")
+        self.assertEqual(fields.get("Sexe_F"), "Yes")
+        self.assertEqual(fields.get("patient_name"), "Bélanger")
+        self.assertEqual(fields.get("patient_firstname"), "Éloïse")
+
+    def test_banque_de_sang_multi_page_merge(self):
+        # General + Spec Multi + Blood Bank
+        pids = ["fsc", "gazar", "bds003", "bds008"]
+        inspection = inspect_multi_requisitions(pids)
+        self.assertEqual(inspection["total_pages"], 3)
+        form_ids = [f["form_id"] for f in inspection["active_forms"]]
+        self.assertIn("general", form_ids)
+        self.assertIn("spec_multi", form_ids)
+        self.assertIn("banque_sang", form_ids)
+
+        pdf_bytes = generate_multi_form_requisition_pdf(pids, patient_info=self.patient_info)
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        self.assertEqual(len(doc), 3)
+
+        # Assert every single page has the doctor, nurse, and patient info
+        for page_idx, page in enumerate(doc):
+            fields = {w.field_name: w.field_value for w in page.widgets() if w.field_value}
+            self.assertTrue(
+                any("Gagnon" in str(v) for v in fields.values()),
+                f"Page {page_idx+1} is missing doctor name"
+            )
+            self.assertTrue(
+                any("BELE" in str(v) for v in fields.values()),
+                f"Page {page_idx+1} is missing patient RAMQ"
+            )
+
 if __name__ == "__main__":
     unittest.main()
+

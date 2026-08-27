@@ -7,7 +7,11 @@ from typing import List, Optional, Annotated
 
 from tube_calculator import search_analyses, calculate_tubes, load_catalog
 from medical_dictionary import CLINICAL_PANELS
-from requisition_filler import generate_filled_requisition_pdf, inspect_requisition_selection
+from requisition_filler import (
+    generate_filled_requisition_pdf,
+    inspect_requisition_selection,
+    parse_ramq_barcode_payload
+)
 
 app = FastAPI(
     title="Gustav - Calculateur de Tubes Sanguins (CHU de Québec)",
@@ -213,6 +217,52 @@ async def api_delete_location(location_id: str):
         raise HTTPException(status_code=404, detail="Location not found")
     return {"status": "success", "deleted_id": location_id}
 
+from clinics_manager import (
+    search_clinics,
+    get_available_sites,
+    get_available_types,
+    get_clinic_by_id
+)
+
+# ==============================================================================
+# SIL-P CLINICS ENDPOINTS (Microsoft Fabric / Power BI Dataset)
+# ==============================================================================
+
+@app.get("/api/clinics/search")
+async def api_search_clinics(
+    q: str = Query("", max_length=100, description="Recherche par nom, ID SIL-P, ville, code postal ou adresse"),
+    site: Optional[str] = Query(None, max_length=150, description="Filtre par site ou centre hospitalier"),
+    type: Optional[str] = Query(None, max_length=20, description="Filtre par type d'inscription (E, H, I, etc.)"),
+    limit: int = Query(50, ge=1, le=200, description="Nombre de résultats par page"),
+    offset: int = Query(0, ge=0, description="Index de départ pour la pagination")
+):
+    """Recherche ultra-rapide et filtrage des 19 600+ cliniques et établissements SIL-P."""
+    return search_clinics(
+        query=q,
+        site=site,
+        clinic_type=type,
+        limit=limit,
+        offset=offset
+    )
+
+@app.get("/api/clinics/sites")
+async def api_get_clinic_sites():
+    """Obtenir la liste des sites/centres hospitaliers avec leur décompte."""
+    return get_available_sites()
+
+@app.get("/api/clinics/types")
+async def api_get_clinic_types():
+    """Obtenir la liste des types d'inscription avec libellés détaillés et décomptes."""
+    return get_available_types()
+
+@app.get("/api/clinics/{clinic_id}")
+async def api_get_clinic(clinic_id: str = Path(..., max_length=50)):
+    """Obtenir les détails complets d'une clinique par son ID SIL-P."""
+    clinic = get_clinic_by_id(clinic_id)
+    if not clinic:
+        raise HTTPException(status_code=404, detail="Clinique SIL-P non trouvée")
+    return clinic
+
 # ==============================================================================
 # REQUISITION ENDPOINTS
 # ==============================================================================
@@ -287,6 +337,99 @@ async def api_requisition_pdf_get(
             "Content-Type": "application/pdf"
         }
     )
+
+class BarcodeDecodeRequest(BaseModel):
+    payload: Annotated[str, Field(max_length=4000)]
+
+class BarcodeImageScanRequest(BaseModel):
+    image_base64: str
+
+@app.post("/api/ramq/decode")
+async def api_decode_ramq_barcode(req: BarcodeDecodeRequest):
+    """Decodes raw barcode payload (1D Code 128 / 2D PDF417) from Quebec RAMQ card."""
+    res = parse_ramq_barcode_payload(req.payload)
+    return res
+
+@app.post("/api/ramq/scan_image")
+async def api_scan_ramq_image(req: BarcodeImageScanRequest):
+    """Scans and decodes barcode from base64 image using zxingcpp with multi-pass filters and super-resolution."""
+    import base64
+    import numpy as np
+    import cv2
+    import zxingcpp
+
+    try:
+        data_str = req.image_base64
+        if "," in data_str:
+            data_str = data_str.split(",", 1)[1]
+        img_bytes = base64.b64decode(data_str)
+        nparr = np.frombuffer(img_bytes, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        if img is None:
+            return {"success": False, "error": "Invalid image data"}
+
+        h, w = img.shape[:2]
+
+        # Multi-scale & Region candidates
+        candidates = []
+        candidates.append(img)
+
+        # Central crop (matching reticle region: center 70% width, center 60% height)
+        cx1, cx2 = int(w * 0.15), int(w * 0.85)
+        cy1, cy2 = int(h * 0.20), int(h * 0.80)
+        crop = img[cy1:cy2, cx1:cx2]
+        if crop.size > 0:
+            candidates.append(crop)
+            # Upscaled crop (2x with Lanczos for sharp barcodes at 35cm focal distance)
+            crop_2x = cv2.resize(crop, (0, 0), fx=2.0, fy=2.0, interpolation=cv2.INTER_LANCZOS4)
+            candidates.append(crop_2x)
+
+        for cand in candidates:
+            # 1. Direct scan
+            res = zxingcpp.read_barcodes(cand, try_rotate=True)
+            for r in res:
+                if r.valid and r.text:
+                    parsed = parse_ramq_barcode_payload(r.text)
+                    return {"success": True, "format": str(r.format), "raw": r.text, **parsed}
+
+            # 2. Grayscale + Sharpening (Unsharp mask to counter webcam focal blur)
+            gray = cv2.cvtColor(cand, cv2.COLOR_BGR2GRAY) if len(cand.shape) == 3 else cand
+            gaussian = cv2.GaussianBlur(gray, (0, 0), 2.0)
+            sharpened = cv2.addWeighted(gray, 2.0, gaussian, -1.0, 0)
+            res = zxingcpp.read_barcodes(sharpened, try_rotate=True)
+            for r in res:
+                if r.valid and r.text:
+                    parsed = parse_ramq_barcode_payload(r.text)
+                    return {"success": True, "format": str(r.format), "raw": r.text, **parsed}
+
+            # 3. CLAHE (Contrast equalization for specular reflections on plastic card)
+            clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+            cl = clahe.apply(gray)
+            res = zxingcpp.read_barcodes(cl, try_rotate=True)
+            for r in res:
+                if r.valid and r.text:
+                    parsed = parse_ramq_barcode_payload(r.text)
+                    return {"success": True, "format": str(r.format), "raw": r.text, **parsed}
+
+            # 4. Otsu & Adaptive Thresholds
+            _, otsu = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            res = zxingcpp.read_barcodes(otsu, try_rotate=True)
+            for r in res:
+                if r.valid and r.text:
+                    parsed = parse_ramq_barcode_payload(r.text)
+                    return {"success": True, "format": str(r.format), "raw": r.text, **parsed}
+
+            # 5. Explicit 180° Inverted orientation
+            rot180 = cv2.rotate(cand, cv2.ROTATE_180)
+            res = zxingcpp.read_barcodes(rot180, try_rotate=True)
+            for r in res:
+                if r.valid and r.text:
+                    parsed = parse_ramq_barcode_payload(r.text)
+                    return {"success": True, "format": str(r.format), "raw": r.text, **parsed}
+
+        return {"success": False}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 if __name__ == "__main__":
     print("=" * 65)

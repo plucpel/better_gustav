@@ -22,5 +22,5 @@ for pid in ["fsc", "gly", "iono", "tropi", "tsh", "inr", "creat", "ferrix", "hba
         print(f"\n[{pid}] {it['name']}:")
         for c in it["containers"]:
             print(f"   - Site: {c['sites'][:40]} | Contenant: {c['container']} | Qty: {c['quantity']}")
-        if it["pediatric_containers"]:
-            print(f"   - Microtubes: {it['pediatric_containers']}")
+        if it.get("pediatric_microtubes"):
+            print(f"   - Microtubes: {it['pediatric_microtubes']}")

@@ -163,5 +163,40 @@ class TestRequisitionFiller(unittest.TestCase):
         self.assertEqual(res_get.headers["content-type"], "application/pdf")
         self.assertGreater(len(res_get.content), 50000)
 
+        # 4. Test POST /api/ramq/decode (1D and 2D)
+        res_1d = client.post("/api/ramq/decode", json={"payload": "TREJ 8504 1212"})
+        self.assertEqual(res_1d.status_code, 200)
+        data_1d = res_1d.json()
+        self.assertEqual(data_1d["ramq"], "TREJ 8504 1212")
+        self.assertEqual(data_1d["dob"], "1985-04-12")
+        self.assertEqual(data_1d["sex"], "M")
+
+        res_2d = client.post("/api/ramq/decode", json={"payload": "BELE 9257 1500\nBÉLANGER\nÉLOÏSE\n1992-07-15\nF"})
+        self.assertEqual(res_2d.status_code, 200)
+        data_2d = res_2d.json()
+        self.assertEqual(data_2d["ramq"], "BELE 9257 1500")
+        self.assertEqual(data_2d["patient_name"], "Bélanger, Éloïse")
+        self.assertEqual(data_2d["dob"], "1992-07-15")
+        self.assertEqual(data_2d["sex"], "F")
+
+        # 5. Test POST /api/ramq/scan_image (PDF417 image decoding)
+        import zxingcpp
+        import numpy as np
+        import cv2
+        import base64
+        gen = zxingcpp.create_barcode("PELLETIER|LUC|PELP81110915|19811109|M", zxingcpp.BarcodeFormat.PDF417)
+        img_arr = np.array(zxingcpp.write_barcode_to_image(gen))
+        _, buf = cv2.imencode(".jpg", img_arr)
+        b64 = base64.b64encode(buf).decode("utf-8")
+
+        res_img = client.post("/api/ramq/scan_image", json={"image_base64": b64})
+        self.assertEqual(res_img.status_code, 200)
+        data_img = res_img.json()
+        self.assertTrue(data_img["success"])
+        self.assertEqual(data_img["ramq"], "PELP 8111 0915")
+        self.assertEqual(data_img["patient_name"], "Pelletier, Luc")
+        self.assertEqual(data_img["dob"], "1981-11-09")
+        self.assertEqual(data_img["sex"], "M")
+
 if __name__ == "__main__":
     unittest.main()

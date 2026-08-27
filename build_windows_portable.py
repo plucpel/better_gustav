@@ -91,6 +91,8 @@ def build():
     shutil.copy2(os.path.join(PROJECT_DIR, "tube_calculator.py"), PORTABLE_DIR)
     shutil.copy2(os.path.join(PROJECT_DIR, "medical_dictionary.py"), PORTABLE_DIR)
     shutil.copy2(os.path.join(PROJECT_DIR, "requisition_filler.py"), PORTABLE_DIR)
+    shutil.copy2(os.path.join(PROJECT_DIR, "profiles_manager.py"), PORTABLE_DIR)
+    shutil.copy2(os.path.join(PROJECT_DIR, "clinics_manager.py"), PORTABLE_DIR)
 
     # Copy data/
     shutil.copytree(os.path.join(PROJECT_DIR, "data"), os.path.join(PORTABLE_DIR, "data"), dirs_exist_ok=True)

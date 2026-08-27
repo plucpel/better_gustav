@@ -304,96 +304,134 @@ TUBE_DEFINITIONS = {
     }
 }
 
-def classify_container(container_str, analysis_name="", pid="", thematic=""):
+def classify_container(container_str, analysis_name="", pid="", thematic="", specimen=""):
     """
     Deterministically classify a Gustav container string and analysis context
     into standardized specimen and tube categories (Blood, Urine, Stool, Swabs, CSF, etc.).
     """
-    c_lower = container_str.lower()
-    name_lower = analysis_name.lower()
-    pid_lower = pid.lower()
-    them_lower = thematic.lower()
-    all_text = f"{c_lower} {name_lower} {pid_lower} {them_lower}"
+    c_lower = (container_str or "").lower().strip()
+    name_lower = (analysis_name or "").lower().strip()
+    pid_lower = (pid or "").lower().strip()
+    them_lower = (thematic or "").lower().strip()
+    spec_lower = (specimen or "").lower().strip()
 
-    # 1. HÉMOCULTURES & BOUTEILLES DE CULTURE
-    if any(k in c_lower for k in ["hemoculture", "hémoculture", "bactec", "bact-alert", "bouteille d'hémoculture", "bouteille d’hémoculture"]):
-        return "HEMOCULTURE"
-
-    # 2. SELLES / MATIÈRES FÉCALES (Coprologie)
-    is_stool = any(k in all_text for k in ["selle", "selles", "fécal", "fecal", "copro", "c. diff", "difficile", "calprotectine", "élastase fécale", "elastase fecale", "parasite"])
-    if is_stool or "cary" in c_lower or "saf" in c_lower or "selles" in c_lower:
-        if "cary" in c_lower or "ept" in c_lower:
-            return "SELLES_CARY_BLAIR"
-        if "saf" in c_lower:
-            return "SELLES_SAF"
-        if any(k in all_text for k in ["sang occulte", "rsosi", "fit", "sofe"]):
-            return "SELLES_FIT"
-        if "orange" in c_lower or "stérile" in c_lower or "contenant" in c_lower or is_stool:
-            return "SELLES_STERILE"
-
-    # 3. URINES (SMU, ECBU, Urines 24h, Biochimie urinaire)
-    is_urine = any(k in all_text for k in ["urine", "urinaire", "ecbu", "sommaire", "microscopie", "culot urinaire", "clairance", "miction", "anuri", "curi", "uruc"])
-    if is_urine or any(k in c_lower for k in ["cruche", "culot", "conique bouchon jaune", "pour urine"]):
-        if any(k in c_lower for k in ["cruche", "24h", "24 h", "24 heures"]) or any(k in name_lower for k in ["24 h", "24 heures", "24h"]):
-            return "URINE_24H"
-        if any(k in c_lower for k in ["culot", "jaune", "non stérile", "miction", "anuri"]) and "stérile (bouchon orange)" not in c_lower:
-            return "URINE_ROUTINE"
-        if "orange" in c_lower or "stérile" in c_lower or "cobas-pcr" in c_lower or "culture" in name_lower or "ecbu" in all_text:
-            return "URINE_STERILE"
-        return "URINE_ROUTINE"
-
-    # 4. LCR & LIQUIDES BIOLOGIQUES & ÉCOUVILLONS
-    if "lcr" in c_lower or "lcr" in name_lower or "céphalo-rachidien" in name_lower or "cephalo-rachidien" in name_lower:
-        return "SPECIMEN_LCR"
-    if any(k in c_lower for k in ["tige", "écouvillon", "ecouvillon", "utm", "m40", "amies", "eswab"]):
+    # 1. SWABS & TRANSPORT MEDIA (Check early so Tige M40 bouchon rouge is not misclassified as SERUM_PLAIN)
+    if any(k in c_lower for k in ["utm", "m6", "m40", "amies", "eswab", "mswab", "tige veloutée", "tige veloutee", "tige sèche", "tige seche", "tige amies"]):
+        return "SPECIMEN_SWAB"
+    if "tige" in c_lower and not any(k in c_lower for k in ["cruche", "tube", "bouchon"]):
         return "SPECIMEN_SWAB"
 
-    # 5. GAZ SANGUINS (Seringues)
-    if any(k in c_lower for k in ["seringue", "gaz"]) or "gaz" in pid_lower or "gazométrie" in name_lower or "gaz sanguins" in name_lower:
+    # 2. FECAL SPECIFIC TRANSPORT MEDIA
+    if "cary" in c_lower or "ept" in c_lower:
+        return "SELLES_CARY_BLAIR"
+    if "saf" in c_lower:
+        return "SELLES_SAF"
+    if any(k in c_lower for k in ["rsosi", "sang occulte"]):
+        return "SELLES_FIT"
+
+    # 3. CSF SPECIFIC CONTAINERS
+    if "lcr" in c_lower or "céphalo-rachidien" in c_lower or "cephalo-rachidien" in c_lower:
+        return "SPECIMEN_LCR"
+
+    # 4. BLOOD SPECIMENS STRICT
+    # Blood gas syringe
+    if any(k in c_lower for k in ["seringue", "gaz"]):
         return "GAZ_SERINGUE"
 
-    # 6. TUBES SANGUINS STRICTS
-    # Citrate / Bleu
+    # Blood cultures
+    if any(k in c_lower for k in ["hemoculture", "hémoculture", "bactec", "bact-alert", "bouteille d'hémoculture", "bouteille d’hémoculture", "bouteilles d'hémoculture"]):
+        return "HEMOCULTURE"
+
+    # Royal Blue
     if "bleu royal" in c_lower:
         return "ROYAL_BLUE"
-    if any(k in c_lower for k in ["bleu (citrate", "citrate", "bleu pâ"]) or (("bleu" in c_lower or "citrate" in c_lower) and "orange" not in c_lower):
+
+    # Citrate / Light Blue (ensure not royal blue or orange)
+    if any(k in c_lower for k in ["bleu (citrate", "citrate", "bleu pâ"]) or ("bleu" in c_lower and "royal" not in c_lower and "orange" not in c_lower and "m40" not in c_lower):
         return "CITRATE"
 
-    # Rose / Banque de sang
-    if "rose" in c_lower or any(k in name_lower for k in ["groupe sanguin", "coombs", "rai", "compatibilite", "crossmatch"]):
+    # Pink / Rose (Blood bank - ensure not Vert_HepNa_Collant_rose)
+    if "rose" in c_lower and "vert_hepna_collant_rose" not in c_lower and "vert" not in c_lower:
         return "EDTA_ROSE"
 
-    # Lavande / EDTA
+    # Lavender / Mauve (EDTA)
     if any(k in c_lower for k in ["lavande", "edta", "mauve"]):
         return "EDTA"
 
-    # Menthe / Héparine Lithium
-    if any(k in c_lower for k in ["menthe", "pst", "heparine_lithium", "héparine de lithium"]) or ("vert" in c_lower and "sodium" not in c_lower and "hepna" not in c_lower and "cary" not in c_lower):
-        return "HEPARINE_LITHIUM"
-
-    # Vert foncé / Héparine Sodium
-    if any(k in c_lower for k in ["vert (hepna)", "heparine_sodium", "hepna", "vert foncé"]):
+    # Sodium Heparin (Vert HepNa)
+    if any(k in c_lower for k in ["vert (hepna)", "heparine_sodium", "hepna", "vert foncé", "vert fonce", "vert héparine sodium", "vert heparine sodium", "vert_hepna"]):
         return "HEPARINE_SODIUM"
 
-    # Doré / Or (Gel séparateur SST) -> MUST NOT MATCH 'orange'!
+    # Lithium Heparin (Menthe / Vert lime / HepLi)
+    if any(k in c_lower for k in ["menthe", "pst", "heparine_lithium", "héparine de lithium", "vert lime (hepli)"]) or ("vert" in c_lower and "sodium" not in c_lower and "hepna" not in c_lower and "cary" not in c_lower and "verre" not in c_lower and "rose" not in c_lower):
+        return "HEPARINE_LITHIUM"
+
+    # Gold / Or (Serum Gel SST - ensure not orange)
     if "orange" not in c_lower:
-        if bool(re.search(r"\b(or|doré|dore|sst)\b", c_lower)) or "or (activateur" in c_lower or "gel activateur" in c_lower:
+        if bool(re.search(r"\b(or|doré|dore|sst)\b", c_lower)) or "or (activateur" in c_lower or "gel activateur" in c_lower or "vert lime (hepli) ou or" in c_lower:
             return "SERUM_GEL"
 
-    # Rouge / Sec sans gel
-    if any(k in c_lower for k in ["rouge", "sec sans gel"]):
+    # Red / Rouge (Serum plain without gel)
+    if any(k in c_lower for k in ["rouge (activateur", "sec sans gel", "rouge (sec", "tube bouchon rouge"]) or (c_lower == "rouge" or c_lower == "tube rouge"):
         return "SERUM_PLAIN"
 
-    # Gris / Fluorure
+    # Grey / Gris (Fluoride / Oxalate)
     if any(k in c_lower for k in ["gris", "fluorure", "oxalate"]):
         return "FLUORURE"
 
-    # Fallback based on analysis name
-    if any(k in name_lower for k in ["formule sanguine", "plaquettes", "reticulocytes", "frottis", "hba1c"]):
+    # 5. URINE SPECIFIC CONTAINERS
+    # 24h Urine jugs
+    if any(k in c_lower for k in ["cruche", "24h", "24 h", "24 heures"]):
+        return "URINE_24H"
+
+    # Routine urine containers (yellow cap / conical tube)
+    if any(k in c_lower for k in ["culot", "conique bouchon jaune", "pour culot", "contenant non stérile (bouchon jaune)", "pour urine"]):
+        return "URINE_ROUTINE"
+
+    # 6. DUAL / GENERIC CONTAINERS (e.g. Bouchon orange, Contenant stérile, Tube conique 15 ml, Cobas-PCR)
+    # Check context words using whole words or specific identifiers
+    is_stool_context = (
+        any(w in spec_lower for w in ["selle", "fecal", "fécal"]) or
+        any(re.search(r"\b" + re.escape(w) + r"\b", f"{name_lower} {them_lower}") for w in ["selle", "selles", "fécal", "fecal", "copro", "c. diff", "difficile", "calprotectine", "élastase fécale", "elastase fecale"]) or
+        pid_lower in ["closd", "cdtox", "copro", "calpr", "elast"]
+    )
+    is_urine_context = (
+        any(w in spec_lower for w in ["urine", "urinaire"]) or
+        any(re.search(r"\b" + re.escape(w) + r"\b", f"{name_lower} {them_lower}") for w in ["urine", "urines", "urinaire", "urinaires", "ecbu", "sommaire", "microscopie", "miction"]) or
+        pid_lower in ["anuri", "curi", "uruc", "smu"] or
+        "cobas-pcr urine" in c_lower
+    )
+    is_lcr_context = (
+        "lcr" in spec_lower or "céphalo-rachidien" in spec_lower or "cephalo-rachidien" in spec_lower or
+        any(re.search(r"\b" + re.escape(w) + r"\b", f"{name_lower} {them_lower}") for w in ["lcr", "céphalo-rachidien", "cephalo-rachidien"]) or
+        pid_lower in ["lcr", "plcr"]
+    )
+
+    if "orange" in c_lower or "stérile" in c_lower or "contenant" in c_lower or "cobas-pcr" in c_lower:
+        if is_stool_context:
+            return "SELLES_STERILE"
+        if is_urine_context:
+            return "URINE_STERILE"
+        if is_lcr_context:
+            return "SPECIMEN_LCR"
+        return "SPECIMEN_DIVERS"
+
+    # 7. FALLBACKS BASED ON SPECIMEN / NAME / PID
+    if is_stool_context:
+        return "SELLES_STERILE"
+    if is_urine_context:
+        if any(k in name_lower for k in ["24 h", "24 heures", "24h"]) or "24" in spec_lower:
+            return "URINE_24H"
+        return "URINE_ROUTINE"
+    if is_lcr_context:
+        return "SPECIMEN_LCR"
+
+    # Blood fallbacks by test name / keywords
+    if any(k in name_lower for k in ["formule sanguine", "plaquettes", "reticulocytes", "frottis", "hba1c", "vitesse de sédimentation"]):
         return "EDTA"
     if any(k in name_lower for k in ["inr", "quick", "ptt", "tca", "fibrinogene", "d-dimere"]):
         return "CITRATE"
-    if any(k in name_lower for k in ["troponine", "electrolytes", "creatinine", "uree", "bilirubine", "alt", "ast", "tsh"]):
+    if any(k in name_lower for k in ["troponine", "electrolytes", "creatinine", "uree", "bilirubine", "alt", "ast", "tsh", "acide urique"]):
         return "HEPARINE_LITHIUM"
 
     return "SPECIMEN_DIVERS"
@@ -575,6 +613,7 @@ def calculate_tubes(selected_pids, site="Tous les sites", is_pediatric=False):
         chosen_container_str = ""
         chosen_qty = ""
         chosen_count = "1"
+        chosen_specimen = item.get("specimen_type", "")
         
         for c in item.get("containers", []):
             c_sites = normalize_str(c.get("sites", ""))
@@ -583,14 +622,18 @@ def calculate_tubes(selected_pids, site="Tous les sites", is_pediatric=False):
                 chosen_container_str = c.get("container", "")
                 chosen_qty = c.get("quantity", "")
                 chosen_count = c.get("count", "1")
+                if c.get("specimen"):
+                    chosen_specimen = c.get("specimen")
                 break
         
         if not chosen_container_str and item.get("containers"):
             chosen_container_str = item["containers"][0].get("container", "")
             chosen_qty = item["containers"][0].get("quantity", "")
             chosen_count = item["containers"][0].get("count", "1")
+            if item["containers"][0].get("specimen"):
+                chosen_specimen = item["containers"][0].get("specimen")
 
-        cat_key = classify_container(chosen_container_str, item["name"], pid, item.get("thematic", ""))
+        cat_key = classify_container(chosen_container_str, item["name"], pid, item.get("thematic", ""), chosen_specimen)
 
         # Site adjustments (e.g. HSS using serum gel)
         if ("hss" in normalize_str(site) or "portneuf" in normalize_str(site)) and cat_key == "HEPARINE_LITHIUM":

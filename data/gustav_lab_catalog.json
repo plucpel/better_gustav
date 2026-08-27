@@ -51283,5 +51283,42 @@
       "C34SP",
       "immunologie"
     ]
+  },
+  "bds008": {
+    "pid": "bds008",
+    "name": "2e détermination ABO Rh",
+    "thematic": "Manuel des prélèvements (Répertoire des analyses)",
+    "url": "https://gustavguideext.chudequebec.ca/aceptm/#document/bds008",
+    "containers": [
+      {
+        "sites": "Tous les sites",
+        "container": "Rose (EDTA K2)",
+        "count": "1",
+        "specimen": "Sang",
+        "quantity": ""
+      }
+    ],
+    "pediatric_microtubes": [
+      {
+        "count": "2",
+        "description": "Microtube à bouchon lavande"
+      }
+    ],
+    "specimen_type": "Sang",
+    "preparation": "Prélèvement indépendant distinct pour confirmation du groupe sanguin ABO-Rh.",
+    "instructions": [
+      "Prélèvement distinct obligatoire pour confirmer le groupe ABO Rh avant transfusion."
+    ],
+    "alerts": [
+      "L’échantillon doit être accompagné de la requête de banque de sang disponible : Clientèle interne dans le logiciel GDF (CQ621). Clientèle externe via le manuel des prélèvements. Respecter les critères d’acceptation des échantillons (précisés au verso du formulaire CQ621) ou au bas de la requête externe."
+    ],
+    "keywords": [
+      "2e détermination",
+      "2e détermination ABO Rh",
+      "deuxième détermination",
+      "confirmation groupe",
+      "2e prélèvement groupe",
+      "ABO Rh confirmation"
+    ]
   }
 }
