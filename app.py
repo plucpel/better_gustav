@@ -112,6 +112,8 @@ class PatientInfo(BaseModel):
     dossier: Optional[Annotated[str, Field(max_length=30)]] = ""
     room: Optional[Annotated[str, Field(max_length=30)]] = ""
     patient_name: Optional[Annotated[str, Field(max_length=100)]] = ""
+    nom: Optional[Annotated[str, Field(max_length=50)]] = ""
+    prenom: Optional[Annotated[str, Field(max_length=50)]] = ""
     dob: Optional[Annotated[str, Field(max_length=20)]] = ""
     clinical_info: Optional[Annotated[str, Field(max_length=200)]] = ""
     sex: Optional[Annotated[str, Field(max_length=5)]] = ""
