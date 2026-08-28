@@ -1,10 +1,30 @@
+import os
+import shutil
 import json
 from starlette.testclient import TestClient
 from app import app
+from profiles_manager import PRESCRIBERS_FILE, NURSES_FILE, LOCATIONS_FILE
 
 client = TestClient(app)
 
 def test_app():
+    # Backup live files
+    bak_files = []
+    for f in [PRESCRIBERS_FILE, NURSES_FILE, LOCATIONS_FILE]:
+        if os.path.exists(f):
+            bak = f + ".testbak"
+            shutil.copy2(f, bak)
+            bak_files.append((f, bak))
+
+    try:
+        _run_all_endpoint_tests()
+    finally:
+        # Restore live files
+        for orig, bak in bak_files:
+            if os.path.exists(bak):
+                shutil.move(bak, orig)
+
+def _run_all_endpoint_tests():
     print("=== 0. Testing PIN & Session Authentication Flow ===")
     # 0a. Initial unauthenticated access
     r_unauth = client.get("/")

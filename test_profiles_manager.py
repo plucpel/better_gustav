@@ -220,5 +220,47 @@ class TestProfilesManager(unittest.TestCase):
         self.assertEqual(res_del.status_code, 200)
         self.assertEqual(len(get_all_locations()), 1)
 
+    def test_immutable_identity_and_inactive_protection(self):
+        """Verify that existing doctor identity fields (name, license) cannot be overwritten, and inactives are blocked."""
+        # 1. Create Dr. Jean Gagnon with official license 76076
+        doc = upsert_prescriber({
+            "doctor_name": "Dr. Jean Gagnon",
+            "doctor_license": "76076",
+            "clinic_name": "GMF Saint-Gabriel"
+        })
+        self.assertEqual(doc["doctor_license"], "76076")
+
+        # 2. Attempt to upsert with same name but conflicting fake license 99999
+        # -> Must NOT overwrite 76076, must create a new distinct record
+        doc_diff_lic = upsert_prescriber({
+            "doctor_name": "Dr. Jean Gagnon",
+            "doctor_license": "99999",
+            "clinic_name": "Autre Clinique"
+        })
+        self.assertEqual(doc_diff_lic["doctor_license"], "99999")
+        
+        all_docs = get_all_prescribers()
+        self.assertEqual(len(all_docs), 2)
+        doc_76076 = [d for d in all_docs if d["doctor_license"] == "76076"][0]
+        self.assertEqual(doc_76076["doctor_name"], "Dr. Jean Gagnon")
+        self.assertEqual(doc_76076["doctor_license"], "76076")
+
+        # 3. Attempt to upsert with same license 76076 but modified name "Dr. Fake Name"
+        # -> Must NOT overwrite existing doctor_name
+        doc_mod_name = upsert_prescriber({
+            "doctor_name": "Dr. Fake Name",
+            "doctor_license": "76076",
+            "clinic_name": "Clinique Mise à jour"
+        })
+        self.assertEqual(doc_mod_name["doctor_name"], "Dr. Jean Gagnon")
+        self.assertEqual(doc_mod_name["clinic_name"], "Clinique Mise à jour")
+
+        # 4. Inactive / Ex-médecin rejection
+        with self.assertRaises(ValueError):
+            upsert_prescriber({
+                "doctor_name": "Dr. Jean Gagnon",
+                "doctor_license": "67222 Ex-médecin"
+            })
+
 if __name__ == "__main__":
     unittest.main()

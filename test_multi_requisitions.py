@@ -24,7 +24,7 @@ class TestMultiRequisitions(unittest.TestCase):
             "dob": "1992-07-15",
             "sex": "F",
             "doctor_name": "Dr. Jean Gagnon",
-            "doctor_license": "77889",
+            "doctor_license": "76076",
             "clinic_name": "Clinique Médicale Lebourgneuf",
             "clinic_id": "SIL-1234",
             "doctor_copy": "Dr. Marc Dupont",
@@ -128,7 +128,7 @@ class TestMultiRequisitions(unittest.TestCase):
             )
             # Check license
             self.assertTrue(
-                any("77889" in str(v) for v in fields.values()),
+                any("76076" in str(v) for v in fields.values()),
                 f"Page {page_idx+1} is missing doctor license"
             )
             # Check nurse with OIIQ & RAMQ
@@ -212,7 +212,7 @@ class TestMultiRequisitions(unittest.TestCase):
 
         # Verify headers
         self.assertIn("Gagnon", fields.get("doctor_name", ""))
-        self.assertEqual(fields.get("doctor_license"), "77889")
+        self.assertEqual(fields.get("doctor_license"), "76076")
         self.assertIn("2111799", fields.get("nurse_name", ""))
         self.assertIn("Lebourgneuf", fields.get("sample_location", ""))
         self.assertEqual(fields.get("ramq"), "BELE 1234 5678")
