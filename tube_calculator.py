@@ -64,7 +64,78 @@ def parse_volume_ml(qty_str):
 
 # Curated external restrictions for high-precision clinical guidance
 EXTERNAL_RESTRICTIONS_OVERRIDE = {
-    # 1. SUR GLACE
+    # =========================================================================
+    # 1. DELAI CRITIQUE (< 15-30 min) : Gaz sanguins, seringues héparinées, lactates, LCR
+    # =========================================================================
+    "gaaco": {"type": "DELAI_CRITIQUE", "badge": "⏱️ Délai < 20 min", "reason": "Gaz sanguin artériel : Acheminement au laboratoire impératif en < 20 min sans glace, non réalisable en externe."},
+    "gaac": {"type": "DELAI_CRITIQUE", "badge": "⏱️ Délai < 20 min", "reason": "Gaz sanguin artériel : Acheminement au laboratoire impératif en < 20 min sans glace, non réalisable en externe."},
+    "gaca": {"type": "DELAI_CRITIQUE", "badge": "⏱️ Délai < 20 min", "reason": "Gaz sanguin artériel / CarboxyHb : Acheminement en < 20 min requis, non réalisable en externe."},
+    "gazar": {"type": "DELAI_CRITIQUE", "badge": "⏱️ Délai < 20 min", "reason": "Gaz sanguin artériel (simple) : Acheminement impératif en < 20 min sans glace, non réalisable en externe."},
+    "gazc": {"type": "DELAI_CRITIQUE", "badge": "⏱️ Délai < 20 min", "reason": "Gaz sanguin capillaire : Acheminement impératif en < 20 min sans glace, non réalisable en externe."},
+    "gacco": {"type": "DELAI_CRITIQUE", "badge": "⏱️ Délai < 20 min", "reason": "Gaz sanguin capillaire et hémoximétrie : Acheminement impératif en < 20 min, non réalisable en externe."},
+    "gacac": {"type": "DELAI_CRITIQUE", "badge": "⏱️ Délai < 20 min", "reason": "Gaz sanguin capillaire : Acheminement impératif en < 20 min, non réalisable en externe."},
+    "gavcs": {"type": "DELAI_CRITIQUE", "badge": "⏱️ Délai < 20 min", "reason": "Gaz sanguin veineux : Acheminement au laboratoire le plus rapidement possible, non réalisable en externe."},
+    "gaoxvx": {"type": "DELAI_CRITIQUE", "badge": "⏱️ Délai < 20 min", "reason": "Co-oxymétrie veineuse : Acheminement au laboratoire le plus rapidement possible, non réalisable en externe."},
+    "gaoxv": {"type": "DELAI_CRITIQUE", "badge": "⏱️ Délai < 20 min", "reason": "Co-oxymétrie veineuse : Acheminement au laboratoire le plus rapidement possible, non réalisable en externe."},
+    "gazvs": {"type": "DELAI_CRITIQUE", "badge": "⏱️ Délai < 20 min", "reason": "Gaz sanguin veineux (seringue) : Acheminement immédiat au laboratoire requis, non réalisable en externe."},
+    "gavco": {"type": "DELAI_CRITIQUE", "badge": "⏱️ Délai < 20 min", "reason": "Gaz sanguin veineux : Acheminement au laboratoire le plus rapidement possible, non réalisable en externe."},
+    "gazve": {"type": "DELAI_CRITIQUE", "badge": "⏱️ Délai < 20 min", "reason": "Gaz sanguin veineux (tube) : Acheminement le plus rapidement possible, non réalisable en externe."},
+    "gazvex": {"type": "DELAI_CRITIQUE", "badge": "⏱️ Délai < 20 min", "reason": "Gaz sanguin veineux (tube) : Acheminement le plus rapidement possible, non réalisable en externe."},
+    "lacc": {"type": "DELAI_CRITIQUE", "badge": "⏱️ Délai < 20 min", "reason": "Lactate capillaire : Acheminement impératif en < 20 min sans glace (risque de fausse augmentation par glycolyse), non réalisable en externe."},
+    "lacvs": {"type": "DELAI_CRITIQUE", "badge": "⏱️ Délai < 20 min", "reason": "Acide lactique veineux : Acheminement au laboratoire en < 20 min requis, non réalisable en externe."},
+    "lacvsx": {"type": "DELAI_CRITIQUE", "badge": "⏱️ Délai < 20 min", "reason": "Acide lactique veineux : Acheminement au laboratoire en < 20 min requis, non réalisable en externe."},
+    "lacsc": {"type": "DELAI_CRITIQUE", "badge": "⏱️ Délai < 20 min", "reason": "Lactate capillaire : Acheminement impératif en < 20 min sans glace, non réalisable en externe."},
+    "lacp": {"type": "DELAI_CRITIQUE", "badge": "⏱️ Délai < 20 min", "reason": "Lactate plasmatique : Acheminement au laboratoire en < 20 min requis, non réalisable en externe."},
+    "lacs": {"type": "DELAI_CRITIQUE", "badge": "⏱️ Délai < 20 min", "reason": "Lactate sanguin : Acheminement au laboratoire en < 20 min requis, non réalisable en externe."},
+    "lact": {"type": "DELAI_CRITIQUE", "badge": "⏱️ Délai < 20 min", "reason": "Lactate sanguin : Acheminement au laboratoire en < 20 min requis, non réalisable en externe."},
+    "acdla": {"type": "DELAI_CRITIQUE", "badge": "⏱️ Délai < 20 min", "reason": "D-Lactate : Acheminement au laboratoire sans délai, non réalisable en externe."},
+    "osptv": {"type": "DELAI_CRITIQUE", "badge": "⏱️ Délai < 15 min", "reason": "P50 : Acheminement très rapide (< 15 min) sinon sur glace obligatoire, non disponible en externe."},
+    "osptvx": {"type": "DELAI_CRITIQUE", "badge": "⏱️ Délai < 15 min", "reason": "P50 : Acheminement très rapide (< 15 min) sinon sur glace obligatoire, non disponible en externe."},
+    "cynlc": {"type": "DELAI_CRITIQUE", "badge": "⏱️ Délai < 30 min", "reason": "Décompte cellulaire LCR : Acheminement immédiat au laboratoire requis (< 30 min), non disponible en externe."},
+    "cynbl": {"type": "DELAI_CRITIQUE", "badge": "⏱️ Délai < 30 min", "reason": "Décompte cellulaire liquide biologique : Acheminement immédiat (< 30 min), non disponible en externe."},
+
+    # =========================================================================
+    # 2. PROTOCOLES HOSPITALIERS & ÉPREUVES DYNAMIQUES
+    # =========================================================================
+    "epr006": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Test de surcharge en sel per os : Protocole hospitalier spécialisé 2013-PROT-PHAR-27, non réalisable en pharmacie / externe."},
+    "susel": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Test de surcharge en sel IV : Protocole hospitalier sous perfusion continue, non réalisable en pharmacie / externe."},
+    "catvc": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Cathétérisme des veines surrénaliennes : Procédure hospitalière invasive, non disponible en externe."},
+    "caspi": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Cathétérisme des sinus pétreux : Procédure hospitalière hautement spécialisée avec tubes sur glace."},
+    "epr001": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Test de déshydratation pour polyurie : Épreuve dynamique sous surveillance médicale hospitalière étroite."},
+    "epr002": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Test de jeûne court (8h-16h) pour hypoglycémie : Épreuve dynamique sous surveillance médicale hospitalière."},
+    "epr003": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Test de jeûne 72h pour hypoglycémie : Hospitalisation obligatoire."},
+    "gnrh1": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Test de stimulation LH-RH (LUTREPULSE) : Protocole dynamique hospitalier spécialisé."},
+    "ghstc": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Test de stimulation à la clonidine pour GH : Épreuve dynamique pédiatrique/adulte hospitalière."},
+    "stia1": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Test de stimulation à l'arginine : Protocole dynamique hospitalier sous perfusion IV."},
+    "stico": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Test de stimulation au cosyntropin 250 µg : Épreuve dynamique endocrinienne spécialisée."},
+    "stimi": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Test de stimulation à l'insuline : Risque d'hypoglycémie sévère, surveillance médicale continue requise."},
+    "gluc2": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Test de stimulation au glucagon : Épreuve dynamique sous surveillance hospitalière."},
+    "cosco": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Test au cosyntropin 1 mcg : Épreuve dynamique hospitalière, tubes lavande sur glace."},
+    "coscox": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Test au cosyntropin 1 mcg : Épreuve dynamique hospitalière, tubes lavande sur glace."},
+    "cosc1": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Test au cosyntropin 250 mcg : Épreuve dynamique hospitalière spécialisée."},
+    "cosc1x": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Test au cosyntropin 250 mcg : Épreuve dynamique hospitalière spécialisée."},
+    "ethr1": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Test de stimulation à la thyrotropine alfa (Thyrogen) : Protocole hospitalier multi-jours."},
+    "ethr1x": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Test de stimulation à la thyrotropine alfa (Thyrogen) : Protocole hospitalier multi-jours."},
+    "ethr3": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Épreuve de stimulation à la thyrotropine (Jour 3) : Protocole hospitalier multi-jours."},
+    "ethr3x": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Épreuve de stimulation à la thyrotropine (Jour 3) : Protocole hospitalier multi-jours."},
+    "ethr5": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Épreuve de stimulation à la thyrotropine (Jour 5) : Protocole hospitalier multi-jours."},
+    "ethr5x": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Épreuve de stimulation à la thyrotropine (Jour 5) : Protocole hospitalier multi-jours."},
+    "copdn": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Test de suppression à la dexaméthasone 1 mg : Protocole endocrinien spécialisé."},
+    "copdnx": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Test de suppression à la dexaméthasone 1 mg : Protocole endocrinien spécialisé."},
+    "supd4": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Test de suppression à la dexaméthasone 4 mg sur 48h : Protocole spécialisé."},
+    "supd8": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Test de suppression à la dexaméthasone 8 mg : Protocole spécialisé, tubes sur glace."},
+    "sudiv": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Test de suppression à la dexaméthasone IV : Surveillance hospitalière et transport sur glace."},
+    "sucap": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Test de suppression au captopril : Épreuve hémodynamique sous surveillance médicale."},
+    "eeana": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Épreuve d'effort en anaérobie : Plateau technique hospitalier et prélèvements sur glace."},
+    "hyp5h": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "HGPO 5 heures : Protocole prolongé 5h avec maintien des tubes sur glace ou centrifugation horaire."},
+    "hyp5hx": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "HGPO 5 heures : Protocole prolongé 5h avec maintien des tubes sur glace ou centrifugation horaire."},
+    "hyp2i": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "HGPO avec dosages d'insuline : Prélèvements sur glace / centrifugation rapide obligatoire."},
+    "hyp2ix": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "HGPO avec dosages d'insuline : Prélèvements sur glace / centrifugation rapide obligatoire."},
+    "dxy25": {"type": "PROTOCOLE_HOSPITALIER", "badge": "📋 Protocole hospitalier", "reason": "Épreuve au D-Xylose : Protocole d'absorption intestinale avec collectes minutées."},
+
+    # =========================================================================
+    # 3. SUR GLACE
+    # =========================================================================
     "ammo": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Spécimen sur glace obligatoire (< 30 min), non réalisable en externe."},
     "ammu": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Spécimen urinaire sur glace obligatoire, non disponible en externe."},
     "ammux": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Spécimen urinaire sur glace obligatoire, non disponible en externe."},
@@ -80,8 +151,6 @@ EXTERNAL_RESTRICTIONS_OVERRIDE = {
     "xsest": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Prélèvement sur glace, transport rapide (Hôpital seulement)."},
     "bio001": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Aviser le laboratoire, mettre immédiatement le spécimen sur glace."},
     "oxap": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Transport immédiat en bain d'eau et glace (sans contact direct), centrifugation < 1h."},
-    "osptv": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Transport rapide (< 15 min), sinon impérativement sur glace."},
-    "osptvx": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Transport rapide (< 15 min), sinon impérativement sur glace."},
     "yvegf": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Prélèvement sur glace, centrifugation à froid et décantation/congélation < 30 min."},
     "il6": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Prélèvement hospitalier obligatoire, arrivée sur glace < 30 min."},
     "hem031": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Centrifugation à 4°C en < 30 min, congélation et transport sur glace sèche."},
@@ -89,12 +158,6 @@ EXTERNAL_RESTRICTIONS_OVERRIDE = {
     "cfbsp": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Centrifugation à 4-8°C, décantation 2 aliquotes et transport sur glace sèche."},
     "fhpr": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Centrifugation à 4-8°C, décantation 2 aliquotes et transport sur glace sèche."},
     "comcf": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Centrifugation à 4-8°C, décantation 2 aliquotes et transport sur glace sèche."},
-    "cosco": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Épreuve dynamique : pré-refroidir et maintenir les tubes lavande sur glace."},
-    "coscox": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Épreuve dynamique : pré-refroidir et maintenir les tubes lavande sur glace."},
-    "sudiv": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Épreuve dynamique : tubes lavande pré-refroidis et transportés sur glace."},
-    "supd8": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Épreuve dynamique : tubes lavande sur glace obligatoires."},
-    "eeana": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Épreuve d'effort : prélèvement immédiat sur glace."},
-    "caspi": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Cathétérisme : tubes lavande sur glace obligatoires."},
     "laclb": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Acheminer sans délai sur glace, non disponible en externe."},
     "laclbx": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Acheminer sans délai sur glace, non disponible en externe."},
     "laclc": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Acheminer sans délai sur glace, non disponible en externe."},
@@ -103,7 +166,9 @@ EXTERNAL_RESTRICTIONS_OVERRIDE = {
     "cynba": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Lavage broncho-alvéolaire : acheminement immédiat sur glace."},
     "cydba": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "LBA pédiatrique : acheminement immédiat sur glace/sac réfrigérant."},
 
-    # 2. DECANTE / CONGELE EN EXTERNE
+    # =========================================================================
+    # 4. DECANTE / CONGELE EN EXTERNE
+    # =========================================================================
     "chga": {"type": "DECANTE_CONGELE", "badge": "🔄 Décantation requise", "reason": "Le spécimen doit impérativement être décanté dans l'heure suivant la ponction."},
     "yqudn": {"type": "DECANTE_CONGELE", "badge": "🔄 Décantation requise", "reason": "Centrifugation et décantation obligatoires en moins de 2 heures."},
     "xah50": {"type": "DECANTE_CONGELE", "badge": "🔄 Décantation requise", "reason": "Centrifugation à 4-8°C, décantation et congélation obligatoire en < 45 min."},
@@ -125,13 +190,12 @@ EXTERNAL_RESTRICTIONS_OVERRIDE = {
     "asspg": {"type": "DECANTE_CONGELE", "badge": "🔄 Aliquotage requis", "reason": "Demande externe : 1 aliquote de 0,5 mL distincte requise par test."},
     "xartv": {"type": "DECANTE_CONGELE", "badge": "❄️ Congélation requise", "reason": "Spécimen à congeler très rapidement à -20°C (Non disponible externe)."},
 
-    # 3. NON DISPONIBLE EN EXTERNE
+    # =========================================================================
+    # 5. NON DISPONIBLE EN EXTERNE
+    # =========================================================================
     "bioq": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Non disponible en externe (CLSC, cliniques) - Corridor CHU interne requis."},
     "hem035": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Non disponible pour la clientèle externe (CLSC, CM...)."},
     "myd88": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Non disponible pour la clientèle externe (CLSC, CM...)."},
-    "catvc": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Épreuve dynamique hospitalière, non disponible en externe."},
-    "epr006": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Test de surcharge hospitalier, non disponible en externe."},
-    "susel": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Test de surcharge hospitalier, non disponible en externe."},
     "pyrlc": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Non disponible en externe (CLSC, cliniques privées, résidences)."},
     "ffa": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Prélèvement à ne faire qu'à l'hôpital, non disponible pour l'externe."},
     "hgh": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Doit être prélevé à l'intérieur du CHU ou en centre hospitalier avec labo."},
@@ -161,7 +225,9 @@ EXTERNAL_RESTRICTIONS_OVERRIDE = {
 
 def get_external_restriction(pid, item=None):
     """
-    Evaluates whether a laboratory test has external clinic / CLSC collection restrictions:
+    Evaluates whether a laboratory test has external clinic / CLSC / pharmacy collection restrictions:
+    - DELAI_CRITIQUE (blood gas, lactate, fast transit < 15-30 min)
+    - PROTOCOLE_HOSPITALIER (dynamic stimulation/suppression/overload protocols)
     - SUR_GLACE (requires ice bath, dry ice, pre-chilled tubes)
     - DECANTE_CONGELE (requires immediate centrifugation, decantation, or fast freezing)
     - NON_DISPO_EXTERNE (hospital only or strictly unavailable for external clinics)
@@ -173,7 +239,17 @@ def get_external_restriction(pid, item=None):
     if pid_clean in EXTERNAL_RESTRICTIONS_OVERRIDE:
         ov = EXTERNAL_RESTRICTIONS_OVERRIDE[pid_clean]
         t = ov["type"]
-        b_class = "bg-rose-50 text-rose-700 border-rose-200" if t == "NON_DISPO_EXTERNE" else ("bg-sky-50 text-sky-700 border-sky-200" if t == "SUR_GLACE" else "bg-amber-50 text-amber-700 border-amber-200")
+        if t == "NON_DISPO_EXTERNE":
+            b_class = "bg-rose-50 text-rose-700 border-rose-200"
+        elif t == "DELAI_CRITIQUE":
+            b_class = "bg-orange-50 text-orange-700 border-orange-200"
+        elif t == "PROTOCOLE_HOSPITALIER":
+            b_class = "bg-purple-50 text-purple-700 border-purple-200"
+        elif t == "SUR_GLACE":
+            b_class = "bg-sky-50 text-sky-700 border-sky-200"
+        else: # DECANTE_CONGELE
+            b_class = "bg-amber-50 text-amber-700 border-amber-200"
+
         return {
             "is_incompatible": True,
             "type": t,
@@ -189,12 +265,33 @@ def get_external_restriction(pid, item=None):
     if not item:
         return {"is_incompatible": False, "type": None, "badge": None, "badge_class": None, "reason": None}
         
+    name_clean = item.get("name", "").lower()
     prep = item.get("preparation", "")
     inst = item.get("instructions", [])
     alerts = item.get("alerts", [])
     combined = " \n ".join([prep] + inst + alerts)
     
-    # Check "Externe (CLSC...)" "Non disponible"
+    # 1. Check Blood gas & Lactates (Critical delay)
+    if any(k in name_clean for k in ["gaz sanguin", "gaz artériel", "gaz veineux", "gaz capillaire", "co-oxymétrie", "lactate", "acide lactique"]) and not any(ex in name_clean for ex in ["déshydrogénase", "deshydrogenase", "ldh"]):
+        return {
+            "is_incompatible": True,
+            "type": "DELAI_CRITIQUE",
+            "badge": "⏱️ Délai < 20 min",
+            "badge_class": "bg-orange-50 text-orange-700 border-orange-200",
+            "reason": "Gaz sanguins / Lactate : Acheminement au laboratoire en < 20 min requis, non réalisable en externe / pharmacie."
+        }
+
+    # 2. Check Dynamic / Hospital protocols
+    if any(k in name_clean for k in ["test de surcharge", "épreuve de stimulation", "test de stimulation", "test de suppression", "cathétérisme", "test de déshydratation", "test de jeûne", "épreuve d'effort"]):
+        return {
+            "is_incompatible": True,
+            "type": "PROTOCOLE_HOSPITALIER",
+            "badge": "📋 Protocole hospitalier",
+            "badge_class": "bg-purple-50 text-purple-700 border-purple-200",
+            "reason": "Protocole hospitalier dynamique spécialisé (surveillance médicale/hospitalière requise, non réalisable en pharmacie)."
+        }
+
+    # 3. Check "Externe (CLSC...)" "Non disponible"
     if re.search(r"Externe\s*\(CLSC[^)]*\)\s*Non\s*disponible|Non\s+disponible\s+(?:en|pour|pour\s+l[\'\’])\s*externe|Prélèvement\s+à\s+ne\s+faire\s+qu[\'\’]à\s+l[\'\’]hôpital", combined, re.IGNORECASE):
         return {
             "is_incompatible": True,
@@ -204,7 +301,7 @@ def get_external_restriction(pid, item=None):
             "reason": "Analyse non réalisable en externe ou réservée au milieu hospitalier."
         }
         
-    # Check Ice (exclude explicit negative phrases like "ne pas mettre sur glace")
+    # 4. Check Ice (exclude explicit negative phrases like "ne pas mettre sur glace")
     if re.search(r"\b(glace|glacée|glacées|ice)\b", combined, re.IGNORECASE) and not re.search(r"ne\s+pas\s+mettre\s+sur\s+(?:la\s+)?glace|pas\s+nécessaire", combined, re.IGNORECASE):
         return {
             "is_incompatible": True,
@@ -214,7 +311,7 @@ def get_external_restriction(pid, item=None):
             "reason": "Spécimen nécessitant un transport ou maintien sur glace."
         }
         
-    # Check Decant
+    # 5. Check Decant
     if re.search(r"d[eé]cant|double\s+centrifug|congeler\s+imm[eé]diatement", combined, re.IGNORECASE) and not re.search(r"ne\s+pas\s+(?:centrifuger|congeler)", combined, re.IGNORECASE):
         return {
             "is_incompatible": True,
@@ -222,6 +319,16 @@ def get_external_restriction(pid, item=None):
             "badge": "🔄 Décantation requise",
             "badge_class": "bg-amber-50 text-amber-700 border-amber-200",
             "reason": "Spécimen nécessitant une centrifugation, décantation ou congélation immédiate."
+        }
+
+    # 6. Check Short delay keywords (< 15-30 min)
+    if re.search(r"\b(<\s*(?:15|20|30)\s*min(?:utes?)?|le plus rapidement possible|sans d[ée]lai)\b", combined, re.IGNORECASE) and not re.search(r"jours?|semaines?", combined, re.IGNORECASE):
+        return {
+            "is_incompatible": True,
+            "type": "DELAI_CRITIQUE",
+            "badge": "⏱️ Délai critique",
+            "badge_class": "bg-orange-50 text-orange-700 border-orange-200",
+            "reason": "Délai d'acheminement critique (< 30 min), non réalisable en pharmacie / externe."
         }
 
     return {"is_incompatible": False, "type": None, "badge": None, "badge_class": None, "reason": None}
@@ -771,12 +878,18 @@ def calculate_tubes(selected_pids, site="Tous les sites", is_pediatric=False):
 
         for al in item.get("alerts", []):
             al_clean = al.strip()
-            if any(k in al_clean.lower() for k in ["glace", "lumière", "délai", "rapidement", "achemin", "attention", "soluté", "minutes", "heure"]):
-                if "glace" in al_clean.lower():
+            al_lower = al_clean.lower()
+            if any(k in al_lower for k in ["glace", "lumière", "lumiere", "délai", "delai", "rapidement", "achemin", "attention", "soluté", "solute", "minute", "heure"]):
+                if "ne pas mettre sur glace" in al_lower or "pas sur glace" in al_lower:
+                    if any(k in al_lower for k in ["minute", "délai", "delai", "rapidement", "sans délai"]):
+                        structured_global_alerts.append(f"⏱️ {item['name']} : {al_clean}")
+                    else:
+                        structured_global_alerts.append(f"⚠️ {item['name']} : {al_clean}")
+                elif "glace" in al_lower:
                     structured_global_alerts.append(f"🧊 {item['name']} : {al_clean}")
-                elif "lumière" in al_clean.lower():
+                elif "lumière" in al_lower or "lumiere" in al_lower:
                     structured_global_alerts.append(f"🌑 {item['name']} : {al_clean}")
-                elif "minute" in al_clean.lower() or "délai" in al_clean.lower() or "rapidement" in al_clean.lower():
+                elif any(k in al_lower for k in ["minute", "délai", "delai", "rapidement", "sans délai"]):
                     structured_global_alerts.append(f"⏱️ {item['name']} : {al_clean}")
                 else:
                     structured_global_alerts.append(f"⚠️ {item['name']} : {al_clean}")

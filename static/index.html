@@ -1897,6 +1897,14 @@
       });
     }
 
+    function getRestrictionIcon(type) {
+      if (type === 'SUR_GLACE') return '🧊';
+      if (type === 'DECANTE_CONGELE') return '🔄';
+      if (type === 'DELAI_CRITIQUE') return '⏱️';
+      if (type === 'PROTOCOLE_HOSPITALIER') return '📋';
+      return '🚫';
+    }
+
     async function updateBasket() {
       const count = selectedAnalyses.size;
       basketCount.innerText = count;
@@ -1922,10 +1930,11 @@
         const chip = document.createElement("div");
         chip.dataset.pid = pid;
         if (isRestricted) {
+          const icon = getRestrictionIcon(incompData ? incompData.type : null);
           chip.className = "bg-rose-50 border border-rose-300 hover:border-rose-400 shadow-sm rounded-lg px-2.5 py-1 text-xs flex items-center space-x-1.5 text-rose-900 transition group font-semibold";
           chip.title = incompData ? incompData.reason : "Prélèvement non réalisable en externe";
           chip.innerHTML = `
-            <span class="text-xs">${incompData && incompData.type === 'SUR_GLACE' ? '🧊' : (incompData && incompData.type === 'DECANTE_CONGELE' ? '🔄' : '🚫')}</span>
+            <span class="text-xs">${icon}</span>
             <span class="font-bold truncate max-w-[170px]">${pid.toUpperCase()}</span>
             <span class="text-[9px] bg-rose-200/90 text-rose-950 px-1.5 py-0.5 rounded font-bold">${escapeHtml(incompData ? incompData.badge : 'Non externe')}</span>
             <button class="text-rose-400 hover:text-rose-700 transition" title="Supprimer">
@@ -1962,10 +1971,11 @@
         const isRestricted = lastKnownIncompatibilities.has(pidLower);
         const incompData = lastKnownIncompatibilities.get(pidLower);
         if (isRestricted && !chip.classList.contains("bg-rose-50")) {
+          const icon = getRestrictionIcon(incompData ? incompData.type : null);
           chip.className = "bg-rose-50 border border-rose-300 hover:border-rose-400 shadow-sm rounded-lg px-2.5 py-1 text-xs flex items-center space-x-1.5 text-rose-900 transition group font-semibold";
           chip.title = incompData ? incompData.reason : "Prélèvement non réalisable en externe";
           chip.innerHTML = `
-            <span class="text-xs">${incompData && incompData.type === 'SUR_GLACE' ? '🧊' : (incompData && incompData.type === 'DECANTE_CONGELE' ? '🔄' : '🚫')}</span>
+            <span class="text-xs">${icon}</span>
             <span class="font-bold truncate max-w-[170px]">${pid.toUpperCase()}</span>
             <span class="text-[9px] bg-rose-200/90 text-rose-950 px-1.5 py-0.5 rounded font-bold">${escapeHtml(incompData ? incompData.badge : 'Non externe')}</span>
             <button class="text-rose-400 hover:text-rose-700 transition" title="Supprimer">
@@ -2077,7 +2087,7 @@
         externalIncompCountBadge.innerText = incompList.length;
         externalIncompatibilityList.innerHTML = "";
         incompList.forEach(inc => {
-          const icon = inc.type === 'SUR_GLACE' ? '🧊' : (inc.type === 'DECANTE_CONGELE' ? '🔄' : '🚫');
+          const icon = getRestrictionIcon(inc.type);
           const card = document.createElement("div");
           card.className = "bg-white/90 border border-rose-200/90 rounded-xl p-3 flex items-start space-x-2.5 shadow-2xs";
           card.innerHTML = `
