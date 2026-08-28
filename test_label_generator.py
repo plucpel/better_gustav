@@ -137,9 +137,9 @@ class TestLabelGenerator(unittest.TestCase):
             self.assertAlmostEqual(page.rect.width, expected_w, places=1)
             self.assertAlmostEqual(page.rect.height, expected_h, places=1)
 
-    def test_zxing_optical_decodability_of_pdf_labels(self):
-        """Verify that barcode scanners (zxingcpp) can decode 100% of generated labels."""
-        pids = ["fsc", "elec", "ptrin", "gaaco", "bds003"]
+    def test_simplified_label_content_and_numbering(self):
+        """Verify that generated PDF labels contain strictly Name, DOB, RAMQ, and 1/X numbering."""
+        pids = ["fsc", "elec", "ptrin"]
         pdf_bytes = generate_tube_labels_pdf(
             pids=pids,
             site="Tous les sites",
@@ -149,23 +149,18 @@ class TestLabelGenerator(unittest.TestCase):
         )
         
         doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-        self.assertGreater(len(doc), 0)
+        self.assertEqual(len(doc), 3)
         
-        for idx, page in enumerate(doc):
-            pix = page.get_pixmap(dpi=300)
-            img = np.frombuffer(pix.samples, dtype=np.uint8).reshape((pix.height, pix.width, pix.n))
-            if pix.n == 4:
-                img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)
-            elif pix.n == 3:
-                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-                
-            barcodes = zxingcpp.read_barcodes(img)
-            self.assertGreaterEqual(
-                len(barcodes), 1,
-                f"Page {idx+1} barcode was not decodable by zxingcpp"
-            )
-            self.assertEqual(barcodes[0].text, "TREJ80051512")
-            self.assertIn("Code 128", str(barcodes[0].format))
+        for idx, page in enumerate(doc, 1):
+            text = page.get_text()
+            # 1. Patient Name
+            self.assertIn("TREMBLAY, JEAN", text)
+            # 2. Numbering (e.g. 1/3, 2/3, 3/3)
+            self.assertIn(f"{idx}/3", text)
+            # 3. RAMQ
+            self.assertIn("RAMQ : TREJ 8005 1512", text)
+            # 4. DOB
+            self.assertIn("DDN : 1980-05-15 (M)", text)
 
     def test_filename_formatting(self):
         """Test clean filename formatting."""

@@ -127,6 +127,31 @@
     </div>
   </header>
 
+  <!-- Medesync Active Session Banner (Shown only when initiated with patient params) -->
+  <div id="medesyncBanner" class="hidden bg-gradient-to-r from-emerald-700 via-teal-700 to-cyan-800 text-white shadow-md border-b border-emerald-500/30 px-4 py-2.5 transition-all">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <span class="flex h-3 w-3 relative">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-400"></span>
+        </span>
+        <div class="flex items-center space-x-2 text-xs sm:text-sm font-medium">
+          <span class="font-bold tracking-wide uppercase bg-emerald-950/70 px-2 py-0.5 rounded text-[10px] border border-emerald-400/40 text-emerald-200">Session Medesync</span>
+          <span id="medesyncBannerText" class="font-semibold">Dossier actif</span>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2">
+        <button id="btnMedesyncQuickSend" class="bg-white hover:bg-emerald-50 text-emerald-900 font-bold px-3 py-1.5 rounded-lg text-xs transition shadow flex items-center space-x-1.5 cursor-pointer">
+          <i class="fa-solid fa-cloud-arrow-up text-emerald-600"></i>
+          <span>Renvoyer Requête à Medesync</span>
+        </button>
+        <button id="btnMedesyncClearSession" class="text-white/70 hover:text-white text-xs px-2 py-1.5 hover:bg-white/10 rounded transition" title="Réinitialiser la session Medesync">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Main Content Grid -->
   <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
     
@@ -582,6 +607,10 @@
             <i class="fa-solid fa-file-arrow-down text-xs"></i>
             <span>Générer &amp; Télécharger PDF</span>
           </button>
+          <button id="btnSendToMedesyncModal" class="hidden px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow transition flex items-center space-x-1.5" title="Transmettre le PDF généré directement au dossier Medesync">
+            <i class="fa-solid fa-cloud-arrow-up text-xs"></i>
+            <span>Renvoyer à Medesync</span>
+          </button>
           <button id="btnOpenDymoFromRequisition" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow transition flex items-center space-x-1.5" title="Ouvrir l'aperçu et l'impression des étiquettes Dymo">
             <i class="fa-solid fa-tags text-[11px]"></i>
             <span>Étiquettes Dymo</span>
@@ -633,13 +662,10 @@
                 <i class="fa-solid fa-camera text-[11px]"></i>
                 <span>Scanner RAMQ</span>
               </button>
-              <!-- Format Selector -->
-              <div class="flex items-center space-x-1.5 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 text-xs">
-                <span class="text-slate-500 font-medium">Format :</span>
-                <select id="dymoFormatSelect" class="bg-transparent font-bold text-slate-800 outline-none cursor-pointer text-xs">
-                  <option value="30336">Dymo 30336 (1" x 2-1/8" • 54x25 mm)</option>
-                  <option value="30334">Dymo 30334 (1-1/4" x 2-1/4" • 57x32 mm)</option>
-                </select>
+              <!-- Fixed Format Badge (30336) -->
+              <div class="flex items-center space-x-1.5 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700">
+                <i class="fa-solid fa-tag text-sky-600"></i>
+                <span>Format Dymo 30336 (54×25 mm)</span>
               </div>
             </div>
           </div>
@@ -1378,7 +1404,6 @@
       if (downloadDymoPdfBtn) downloadDymoPdfBtn.addEventListener("click", () => triggerDymoPdfDownload(false));
       if (directPrintDymoBtn) directPrintDymoBtn.addEventListener("click", directPrintDymo);
       if (btnDymoScanRamq) btnDymoScanRamq.addEventListener("click", () => startRamqScanner());
-      if (dymoFormatSelect) dymoFormatSelect.addEventListener("change", loadDymoPreview);
 
       // Auto-extract RAMQ in Dymo inputs
       const dymoRamqInput = document.getElementById("dymoRamq");
@@ -1415,6 +1440,240 @@
           });
         }
       });
+
+      // Medesync Session Banner Event Listeners
+      const btnMedesyncQuickSend = document.getElementById("btnMedesyncQuickSend");
+      const btnMedesyncClearSession = document.getElementById("btnMedesyncClearSession");
+      const btnSendToMedesyncModal = document.getElementById("btnSendToMedesyncModal");
+
+      if (btnMedesyncQuickSend) btnMedesyncQuickSend.addEventListener("click", () => sendToMedesync(btnMedesyncQuickSend));
+      if (btnSendToMedesyncModal) btnSendToMedesyncModal.addEventListener("click", () => sendToMedesync(btnSendToMedesyncModal));
+      if (btnMedesyncClearSession) btnMedesyncClearSession.addEventListener("click", clearMedesyncSession);
+
+      // Handle Incoming URL parameters from Medesync / external EMR
+      await handleIncomingUrlParams();
+    }
+
+    // ==============================================================================
+    // MEDESYNC & EXTERNAL EMR INTEGRATION BRIDGE
+    // ==============================================================================
+    
+    window._medesyncContext = null;
+
+    function showMedesyncBanner(context) {
+      const banner = document.getElementById("medesyncBanner");
+      const bannerText = document.getElementById("medesyncBannerText");
+      const modalBtn = document.getElementById("btnSendToMedesyncModal");
+      
+      if (!banner || !bannerText) return;
+
+      const parts = [];
+      if (context.dossier) parts.push(`Dossier #${escapeHtml(context.dossier)}`);
+      if (context.nom) parts.push(escapeHtml(context.nom));
+      if (context.ramq) parts.push(escapeHtml(context.ramq));
+      
+      bannerText.innerHTML = parts.join(" • ") || "Session patient active";
+      banner.classList.remove("hidden");
+
+      if (modalBtn) {
+        modalBtn.classList.remove("hidden");
+      }
+    }
+
+    function clearMedesyncSession() {
+      window._medesyncContext = null;
+      const banner = document.getElementById("medesyncBanner");
+      const modalBtn = document.getElementById("btnSendToMedesyncModal");
+      if (banner) banner.classList.add("hidden");
+      if (modalBtn) modalBtn.classList.add("hidden");
+      
+      if (window.history && window.history.replaceState) {
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
+    }
+
+    function showMedesyncNotification(message, isSuccess = true) {
+      const existing = document.getElementById("medesyncToast");
+      if (existing) existing.remove();
+
+      const toast = document.createElement("div");
+      toast.id = "medesyncToast";
+      toast.className = `fixed bottom-6 right-6 z-50 ${isSuccess ? 'bg-emerald-900 border-emerald-500 text-emerald-100' : 'bg-rose-900 border-rose-500 text-rose-100'} border shadow-2xl rounded-2xl p-4 flex items-center space-x-3 text-xs font-semibold animate-in fade-in slide-in-from-bottom-5 duration-200`;
+      toast.innerHTML = `
+        <div class="w-7 h-7 rounded-full ${isSuccess ? 'bg-emerald-800 text-emerald-300' : 'bg-rose-800 text-rose-300'} flex items-center justify-center text-sm flex-shrink-0">
+          <i class="fa-solid ${isSuccess ? 'fa-check' : 'fa-circle-exclamation'}"></i>
+        </div>
+        <div class="flex-1 pr-2">${escapeHtml(message)}</div>
+        <button class="text-white/60 hover:text-white transition" onclick="this.parentElement.remove()">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      `;
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        if (toast && toast.parentElement) {
+          toast.remove();
+        }
+      }, 5000);
+    }
+
+    async function sendToMedesync(triggerBtn = null) {
+      if (selectedAnalyses.size === 0) {
+        alert("Veuillez sélectionner au moins une analyse avant de transmettre la requête à Medesync.");
+        return;
+      }
+
+      const pInfo = collectPatientInfo();
+      const dossier = pInfo.dossier || (window._medesyncContext ? window._medesyncContext.dossier : "");
+
+      const btn = triggerBtn || document.getElementById("btnMedesyncQuickSend") || document.getElementById("btnSendToMedesyncModal");
+      const origHtml = btn ? btn.innerHTML : "";
+      if (btn) {
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-xs"></i> <span>Génération...</span>`;
+        btn.disabled = true;
+      }
+
+      try {
+        await generateAndDownloadPdf(false);
+        showMedesyncNotification(`Requête Optilab prête et transmise pour le dossier #${dossier || 'patient'}.`);
+      } catch (err) {
+        showMedesyncNotification("Erreur lors de la préparation pour Medesync : " + err.message, false);
+      } finally {
+        if (btn) {
+          btn.innerHTML = origHtml;
+          btn.disabled = false;
+        }
+      }
+    }
+
+    async function handleIncomingUrlParams() {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (!urlParams.toString()) return;
+
+      const nom = urlParams.get("nom") || urlParams.get("name") || urlParams.get("patient");
+      const ramq = urlParams.get("ramq") || urlParams.get("nam");
+      const licence = urlParams.get("licence") || urlParams.get("license") || urlParams.get("permis") || urlParams.get("doctor_license");
+      const dossier = urlParams.get("dossier") || urlParams.get("chart") || urlParams.get("patient_id") || urlParams.get("medesync_id");
+      const site = urlParams.get("site");
+      const analysesStr = urlParams.get("analyses") || urlParams.get("tests") || urlParams.get("pids");
+      const source = urlParams.get("source") || urlParams.get("from") || "medesync";
+
+      let hasPatientData = false;
+
+      // 1. Patient Name
+      if (nom) {
+        const reqNameEl = document.getElementById("reqPatientName");
+        if (reqNameEl) {
+          reqNameEl.value = nom.trim();
+          hasPatientData = true;
+        }
+        const dymoNameEl = document.getElementById("dymoPatientName");
+        if (dymoNameEl) dymoNameEl.value = nom.trim();
+      }
+
+      // 2. RAMQ
+      if (ramq) {
+        const reqRamqEl = document.getElementById("reqRamq");
+        if (reqRamqEl) {
+          reqRamqEl.value = ramq.trim();
+          hasPatientData = true;
+          reqRamqEl.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        const dymoRamqEl = document.getElementById("dymoRamq");
+        if (dymoRamqEl) {
+          dymoRamqEl.value = ramq.trim();
+          dymoRamqEl.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+      }
+
+      // 3. Dossier / Chart
+      if (dossier) {
+        const reqDossierEl = document.getElementById("reqDossier");
+        if (reqDossierEl) {
+          reqDossierEl.value = dossier.trim();
+          hasPatientData = true;
+        }
+      }
+
+      // Save context & Show banner
+      if (hasPatientData || dossier) {
+        window._medesyncContext = {
+          nom: nom ? nom.trim() : "",
+          ramq: ramq ? ramq.trim() : "",
+          licence: licence ? licence.trim() : "",
+          dossier: dossier ? dossier.trim() : "",
+          source: source
+        };
+        showMedesyncBanner(window._medesyncContext);
+      }
+
+      // 4. Doctor License
+      if (licence) {
+        const reqDocLicEl = document.getElementById("reqDoctorLicense");
+        if (reqDocLicEl) {
+          reqDocLicEl.value = licence.trim();
+          try {
+            const res = await fetch(`/api/prescribers/search?q=${encodeURIComponent(licence.trim())}&limit=5`);
+            if (res.ok) {
+              const matches = await res.json();
+              if (matches && matches.length > 0) {
+                const exact = matches.find(m => String(m.doctor_license || "").trim() === licence.trim()) || matches[0];
+                applyPrescriber(exact);
+              }
+            }
+          } catch (e) {
+            console.debug("Prescriber auto-lookup from URL skipped:", e);
+          }
+        }
+      }
+
+      // 5. Site
+      if (site && siteSelect) {
+        const siteMatch = Array.from(siteSelect.options).find(opt => 
+          opt.value.toLowerCase().includes(site.toLowerCase()) || 
+          opt.text.toLowerCase().includes(site.toLowerCase())
+        );
+        if (siteMatch) {
+          siteSelect.value = siteMatch.value;
+          currentSite = siteMatch.value;
+          summarySiteLabel.innerText = currentSite;
+        }
+      }
+
+      // 6. Analyses
+      if (analysesStr) {
+        const terms = analysesStr.split(/[,;|]/).map(t => t.trim()).filter(Boolean);
+        for (const term of terms) {
+          if (panelsData[term]) {
+            panelsData[term].pids.forEach(p => selectedAnalyses.add(p));
+          } else {
+            try {
+              const sRes = await fetch(`/api/search?q=${encodeURIComponent(term)}`);
+              if (sRes.ok) {
+                const sData = await sRes.json();
+                if (sData && sData.length > 0) {
+                  const first = sData[0];
+                  if (first.type === "panel") {
+                    first.pids.forEach(p => selectedAnalyses.add(p));
+                  } else if (first.pid) {
+                    selectedAnalyses.add(first.pid);
+                  }
+                }
+              }
+            } catch (e) {
+              console.debug("Analysis lookup skipped for term:", term, e);
+            }
+          }
+        }
+        await updateBasket();
+      }
+
+      // Auto-focus on analysis input
+      setTimeout(() => {
+        if (analysisInput) {
+          analysisInput.focus();
+        }
+      }, 150);
     }
 
     function escapeHtml(str) {
@@ -3934,6 +4193,41 @@
           setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
         }
 
+        // Broadcast custom event & window.postMessage for Medesync bridge / extensions
+        try {
+          const detail = {
+            blob: blob,
+            blobUrl: blobUrl,
+            filename: pdfFilename,
+            patient_info: pInfo,
+            dossier: pInfo.dossier || (window._medesyncContext ? window._medesyncContext.dossier : ""),
+            ramq: pInfo.ramq || (window._medesyncContext ? window._medesyncContext.ramq : ""),
+            patient_name: pInfo.patient_name || (window._medesyncContext ? window._medesyncContext.nom : ""),
+            timestamp: new Date().toISOString()
+          };
+          document.dispatchEvent(new CustomEvent("gustav:pdf_ready", { detail }));
+
+          if (window.opener || (window.parent && window.parent !== window)) {
+            const target = window.opener || window.parent;
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              target.postMessage({
+                type: "GUSTAV_PDF_READY",
+                payload: {
+                  pdfBase64: reader.result,
+                  filename: pdfFilename,
+                  dossier: detail.dossier,
+                  ramq: detail.ramq,
+                  patient_name: detail.patient_name
+                }
+              }, "*");
+            };
+            reader.readAsDataURL(blob);
+          }
+        } catch (postErr) {
+          console.debug("Medesync broadcast skipped:", postErr);
+        }
+
         // Refresh server profiles in background to reflect auto-learning
         setTimeout(() => {
           loadServerPrescribers();
@@ -3961,7 +4255,7 @@
     const downloadDymoPdfBtn = document.getElementById("downloadDymoPdfBtn");
     const directPrintDymoBtn = document.getElementById("directPrintDymoBtn");
     const btnDymoScanRamq = document.getElementById("btnDymoScanRamq");
-    const dymoFormatSelect = document.getElementById("dymoFormatSelect");
+    const DYMO_FORMAT = "30336"; // Fixed standard format (1" x 2-1/8" • 54x25 mm)
 
     const dymoPatientName = document.getElementById("dymoPatientName");
     const dymoRamq = document.getElementById("dymoRamq");
@@ -4072,13 +4366,12 @@
 
       syncDymoToRequisition();
       const pInfo = collectPatientInfo();
-      const formatVal = dymoFormatSelect ? (dymoFormatSelect.value || "30336") : "30336";
 
       const payload = {
         pids: Array.from(selectedAnalyses),
         site: pInfo.site || currentSite,
         is_pediatric: isPediatric,
-        format: formatVal,
+        format: DYMO_FORMAT,
         patient_info: pInfo
       };
 
@@ -4130,57 +4423,24 @@
 
       let html = "";
       labels.forEach((l, idx) => {
-        const ramqBarcodeSvg = generateCode128Svg(l.ramq_raw, 26);
-        const alertHtml = l.alert_str ? `
-          <div class="mt-2 bg-slate-950 text-white px-2 py-1 rounded text-[10px] font-bold flex items-center justify-between">
-            <span>${l.alert_str}</span>
-            <span class="text-slate-300 font-normal font-mono text-[9px]">${l.time_str || ''}</span>
-          </div>
-        ` : `
-          <div class="mt-2 text-[10px] text-slate-500 flex items-center justify-between border-t border-slate-200 pt-1">
-            <span class="truncate">${l.nurse_str || ''} ${l.location_str ? '• ' + l.location_str : ''}</span>
-            <span class="font-mono text-slate-600 shrink-0">${l.time_str || ''}</span>
-          </div>
-        `;
-
+        const seqText = `${l.sequence_index || (idx + 1)}/${l.total_sequence || labels.length}`;
         html += `
-          <div class="bg-white border-2 border-slate-300 rounded-xl p-3 shadow-md hover:border-sky-500 transition relative flex flex-col justify-between" style="min-height: 185px;">
-            <!-- Top header row -->
-            <div class="border-b border-slate-200 pb-1.5 mb-1 flex items-start justify-between gap-2">
-              <div>
-                <div class="text-xs font-bold text-slate-900 leading-tight">${l.patient_name}</div>
-                <div class="text-[11px] text-slate-600 font-medium">
-                  ${l.dob ? 'DDN: ' + l.dob : ''} ${l.sex ? '(' + l.sex + ')' : ''}
-                </div>
-              </div>
-              <div class="text-right">
-                <div class="text-xs font-bold text-sky-900 font-mono">${l.ramq_display || l.ramq_raw || ''}</div>
-                <div class="text-[10px] text-slate-500 font-mono">${l.dossier ? 'Dos: ' + l.dossier : ''}</div>
-              </div>
+          <div class="bg-white border-2 border-slate-300 rounded-xl p-4 shadow-sm hover:border-sky-500 transition relative flex flex-col justify-between" style="min-height: 125px;">
+            <!-- Row 1: Name & 1/X Numbering -->
+            <div class="flex items-center justify-between pb-2 border-b border-slate-200 gap-2">
+              <div class="text-sm font-black text-slate-900 truncate uppercase tracking-tight">${escapeHtml(l.patient_name)}</div>
+              <div class="bg-slate-900 text-white font-black px-2.5 py-0.5 rounded text-xs shrink-0 font-mono">${seqText}</div>
             </div>
 
-            <!-- Barcode Area -->
-            <div class="py-1 text-center bg-white">
-              <div class="px-2">${ramqBarcodeSvg}</div>
-              <div class="text-[10px] font-mono tracking-widest text-slate-800 font-semibold mt-0.5">${l.ramq_raw || ''}</div>
+            <!-- Row 2: RAMQ -->
+            <div class="py-2 text-base font-black text-slate-900 font-mono tracking-wide">
+              <span class="text-xs text-slate-500 font-sans font-bold uppercase tracking-normal">RAMQ : </span>${escapeHtml(l.ramq_display || l.ramq_raw || 'Non spécifiée')}
             </div>
 
-            <!-- Tube details -->
-            <div class="mt-1 pt-1 border-t border-slate-200">
-              <div class="flex items-center justify-between text-xs font-bold text-slate-900">
-                <div class="flex items-center space-x-1.5 truncate">
-                  <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${l.color_code};"></span>
-                  <span class="truncate">${l.tube_index_str} • ${l.cap_color_name}</span>
-                </div>
-                <span class="text-[11px] font-semibold text-slate-600 shrink-0">${l.max_volume ? l.max_volume.split('par')[0].trim() : ''}</span>
-              </div>
-              <div class="text-[11px] text-slate-700 font-medium truncate mt-0.5">
-                Analyses : <span class="font-semibold text-indigo-950">${l.analyses_str}</span>
-              </div>
+            <!-- Row 3: DOB & Sex -->
+            <div class="text-xs font-bold text-slate-800 pt-1.5 border-t border-slate-100 flex items-center justify-between">
+              <span><span class="text-slate-500 font-medium">DDN : </span>${escapeHtml(l.dob || 'Non spécifiée')} ${l.sex ? '(' + escapeHtml(l.sex) + ')' : ''}</span>
             </div>
-
-            <!-- Alert or Traceability Footer -->
-            ${alertHtml}
           </div>
         `;
       });
@@ -4196,49 +4456,25 @@
       }
 
       let html = "";
-      labels.forEach(l => {
-        const ramqBarcodeSvg = generateCode128Svg(l.ramq_raw, 22);
-        const alertHtml = l.alert_str ? `
-          <div style="background: #000; color: #fff; padding: 1px 3px; font-size: 7.5pt; font-weight: bold; margin-top: 1.5px; display: flex; justify-content: space-between; border-radius: 2px;">
-            <span>${l.alert_str}</span>
-            <span style="font-size: 6.5pt; font-weight: normal;">${l.time_str || ''}</span>
-          </div>
-        ` : `
-          <div style="font-size: 6.5pt; color: #333; margin-top: 1.5px; border-top: 0.4pt solid #ccc; padding-top: 1px; display: flex; justify-content: space-between;">
-            <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 32mm;">${l.nurse_str || ''}</span>
-            <span style="font-family: monospace;">${l.time_str || ''}</span>
-          </div>
-        `;
-
+      labels.forEach((l, idx) => {
+        const seqText = `${l.sequence_index || (idx + 1)}/${l.total_sequence || labels.length}`;
         html += `
-          <div class="dymo-print-label">
-            <!-- Patient Header -->
-            <div style="display: flex; justify-content: space-between; font-size: 7.5pt; font-weight: bold; border-bottom: 0.4pt solid #777; padding-bottom: 1px;">
-              <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 28mm;">${l.patient_name}</span>
-              <span style="font-family: monospace; white-space: nowrap;">${l.ramq_display || l.ramq_raw || ''}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; font-size: 6.2pt; color: #222; margin-top: 0.5px;">
-              <span>${l.dob ? 'DDN: ' + l.dob : ''} ${l.sex ? '(' + l.sex + ')' : ''}</span>
-              <span>${l.dossier ? 'Dos: ' + l.dossier : ''}</span>
+          <div class="dymo-print-label" style="display: flex; flex-direction: column; justify-content: space-between; padding: 2.2mm 2.8mm; box-sizing: border-box; height: 25.4mm; width: 54mm; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #fff; color: #000;">
+            <!-- Row 1: Name & 1/X -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 0.6pt solid #000; padding-bottom: 0.8mm;">
+              <span style="font-size: 8.8pt; font-weight: 900; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 38mm; letter-spacing: -0.2px;">${l.patient_name}</span>
+              <span style="background: #000; color: #fff; font-size: 8.5pt; font-weight: 900; padding: 0.4mm 1.6mm; border-radius: 0.8mm; font-family: monospace;">${seqText}</span>
             </div>
 
-            <!-- Barcode Area -->
-            <div style="margin: 1px 0; text-align: center;">
-              ${ramqBarcodeSvg}
-              <div style="font-size: 5.5pt; font-family: monospace; letter-spacing: 1px;">${l.ramq_raw || ''}</div>
+            <!-- Row 2: RAMQ -->
+            <div style="font-size: 9.8pt; font-weight: 900; font-family: monospace; letter-spacing: 0.5px; margin: 1mm 0;">
+              <span style="font-size: 7.5pt; font-weight: bold; font-family: sans-serif; letter-spacing: 0;">RAMQ : </span>${l.ramq_display || l.ramq_raw || ''}
             </div>
 
-            <!-- Tube Info -->
-            <div style="display: flex; justify-content: space-between; font-size: 6.8pt; font-weight: bold; margin-top: 0.5px;">
-              <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 38mm;">${l.tube_index_str} • ${l.cap_color_name}</span>
-              <span style="font-size: 6.2pt;">${l.max_volume ? l.max_volume.split('par')[0].trim() : ''}</span>
+            <!-- Row 3: DOB & Sex -->
+            <div style="font-size: 8.2pt; font-weight: bold; border-top: 0.4pt solid #777; padding-top: 0.8mm;">
+              <span style="font-size: 7.2pt; font-weight: normal; color: #333;">DDN : </span>${l.dob || ''} ${l.sex ? '(' + l.sex + ')' : ''}
             </div>
-            <div style="font-size: 6.2pt; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-              Analyses : ${l.analyses_str}
-            </div>
-
-            <!-- Footer -->
-            ${alertHtml}
           </div>
         `;
       });
@@ -4251,13 +4487,12 @@
 
       syncDymoToRequisition();
       const pInfo = collectPatientInfo();
-      const formatVal = dymoFormatSelect ? (dymoFormatSelect.value || "30336") : "30336";
 
       const payload = {
         pids: Array.from(selectedAnalyses),
         site: pInfo.site || currentSite,
         is_pediatric: isPediatric,
-        format: formatVal,
+        format: DYMO_FORMAT,
         patient_info: pInfo
       };
 
@@ -4285,7 +4520,7 @@
           const a = document.createElement("a");
           a.href = blobUrl;
           
-          let filename = `Etiquettes_Dymo_${formatVal}.pdf`;
+          let filename = `Etiquettes_Dymo_30336.pdf`;
           const pName = (pInfo.patient_name || "").trim();
           const ramq = (pInfo.ramq || "").trim();
           const parts = ["Etiquettes"];
@@ -4313,7 +4548,7 @@
 
     function directPrintDymo() {
       if (selectedAnalyses.size === 0) return;
-      buildDymoPrintArea(currentDymoLabelsData, dymoFormatSelect ? (dymoFormatSelect.value || "30336") : "30336");
+      buildDymoPrintArea(currentDymoLabelsData, DYMO_FORMAT);
       window.print();
     }
 

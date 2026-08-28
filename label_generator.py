@@ -212,7 +212,10 @@ def prepare_label_items(
     return final_label_payloads
 
 def _draw_single_dymo_page(page: fitz.Page, label_data: Dict[str, Any], format_name: str = "30336"):
-    """Renders a pixel-perfect, high-contrast 300 DPI vector label on a single PyMuPDF page."""
+    """
+    Renders a clean, high-contrast, large-font label for Dymo 30336.
+    Contains strictly: Name, DOB, RAMQ, and 1/X numbering. No barcode.
+    """
     cfg = LABEL_FORMATS.get(format_name, LABEL_FORMATS["30336"])
     w = cfg["width_pt"]
     h = cfg["height_pt"]
@@ -220,99 +223,40 @@ def _draw_single_dymo_page(page: fitz.Page, label_data: Dict[str, Any], format_n
     # 0. Clean white background
     page.draw_rect(fitz.Rect(0, 0, w, h), color=(1, 1, 1), fill=(1, 1, 1))
     
-    # 1. ZONE 1: PATIENT HEADER (Top row)
-    pname = str(label_data.get("patient_name", "")).strip()[:24]
-    ramq_display = label_data.get("ramq_display", "")
+    # 1. Name & Numbering (Top Row)
+    pname = str(label_data.get("patient_name", "")).strip().upper()
+    if not pname:
+        pname = "PATIENT (NON NOMMÉ)"
+    pname_trunc = pname[:24]
     
-    # Left: Patient Name (Bold)
-    page.insert_text(fitz.Point(4, 9.5), pname, fontname="helv", fontsize=7.2, color=(0, 0, 0))
-    # Right: RAMQ Display
-    if ramq_display:
-        page.insert_text(fitz.Point(w - 4 - len(ramq_display) * 3.9, 9.5), ramq_display, fontname="helv", fontsize=6.8, color=(0, 0, 0))
-        
-    # Row 2: DOB, Sex & Chart
+    seq_i = label_data.get("sequence_index", 1)
+    tot_seq = label_data.get("total_sequence", 1)
+    num_str = f"{seq_i}/{tot_seq}"
+    
+    # Patient Name (Bold, prominent)
+    page.insert_text(fitz.Point(6, 19), pname_trunc, fontname="helv", fontsize=9.5, color=(0, 0, 0))
+    
+    # 1/X Numbering (Top Right Badge)
+    num_w = len(num_str) * 6.2
+    badge_rect = fitz.Rect(w - 6 - num_w - 6, 7, w - 6, 23)
+    page.draw_rect(badge_rect, color=(0, 0, 0), fill=(0, 0, 0), width=0.5)
+    page.insert_text(fitz.Point(w - 6 - num_w - 3, 18.5), num_str, fontname="helv", fontsize=9.5, color=(1, 1, 1))
+    
+    # Divider line
+    page.draw_line(fitz.Point(6, 27), fitz.Point(w - 6, 27), color=(0.4, 0.4, 0.4), width=0.6)
+    
+    # 2. RAMQ (Middle Row, Large & Bold)
+    ramq_display = label_data.get("ramq_display") or label_data.get("ramq_raw", "")
+    ramq_text = f"RAMQ : {ramq_display}" if ramq_display else "RAMQ : Non spécifiée"
+    page.insert_text(fitz.Point(6, 45), ramq_text, fontname="helv", fontsize=10.0, color=(0, 0, 0))
+    
+    # 3. DOB & Sex (Bottom Row)
     dob = label_data.get("dob", "")
     sex = label_data.get("sex", "")
-    dob_str = f"DDN: {dob}" if dob else ""
-    sex_str = f" ({sex})" if sex else ""
-    demo_left = f"{dob_str}{sex_str}".strip()
-    chart = label_data.get("dossier", "")
-    chart_str = f"Dos: {chart}" if chart else ""
-    
-    if demo_left:
-        page.insert_text(fitz.Point(4, 16.5), demo_left, fontname="helv", fontsize=5.8, color=(0.1, 0.1, 0.1))
-    if chart_str:
-        page.insert_text(fitz.Point(w - 4 - len(chart_str) * 3.2, 16.5), chart_str, fontname="helv", fontsize=5.8, color=(0.1, 0.1, 0.1))
-        
-    # Hairline divider
-    page.draw_line(fitz.Point(4, 18.5), fitz.Point(w - 4, 18.5), color=(0.7, 0.7, 0.7), width=0.4)
-    
-    # 2. ZONE 2: CODE 128 BARCODE (RAMQ)
-    ramq_raw = label_data.get("ramq_raw", "")
-    if ramq_raw:
-        mods = encode_code128_b(ramq_raw)
-        if mods:
-            mod_w = min(0.68, (w - 20) / len(mods))
-            total_bw = len(mods) * mod_w
-            bx_start = (w - total_bw) / 2.0
-            by_top = 20.5
-            bh = 11.5
-            
-            i = 0
-            while i < len(mods):
-                if mods[i] == 1:
-                    start_i = i
-                    while i < len(mods) and mods[i] == 1:
-                        i += 1
-                    end_i = i
-                    r = fitz.Rect(bx_start + start_i * mod_w, by_top, bx_start + end_i * mod_w, by_top + bh)
-                    page.draw_rect(r, color=None, fill=(0, 0, 0))
-                else:
-                    i += 1
-                    
-            # Text under barcode
-            btext = ramq_raw
-            tw = len(btext) * 3.2
-            page.insert_text(fitz.Point((w - tw) / 2.0, by_top + bh + 4.8), btext, fontname="helv", fontsize=5.0, color=(0, 0, 0))
-    else:
-        # Fallback if no RAMQ: print clear notice
-        page.insert_text(fitz.Point(w / 2.0 - 30, 28), "[ AUCUN CODE RAMQ ]", fontname="helv", fontsize=5.5, color=(0.4, 0.4, 0.4))
-        
-    # 3. ZONE 3: TUBE & SPECIMEN IDENTIFICATION
-    seq_str = label_data.get("tube_index_str", "Tube 1/1")
-    cap_info = label_data.get("cap_color_name", "")
-    max_vol = label_data.get("max_volume", "")
-    
-    tube_left = f"{seq_str} • {cap_info}"[:32]
-    page.insert_text(fitz.Point(4, 43.5), tube_left, fontname="helv", fontsize=6.2, color=(0, 0, 0))
-    
-    if max_vol and "mL" in max_vol:
-        vol_clean = max_vol.split("par")[0].strip()
-        page.insert_text(fitz.Point(w - 4 - len(vol_clean) * 3.2, 43.5), vol_clean, fontname="helv", fontsize=5.8, color=(0.2, 0.2, 0.2))
-        
-    # Analyses list line
-    analyses_str = f"Analyses: {label_data.get('analyses_str', '')}"
-    if len(analyses_str) > 42:
-        analyses_str = analyses_str[:40] + "..."
-    page.insert_text(fitz.Point(4, 51.5), analyses_str, fontname="helv", fontsize=5.6, color=(0.1, 0.1, 0.1))
-    
-    # 4. ZONE 4: FOOTER (Traceability & Critical Alert Badge)
-    alert = label_data.get("alert_str", "")
-    time_s = label_data.get("time_str", "")
-    nurse_s = label_data.get("nurse_str", "")
-    
-    if alert:
-        # Draw high-contrast solid black badge
-        alert_text = alert[:38]
-        alert_w = min(w - 8, len(alert_text) * 4.2 + 8)
-        page.draw_rect(fitz.Rect(4, 55.5, 4 + alert_w, 67.5), color=None, fill=(0, 0, 0))
-        page.insert_text(fitz.Point(8, 64.0), alert_text, fontname="helv", fontsize=5.6, color=(1, 1, 1))
-        if time_s:
-            page.insert_text(fitz.Point(w - 4 - len(time_s) * 3.0, 64.0), time_s, fontname="helv", fontsize=5.0, color=(0.2, 0.2, 0.2))
-    else:
-        trace_parts = [p for p in [time_s, nurse_s] if p]
-        trace_str = " • ".join(trace_parts)[:42]
-        page.insert_text(fitz.Point(4, 64.0), trace_str, fontname="helv", fontsize=5.2, color=(0.3, 0.3, 0.3))
+    dob_str = f"DDN : {dob}" if dob else "DDN : Non spécifiée"
+    if sex:
+        dob_str += f" ({sex})"
+    page.insert_text(fitz.Point(6, 61), dob_str, fontname="helv", fontsize=9.0, color=(0, 0, 0))
 
 def generate_tube_labels_pdf(
     pids: List[str],
