@@ -149,24 +149,30 @@ def get_all_prescribers() -> List[Dict[str, Any]]:
 def find_prescriber_duplicate(doc_license: str, doctor_name: str, prescribers: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
     """
     Finds if a prescriber already exists using license # or fuzzy name matching.
+    CRITICAL RULE: If both records have license numbers and they differ, they are NEVER duplicates.
     """
     lic_clean = doc_license.strip().replace(" ", "").replace("-", "") if doc_license else ""
     name_norm = normalize_text(doctor_name)
 
     for p in prescribers:
         p_lic = str(p.get("doctor_license", "")).strip().replace(" ", "").replace("-", "")
-        # Exact license match
-        if lic_clean and p_lic and lic_clean == p_lic:
-            return p
         
-        # Name comparison
+        # 1. Exact license match
+        if lic_clean and p_lic:
+            if lic_clean == p_lic:
+                return p
+            else:
+                # Different license numbers -> strictly different doctors, do NOT match by name!
+                continue
+        
+        # 2. Match by name only when at least one license is missing
         p_name_norm = normalize_text(p.get("doctor_name", ""))
         if name_norm and p_name_norm:
             if name_norm == p_name_norm:
                 return p
-            # Typo similarity check
-            if len(name_norm) >= 5 and len(p_name_norm) >= 5:
-                if SequenceMatcher(None, name_norm, p_name_norm).ratio() >= 0.88:
+            # High-confidence typo similarity check
+            if len(name_norm) >= 6 and len(p_name_norm) >= 6:
+                if SequenceMatcher(None, name_norm, p_name_norm).ratio() >= 0.92:
                     return p
                     
     return None
@@ -174,6 +180,7 @@ def find_prescriber_duplicate(doc_license: str, doctor_name: str, prescribers: L
 def upsert_prescriber(data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Adds or updates a prescriber with duplicate, typo, and inactive physician protection.
+    IMMUTABLE IDENTITY: NEVER overwrites doctor_name or doctor_license of an existing entry.
     """
     if is_inactive_or_ex_doctor(data):
         raise ValueError("Cannot upsert inactive or ex-physician")
@@ -194,11 +201,13 @@ def upsert_prescriber(data: Dict[str, Any]) -> Dict[str, Any]:
         existing = find_prescriber_duplicate(doc_lic, doc_name, prescribers)
 
         if existing:
-            # Update non-empty fields
-            if doc_name:
+            # IMMUTABLE IDENTITY: NEVER overwrite existing name or license!
+            if not existing.get("doctor_name") and doc_name:
                 existing["doctor_name"] = doc_name
-            if doc_lic:
+            if not existing.get("doctor_license") and doc_lic:
                 existing["doctor_license"] = doc_lic
+
+            # Update complementary metadata
             if data.get("clinic_name"):
                 existing["clinic_name"] = str(data["clinic_name"]).strip()
             if data.get("clinic_id"):
@@ -207,6 +216,11 @@ def upsert_prescriber(data: Dict[str, Any]) -> Dict[str, Any]:
                 existing["doctor_copy"] = str(data["doctor_copy"]).strip()
             if data.get("doctor_copy_license"):
                 existing["doctor_copy_license"] = str(data["doctor_copy_license"]).strip()
+            if data.get("specialty") and not existing.get("specialty"):
+                existing["specialty"] = str(data["specialty"]).strip()
+            if data.get("city") and not existing.get("city"):
+                existing["city"] = str(data["city"]).strip()
+
             existing["updated_at"] = data.get("updated_at") or uuid.uuid4().hex[:8]
             _save_json(PRESCRIBERS_FILE, prescribers)
             return existing
@@ -510,12 +524,17 @@ def bulk_import_prescribers(items: List[Dict[str, Any]]) -> Dict[str, Any]:
             if clean_lic and clean_lic in by_license:
                 existing_record = by_license[clean_lic]
             elif norm_name and norm_name in by_name:
-                existing_record = by_name[norm_name]
+                cand = by_name[norm_name]
+                cand_lic = str(cand.get("doctor_license", "")).strip().replace(" ", "").replace("-", "")
+                # Match by name only if candidate has no license or matching license
+                if not cand_lic or (clean_lic and cand_lic == clean_lic):
+                    existing_record = cand
 
             if existing_record:
-                if formatted_name:
+                # IMMUTABLE IDENTITY: NEVER overwrite existing doctor_name or doctor_license!
+                if not existing_record.get("doctor_name") and formatted_name:
                     existing_record["doctor_name"] = formatted_name
-                if lic:
+                if not existing_record.get("doctor_license") and lic:
                     existing_record["doctor_license"] = lic
                 if fields["clinic_name"]:
                     existing_record["clinic_name"] = fields["clinic_name"]
