@@ -173,10 +173,18 @@ def find_prescriber_duplicate(doc_license: str, doctor_name: str, prescribers: L
 
 def upsert_prescriber(data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Adds or updates a prescriber with duplicate and typo protection.
+    Adds or updates a prescriber with duplicate, typo, and inactive physician protection.
     """
+    if is_inactive_or_ex_doctor(data):
+        raise ValueError("Cannot upsert inactive or ex-physician")
+
     doc_name = str(data.get("doctor_name", "")).strip()
     doc_lic = str(data.get("doctor_license", "")).strip()
+
+    # Extract clean digits for Quebec physician permit (4-6 digits)
+    digits_lic = "".join(c for c in doc_lic if c.isdigit())
+    if digits_lic and len(digits_lic) in [4, 5, 6]:
+        doc_lic = digits_lic
     
     if not doc_name and not doc_lic:
         raise ValueError("Doctor name or license number required")
@@ -384,8 +392,12 @@ def extract_doctor_fields(raw: Dict[str, Any]) -> Optional[Dict[str, str]]:
         raw.get("cp") or
         ""
     )
-    # Clean any trailing non-digit status annotations if valid permit number present
-    lic = str(lic).strip()
+    lic_str = str(lic).strip()
+    digits_lic = "".join(c for c in lic_str if c.isdigit())
+    if digits_lic and len(digits_lic) in [4, 5, 6]:
+        lic = digits_lic
+    else:
+        lic = lic_str
 
     clinic_name = (
         raw.get("clinic_name") or
