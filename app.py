@@ -17,6 +17,12 @@ from requisition_filler import (
     inspect_requisition_selection,
     parse_ramq_barcode_payload
 )
+from label_generator import (
+    generate_tube_labels_pdf,
+    prepare_label_items,
+    format_labels_pdf_filename,
+    LABEL_FORMATS
+)
 
 app = FastAPI(
     title="Gustav - Calculateur de Tubes Sanguins (CHU de Québec)",
@@ -412,6 +418,98 @@ async def api_requisition_pdf_get(
         media_type="application/pdf",
         headers={
             "Content-Disposition": 'inline; filename="Requete_Optilab.pdf"; filename*=UTF-8\'\'Requete_Optilab.pdf',
+            "Content-Type": "application/pdf"
+        }
+    )
+
+# ==============================================================================
+# DYMO TUBE LABELS ENDPOINTS
+# ==============================================================================
+
+class LabelsRequest(BaseModel):
+    pids: List[Annotated[str, Field(max_length=64)]] = Field(..., max_length=100)
+    site: Optional[Annotated[str, Field(max_length=120)]] = "Tous les sites"
+    is_pediatric: Optional[bool] = False
+    format: Optional[Annotated[str, Field(max_length=20)]] = "30336"
+    patient_info: Optional[PatientInfo] = None
+
+@app.post("/api/labels/preview")
+async def api_labels_preview(req: LabelsRequest):
+    """Returns structured label metadata for interactive web rendering and Dymo preview."""
+    patient_dict = req.patient_info.model_dump() if req.patient_info else {}
+    format_key = req.format if req.format in LABEL_FORMATS else "30336"
+    labels = prepare_label_items(
+        pids=req.pids,
+        site=req.site or "Tous les sites",
+        is_pediatric=bool(req.is_pediatric),
+        patient_info=patient_dict
+    )
+    return {
+        "status": "success",
+        "total_labels": len(labels),
+        "format": LABEL_FORMATS[format_key],
+        "format_key": format_key,
+        "labels": labels
+    }
+
+@app.post("/api/labels/pdf")
+async def api_labels_pdf_post(req: LabelsRequest):
+    """Generate and stream the high-resolution vector PDF for Dymo thermal printers."""
+    patient_dict = req.patient_info.model_dump() if req.patient_info else {}
+    format_key = req.format if req.format in LABEL_FORMATS else "30336"
+    
+    # Auto-learning: save/update prescriber & nurse if credentials supplied
+    if patient_dict.get("nurse_name") or patient_dict.get("sample_location"):
+        try:
+            upsert_nurse({
+                "nurse_name": patient_dict.get("nurse_name", ""),
+                "sample_location": patient_dict.get("sample_location", "")
+            })
+        except Exception as e:
+            print(f"[app] Nurse auto-save skipped: {e}")
+
+    pdf_bytes = generate_tube_labels_pdf(
+        pids=req.pids,
+        site=req.site or "Tous les sites",
+        is_pediatric=bool(req.is_pediatric),
+        patient_info=patient_dict,
+        format_name=format_key
+    )
+    filename = format_labels_pdf_filename(patient_dict)
+    ascii_safe_name = filename.encode("ascii", "ignore").decode("ascii").strip() or "Etiquettes_Dymo_30336.pdf"
+    encoded_filename = urllib.parse.quote(filename)
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'inline; filename="{ascii_safe_name}"; filename*=UTF-8\'\'{encoded_filename}',
+            "Content-Type": "application/pdf"
+        }
+    )
+
+@app.get("/api/labels/pdf")
+async def api_labels_pdf_get(
+    pids: str = Query(..., description="Comma-separated PIDs"),
+    site: Optional[str] = Query("Tous les sites"),
+    is_pediatric: Optional[bool] = Query(False),
+    format: Optional[str] = Query("30336")
+):
+    """Generate and stream Dymo tube labels PDF via GET."""
+    pid_list = [p.strip() for p in pids.split(",") if p.strip()]
+    format_key = format if format in LABEL_FORMATS else "30336"
+    pdf_bytes = generate_tube_labels_pdf(
+        pids=pid_list,
+        site=site or "Tous les sites",
+        is_pediatric=bool(is_pediatric),
+        patient_info=None,
+        format_name=format_key
+    )
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": 'inline; filename="Etiquettes_Dymo_30336.pdf"; filename*=UTF-8\'\'Etiquettes_Dymo_30336.pdf',
             "Content-Type": "application/pdf"
         }
     )
