@@ -294,6 +294,33 @@
         </div>
       </div>
 
+      <!-- External Incompatibilities Banner (Sur glace, Décanté, Non disponible externe) -->
+      <div id="externalIncompatibilityBanner" class="bg-gradient-to-r from-rose-50 to-amber-50 border-2 border-rose-300 rounded-2xl p-5 shadow-sm hidden space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-rose-200/80">
+          <div class="flex items-center space-x-2.5">
+            <span class="w-8 h-8 rounded-xl bg-rose-500 text-white flex items-center justify-center shadow text-sm">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </span>
+            <div>
+              <h3 class="text-sm font-extrabold text-rose-950 flex items-center gap-1.5">
+                <span>Prélèvement externe non réalisable</span>
+                <span id="externalIncompCountBadge" class="bg-rose-600 text-white text-[10px] px-2 py-0.5 rounded-full font-black">0</span>
+              </h3>
+              <p class="text-[11px] text-rose-800 font-medium">
+                Certaines analyses requièrent un conditionnement hospitalier (sur glace, décantation ou non disponibles en externe).
+              </p>
+            </div>
+          </div>
+          <button id="btnRemoveIncompatibleAnalyses" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-sm transition flex items-center space-x-1.5 ml-auto cursor-pointer" title="Retirer automatiquement toutes les analyses incompatibles du panier">
+            <i class="fa-solid fa-trash-can text-[11px]"></i>
+            <span>Retirer ces analyses</span>
+          </button>
+        </div>
+        <div id="externalIncompatibilityList" class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+          <!-- Dynamic incompatibility cards -->
+        </div>
+      </div>
+
       <!-- Quick Glance Tubes & Colors Summary Tray -->
       <div id="quickGlanceCard" class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hidden">
         <div class="flex items-center justify-between mb-3 pb-2.5 border-b border-slate-100">
@@ -1268,8 +1295,14 @@
     const tubesContainer = document.getElementById("tubesContainer");
     const alertsBanner = document.getElementById("alertsBanner");
     const alertsList = document.getElementById("alertsList");
+    const externalIncompatibilityBanner = document.getElementById("externalIncompatibilityBanner");
+    const externalIncompCountBadge = document.getElementById("externalIncompCountBadge");
+    const externalIncompatibilityList = document.getElementById("externalIncompatibilityList");
+    const btnRemoveIncompatibleAnalyses = document.getElementById("btnRemoveIncompatibleAnalyses");
     const ficheModal = document.getElementById("ficheModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
+
+    let lastKnownIncompatibilities = new Map();
 
     // Requisition Elements
     const heroRequisitionBar = document.getElementById("heroRequisitionBar");
@@ -1321,8 +1354,11 @@
 
       clearBasketBtn.addEventListener("click", () => {
         selectedAnalyses.clear();
+        lastKnownIncompatibilities.clear();
         updateBasket();
       });
+
+      btnRemoveIncompatibleAnalyses.addEventListener("click", onRemoveIncompatibleAnalyses);
 
       siteSelect.addEventListener("change", (e) => {
         currentSite = e.target.value;
@@ -1734,6 +1770,15 @@
       renderDropdown(data);
     }
 
+    function onRemoveIncompatibleAnalyses() {
+      if (lastKnownIncompatibilities.size === 0) return;
+      lastKnownIncompatibilities.forEach((_, pid) => {
+        selectedAnalyses.delete(pid);
+      });
+      lastKnownIncompatibilities.clear();
+      updateBasket();
+    }
+
     function renderDropdown(items) {
       currentResults = items;
       highlightedIndex = -1;
@@ -1770,20 +1815,40 @@
           });
         } else {
           const isAdded = selectedAnalyses.has(item.pid);
+          const restr = item.external_restriction;
+          const restrBadge = (restr && restr.is_incompatible) ? `
+            <span class="inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded border ml-1.5 ${restr.badge_class || 'bg-rose-50 text-rose-700 border-rose-200'}">
+              ${escapeHtml(restr.badge)}
+            </span>
+          ` : '';
+
           div.innerHTML = `
-            <div class="flex items-center space-x-2.5">
-              <span class="w-6 h-6 rounded ${isAdded ? 'bg-emerald-100 text-emerald-700' : 'bg-sky-100 text-sky-700'} flex items-center justify-center font-bold text-[10px] uppercase font-mono">${escapeHtml(item.pid.slice(0,3))}</span>
-              <div>
-                <div class="font-semibold text-slate-800">${escapeHtml(item.name)}</div>
-                <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(item.pid)} • ${escapeHtml(item.category || 'Manuel des prélèvements')}</div>
+            <div class="flex items-center space-x-2.5 min-w-0">
+              <span class="w-6 h-6 rounded ${isAdded ? 'bg-emerald-100 text-emerald-700' : 'bg-sky-100 text-sky-700'} flex items-center justify-center font-bold text-[10px] uppercase font-mono flex-shrink-0">${escapeHtml(item.pid.slice(0,3))}</span>
+              <div class="min-w-0">
+                <div class="font-semibold text-slate-800 flex items-center flex-wrap gap-1">
+                  <span>${escapeHtml(item.name)}</span>
+                  ${restrBadge}
+                </div>
+                <div class="text-[10px] text-slate-400 font-mono truncate">${escapeHtml(item.pid)} • ${escapeHtml(item.category || 'Manuel des prélèvements')}</div>
               </div>
             </div>
-            <button class="text-xs font-semibold ${isAdded ? 'text-emerald-600' : 'text-sky-600 hover:text-sky-800'} px-2 py-1 rounded">
+            <button class="text-xs font-semibold ${isAdded ? 'text-emerald-600' : 'text-sky-600 hover:text-sky-800'} px-2 py-1 rounded flex-shrink-0 ml-2">
               <i class="fa-solid ${isAdded ? 'fa-check' : 'fa-plus'}"></i>
             </button>
           `;
           div.addEventListener("click", () => {
             selectedAnalyses.add(item.pid);
+            if (restr && restr.is_incompatible) {
+              lastKnownIncompatibilities.set(item.pid.toLowerCase(), {
+                pid: item.pid,
+                name: item.name,
+                type: restr.type,
+                badge: restr.badge,
+                badge_class: restr.badge_class,
+                reason: restr.reason
+              });
+            }
             analysisInput.value = "";
             clearInputBtn.classList.add("hidden");
             searchResultsDropdown.classList.add("hidden");
@@ -1850,22 +1915,70 @@
       // Fetch names
       basketChipsContainer.innerHTML = "";
       for (const pid of selectedAnalyses) {
+        const pidLower = pid.toLowerCase();
+        const isRestricted = lastKnownIncompatibilities.has(pidLower);
+        const incompData = lastKnownIncompatibilities.get(pidLower);
+
         const chip = document.createElement("div");
-        chip.className = "bg-white border border-slate-200 hover:border-sky-300 shadow-sm rounded-lg px-2.5 py-1 text-xs flex items-center space-x-2 text-slate-800 transition group";
-        chip.innerHTML = `
-          <span class="font-medium truncate max-w-[200px]" title="${pid}">${pid.toUpperCase()}</span>
-          <button class="text-slate-400 hover:text-rose-600 transition" title="Supprimer">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
-        `;
+        chip.dataset.pid = pid;
+        if (isRestricted) {
+          chip.className = "bg-rose-50 border border-rose-300 hover:border-rose-400 shadow-sm rounded-lg px-2.5 py-1 text-xs flex items-center space-x-1.5 text-rose-900 transition group font-semibold";
+          chip.title = incompData ? incompData.reason : "Prélèvement non réalisable en externe";
+          chip.innerHTML = `
+            <span class="text-xs">${incompData && incompData.type === 'SUR_GLACE' ? '🧊' : (incompData && incompData.type === 'DECANTE_CONGELE' ? '🔄' : '🚫')}</span>
+            <span class="font-bold truncate max-w-[170px]">${pid.toUpperCase()}</span>
+            <span class="text-[9px] bg-rose-200/90 text-rose-950 px-1.5 py-0.5 rounded font-bold">${escapeHtml(incompData ? incompData.badge : 'Non externe')}</span>
+            <button class="text-rose-400 hover:text-rose-700 transition" title="Supprimer">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          `;
+        } else {
+          chip.className = "bg-white border border-slate-200 hover:border-sky-300 shadow-sm rounded-lg px-2.5 py-1 text-xs flex items-center space-x-2 text-slate-800 transition group";
+          chip.innerHTML = `
+            <span class="font-medium truncate max-w-[200px]" title="${pid}">${pid.toUpperCase()}</span>
+            <button class="text-slate-400 hover:text-rose-600 transition" title="Supprimer">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          `;
+        }
         chip.querySelector("button").addEventListener("click", () => {
           selectedAnalyses.delete(pid);
+          lastKnownIncompatibilities.delete(pidLower);
           updateBasket();
         });
         basketChipsContainer.appendChild(chip);
       }
 
       recalculate();
+    }
+
+    function refreshBasketChips() {
+      if (!basketChipsContainer) return;
+      const chips = basketChipsContainer.querySelectorAll("div[data-pid]");
+      chips.forEach(chip => {
+        const pid = chip.dataset.pid;
+        if (!pid) return;
+        const pidLower = pid.toLowerCase();
+        const isRestricted = lastKnownIncompatibilities.has(pidLower);
+        const incompData = lastKnownIncompatibilities.get(pidLower);
+        if (isRestricted && !chip.classList.contains("bg-rose-50")) {
+          chip.className = "bg-rose-50 border border-rose-300 hover:border-rose-400 shadow-sm rounded-lg px-2.5 py-1 text-xs flex items-center space-x-1.5 text-rose-900 transition group font-semibold";
+          chip.title = incompData ? incompData.reason : "Prélèvement non réalisable en externe";
+          chip.innerHTML = `
+            <span class="text-xs">${incompData && incompData.type === 'SUR_GLACE' ? '🧊' : (incompData && incompData.type === 'DECANTE_CONGELE' ? '🔄' : '🚫')}</span>
+            <span class="font-bold truncate max-w-[170px]">${pid.toUpperCase()}</span>
+            <span class="text-[9px] bg-rose-200/90 text-rose-950 px-1.5 py-0.5 rounded font-bold">${escapeHtml(incompData ? incompData.badge : 'Non externe')}</span>
+            <button class="text-rose-400 hover:text-rose-700 transition" title="Supprimer">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          `;
+          chip.querySelector("button").addEventListener("click", () => {
+            selectedAnalyses.delete(pid);
+            lastKnownIncompatibilities.delete(pidLower);
+            updateBasket();
+          });
+        }
+      });
     }
 
     async function recalculate() {
@@ -1876,9 +1989,11 @@
         countBottles.innerText = "0";
         tubesContainer.innerHTML = "";
         alertsBanner.classList.add("hidden");
+        externalIncompatibilityBanner.classList.add("hidden");
         document.getElementById("quickGlanceCard").classList.add("hidden");
         heroRequisitionBar.classList.add("hidden");
         currentRequisitionInspection = null;
+        lastKnownIncompatibilities.clear();
         return;
       }
 
@@ -1949,6 +2064,38 @@
       heroSummarySubtitle.innerText = `Calculé pour ${data.analyses_included.length} analyses • Groupement consolidé & Directives`;
       countTubes.innerText = totalTubes;
       countBottles.innerText = totalBottles + totalUrine + totalFecal + totalOther;
+
+      // Render External Incompatibilities Banner (Sur glace, Décanté, Non disponible externe)
+      const incompList = data.external_incompatibilities || [];
+      lastKnownIncompatibilities.clear();
+      incompList.forEach(inc => {
+        lastKnownIncompatibilities.set(inc.pid.toLowerCase(), inc);
+      });
+      refreshBasketChips();
+
+      if (incompList.length > 0) {
+        externalIncompCountBadge.innerText = incompList.length;
+        externalIncompatibilityList.innerHTML = "";
+        incompList.forEach(inc => {
+          const icon = inc.type === 'SUR_GLACE' ? '🧊' : (inc.type === 'DECANTE_CONGELE' ? '🔄' : '🚫');
+          const card = document.createElement("div");
+          card.className = "bg-white/90 border border-rose-200/90 rounded-xl p-3 flex items-start space-x-2.5 shadow-2xs";
+          card.innerHTML = `
+            <span class="text-base mt-0.5 flex-shrink-0">${icon}</span>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-1">
+                <span class="text-xs font-extrabold text-slate-900 truncate">${escapeHtml(inc.name)}</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.5 rounded font-bold flex-shrink-0 ${inc.badge_class || 'bg-rose-100 text-rose-800'}">${escapeHtml(inc.badge)}</span>
+              </div>
+              <p class="text-[11px] text-rose-900 mt-1 leading-snug font-medium">${escapeHtml(inc.reason)}</p>
+            </div>
+          `;
+          externalIncompatibilityList.appendChild(card);
+        });
+        externalIncompatibilityBanner.classList.remove("hidden");
+      } else {
+        externalIncompatibilityBanner.classList.add("hidden");
+      }
 
       // Render Quick Glance Tubes & Colors Tray
       const quickGlanceCard = document.getElementById("quickGlanceCard");
