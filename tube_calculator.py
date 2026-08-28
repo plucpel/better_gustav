@@ -62,6 +62,170 @@ def parse_volume_ml(qty_str):
         
     return 0.0
 
+# Curated external restrictions for high-precision clinical guidance
+EXTERNAL_RESTRICTIONS_OVERRIDE = {
+    # 1. SUR GLACE
+    "ammo": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Spécimen sur glace obligatoire (< 30 min), non réalisable en externe."},
+    "ammu": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Spécimen urinaire sur glace obligatoire, non disponible en externe."},
+    "ammux": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Spécimen urinaire sur glace obligatoire, non disponible en externe."},
+    "acth": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Tube EDTA pré-refroidi et acheminement sur glace obligatoire (< 30 min)."},
+    "calci": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Envoi immédiat sur glace requis, non disponible en externe."},
+    "gast": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "À jeun 8h, transport des tubes sur glace obligatoire."},
+    "metnl": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Prélèvement à l'hôpital seulement, acheminement sur glace (< 30 min)."},
+    "3meth": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Prélèvement à l'hôpital seulement, acheminement sur glace (< 30 min)."},
+    "vitc": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Acheminer sur glace et à l'abri de la lumière dans les 2 heures."},
+    "proap": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Arrivée au laboratoire requise en < 30 min sur glace (Formulaire AH-612)."},
+    "yglug": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Tube pré-refroidi à 4°C et transport immédiat sur glace (Hôpital seulement)."},
+    "yhiss": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Mettre sur glace immédiatement après le prélèvement et acheminer sans délai."},
+    "xsest": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Prélèvement sur glace, transport rapide (Hôpital seulement)."},
+    "bio001": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Aviser le laboratoire, mettre immédiatement le spécimen sur glace."},
+    "oxap": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Transport immédiat en bain d'eau et glace (sans contact direct), centrifugation < 1h."},
+    "osptv": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Transport rapide (< 15 min), sinon impérativement sur glace."},
+    "osptvx": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Transport rapide (< 15 min), sinon impérativement sur glace."},
+    "yvegf": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Prélèvement sur glace, centrifugation à froid et décantation/congélation < 30 min."},
+    "il6": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Prélèvement hospitalier obligatoire, arrivée sur glace < 30 min."},
+    "hem031": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Centrifugation à 4°C en < 30 min, congélation et transport sur glace sèche."},
+    "ycykn": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Centrifugation à 4°C en < 30 min, congélation et envoi sur glace sèche."},
+    "cfbsp": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Centrifugation à 4-8°C, décantation 2 aliquotes et transport sur glace sèche."},
+    "fhpr": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Centrifugation à 4-8°C, décantation 2 aliquotes et transport sur glace sèche."},
+    "comcf": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Centrifugation à 4-8°C, décantation 2 aliquotes et transport sur glace sèche."},
+    "cosco": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Épreuve dynamique : pré-refroidir et maintenir les tubes lavande sur glace."},
+    "coscox": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Épreuve dynamique : pré-refroidir et maintenir les tubes lavande sur glace."},
+    "sudiv": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Épreuve dynamique : tubes lavande pré-refroidis et transportés sur glace."},
+    "supd8": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Épreuve dynamique : tubes lavande sur glace obligatoires."},
+    "eeana": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Épreuve d'effort : prélèvement immédiat sur glace."},
+    "caspi": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Cathétérisme : tubes lavande sur glace obligatoires."},
+    "laclb": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Acheminer sans délai sur glace, non disponible en externe."},
+    "laclbx": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Acheminer sans délai sur glace, non disponible en externe."},
+    "laclc": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Acheminer sans délai sur glace, non disponible en externe."},
+    "laclcx": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Acheminer sans délai sur glace, non disponible en externe."},
+    "isu": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Prélèvement sur glace analysé en < 4h (Prélèvement au CHU requis)."},
+    "cynba": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "Lavage broncho-alvéolaire : acheminement immédiat sur glace."},
+    "cydba": {"type": "SUR_GLACE", "badge": "🧊 Sur glace", "reason": "LBA pédiatrique : acheminement immédiat sur glace/sac réfrigérant."},
+
+    # 2. DECANTE / CONGELE EN EXTERNE
+    "chga": {"type": "DECANTE_CONGELE", "badge": "🔄 Décantation requise", "reason": "Le spécimen doit impérativement être décanté dans l'heure suivant la ponction."},
+    "yqudn": {"type": "DECANTE_CONGELE", "badge": "🔄 Décantation requise", "reason": "Centrifugation et décantation obligatoires en moins de 2 heures."},
+    "xah50": {"type": "DECANTE_CONGELE", "badge": "🔄 Décantation requise", "reason": "Centrifugation à 4-8°C, décantation et congélation obligatoire en < 45 min."},
+    "xcmbl": {"type": "DECANTE_CONGELE", "badge": "🔄 Décantation requise", "reason": "Centrifugation, décantation et congélation obligatoire en < 45 min."},
+    "xcfia": {"type": "DECANTE_CONGELE", "badge": "🔄 Décantation requise", "reason": "Double centrifugation et congélation rapide du plasma requises en < 2h."},
+    "tt": {"type": "DECANTE_CONGELE", "badge": "🔄 Décantation requise", "reason": "Double centrifugation, décantation du plasma et congélation immédiate requises."},
+    "porph": {"type": "DECANTE_CONGELE", "badge": "🔄 Décantation requise", "reason": "Centrifugation et congélation immédiate du plasma à l'abri de la lumière."},
+    "a21hy": {"type": "DECANTE_CONGELE", "badge": "🔄 Décantation requise", "reason": "Centrifugation obligatoire à 4°C."},
+    "xnclc": {"type": "DECANTE_CONGELE", "badge": "🔄 Décantation requise", "reason": "Centrifugation < 1h et décantation obligatoire du culot de globules rouges."},
+    "xnclcx": {"type": "DECANTE_CONGELE", "badge": "🔄 Décantation requise", "reason": "Centrifugation < 1h et décantation obligatoire du culot de globules rouges."},
+    "damiu": {"type": "DECANTE_CONGELE", "badge": "❄️ Congélation requise", "reason": "Spécimen urinaire à congeler sur réception et à protéger de la lumière."},
+    "damiux": {"type": "DECANTE_CONGELE", "badge": "❄️ Congélation requise", "reason": "Spécimen urinaire à congeler sur réception et à protéger de la lumière."},
+    "porbu": {"type": "DECANTE_CONGELE", "badge": "❄️ Congélation requise", "reason": "Spécimen urinaire à congeler sur réception et à protéger de la lumière."},
+    "poru": {"type": "DECANTE_CONGELE", "badge": "❄️ Congélation requise", "reason": "Spécimen urinaire à congeler sur réception et à protéger de la lumière."},
+    "pneug": {"type": "DECANTE_CONGELE", "badge": "🔄 Aliquotage requis", "reason": "Demande externe : 1 aliquote de 0,5 mL distincte requise par test."},
+    "tetag": {"type": "DECANTE_CONGELE", "badge": "🔄 Aliquotage requis", "reason": "Demande externe : 1 aliquote de 0,5 mL distincte requise par test."},
+    "dipgr": {"type": "DECANTE_CONGELE", "badge": "🔄 Aliquotage requis", "reason": "Demande externe : 1 aliquote de 0,5 mL distincte requise par test."},
+    "hinfg": {"type": "DECANTE_CONGELE", "badge": "🔄 Aliquotage requis", "reason": "Demande externe : 1 aliquote de 0,5 mL distincte requise par test."},
+    "asspg": {"type": "DECANTE_CONGELE", "badge": "🔄 Aliquotage requis", "reason": "Demande externe : 1 aliquote de 0,5 mL distincte requise par test."},
+    "xartv": {"type": "DECANTE_CONGELE", "badge": "❄️ Congélation requise", "reason": "Spécimen à congeler très rapidement à -20°C (Non disponible externe)."},
+
+    # 3. NON DISPONIBLE EN EXTERNE
+    "bioq": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Non disponible en externe (CLSC, cliniques) - Corridor CHU interne requis."},
+    "hem035": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Non disponible pour la clientèle externe (CLSC, CM...)."},
+    "myd88": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Non disponible pour la clientèle externe (CLSC, CM...)."},
+    "catvc": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Épreuve dynamique hospitalière, non disponible en externe."},
+    "epr006": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Test de surcharge hospitalier, non disponible en externe."},
+    "susel": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Test de surcharge hospitalier, non disponible en externe."},
+    "pyrlc": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Non disponible en externe (CLSC, cliniques privées, résidences)."},
+    "ffa": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Prélèvement à ne faire qu'à l'hôpital, non disponible pour l'externe."},
+    "hgh": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Doit être prélevé à l'intérieur du CHU ou en centre hospitalier avec labo."},
+    "inhis": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Doit être prélevé à l'intérieur du CHU ou en centre hospitalier avec labo."},
+    "oxneu": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Doit être prélevé à l’intérieur du CHUL en avant-midi."},
+    "ckmb": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Usage interne seulement, non disponible pour l'externe."},
+    "ckmbx": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Usage interne seulement, non disponible pour l'externe."},
+    "glyce": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Prélèvement à ne faire qu'à l'hôpital, non disponible pour l'externe."},
+    "aucun": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Analyse réservée au laboratoire interne, non disponible en externe."},
+    "cyndi": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Microscopie dialyse réservée à l'interne (HDQ seulement)."},
+    "albbi": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Liquide biologique non disponible pour l'externe (Clinique, CLSC...)."},
+    "bilbi": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Liquide biologique non disponible pour l'externe (Clinique, CLSC...)."},
+    "ceabi": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Liquide biologique non disponible pour l'externe (Clinique, CLSC...)."},
+    "clbi": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Liquide biologique non disponible pour l'externe (Clinique, CLSC...)."},
+    "chobi": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Liquide biologique non disponible pour l'externe (Clinique, CLSC...)."},
+    "alpbi": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Liquide biologique non disponible pour l'externe (Clinique, CLSC...)."},
+    "urebi": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Liquide biologique non disponible pour l'externe (Clinique, CLSC...)."},
+    "credp": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Liquide dialyse non disponible pour l'externe (Clinique, CLSC...)."},
+    "credpx": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Liquide dialyse non disponible pour l'externe (Clinique, CLSC...)."},
+    "urdp": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Liquide dialyse non disponible pour l'externe (Clinique, CLSC...)."},
+    "urdpx": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Liquide dialyse non disponible pour l'externe (Clinique, CLSC...)."},
+    "bicuu": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Bicarbonates urinaires non disponibles en externe (contenant spécial)."},
+    "bircux": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Bicarbonates urinaires non disponibles en externe (contenant spécial)."},
+    "crpod": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Créatinine post-dialyse non disponible pour externe."},
+    "crpodx": {"type": "NON_DISPO_EXTERNE", "badge": "🚫 Non dispo en externe", "reason": "Créatinine post-dialyse non disponible pour externe."}
+}
+
+def get_external_restriction(pid, item=None):
+    """
+    Evaluates whether a laboratory test has external clinic / CLSC collection restrictions:
+    - SUR_GLACE (requires ice bath, dry ice, pre-chilled tubes)
+    - DECANTE_CONGELE (requires immediate centrifugation, decantation, or fast freezing)
+    - NON_DISPO_EXTERNE (hospital only or strictly unavailable for external clinics)
+    """
+    if not pid:
+        return {"is_incompatible": False, "type": None, "badge": None, "badge_class": None, "reason": None}
+    
+    pid_clean = pid.lower().strip()
+    if pid_clean in EXTERNAL_RESTRICTIONS_OVERRIDE:
+        ov = EXTERNAL_RESTRICTIONS_OVERRIDE[pid_clean]
+        t = ov["type"]
+        b_class = "bg-rose-50 text-rose-700 border-rose-200" if t == "NON_DISPO_EXTERNE" else ("bg-sky-50 text-sky-700 border-sky-200" if t == "SUR_GLACE" else "bg-amber-50 text-amber-700 border-amber-200")
+        return {
+            "is_incompatible": True,
+            "type": t,
+            "badge": ov["badge"],
+            "badge_class": b_class,
+            "reason": ov["reason"]
+        }
+        
+    if item is None:
+        cat = load_catalog()
+        item = cat.get(pid_clean)
+        
+    if not item:
+        return {"is_incompatible": False, "type": None, "badge": None, "badge_class": None, "reason": None}
+        
+    prep = item.get("preparation", "")
+    inst = item.get("instructions", [])
+    alerts = item.get("alerts", [])
+    combined = " \n ".join([prep] + inst + alerts)
+    
+    # Check "Externe (CLSC...)" "Non disponible"
+    if re.search(r"Externe\s*\(CLSC[^)]*\)\s*Non\s*disponible|Non\s+disponible\s+(?:en|pour|pour\s+l[\'\’])\s*externe|Prélèvement\s+à\s+ne\s+faire\s+qu[\'\’]à\s+l[\'\’]hôpital", combined, re.IGNORECASE):
+        return {
+            "is_incompatible": True,
+            "type": "NON_DISPO_EXTERNE",
+            "badge": "🚫 Non dispo en externe",
+            "badge_class": "bg-rose-50 text-rose-700 border-rose-200",
+            "reason": "Analyse non réalisable en externe ou réservée au milieu hospitalier."
+        }
+        
+    # Check Ice (exclude explicit negative phrases like "ne pas mettre sur glace")
+    if re.search(r"\b(glace|glacée|glacées|ice)\b", combined, re.IGNORECASE) and not re.search(r"ne\s+pas\s+mettre\s+sur\s+(?:la\s+)?glace|pas\s+nécessaire", combined, re.IGNORECASE):
+        return {
+            "is_incompatible": True,
+            "type": "SUR_GLACE",
+            "badge": "🧊 Sur glace",
+            "badge_class": "bg-sky-50 text-sky-700 border-sky-200",
+            "reason": "Spécimen nécessitant un transport ou maintien sur glace."
+        }
+        
+    # Check Decant
+    if re.search(r"d[eé]cant|double\s+centrifug|congeler\s+imm[eé]diatement", combined, re.IGNORECASE) and not re.search(r"ne\s+pas\s+(?:centrifuger|congeler)", combined, re.IGNORECASE):
+        return {
+            "is_incompatible": True,
+            "type": "DECANTE_CONGELE",
+            "badge": "🔄 Décantation requise",
+            "badge_class": "bg-amber-50 text-amber-700 border-amber-200",
+            "reason": "Spécimen nécessitant une centrifugation, décantation ou congélation immédiate."
+        }
+
+    return {"is_incompatible": False, "type": None, "badge": None, "badge_class": None, "reason": None}
+
 # Comprehensive Specimen & Tube Definitions
 TUBE_DEFINITIONS = {
     # 1. BLOOD SPECIMENS (CLSI H3-A6 Standard Order of Draw)
@@ -454,7 +618,8 @@ def search_analyses(query, limit=15):
                     "pid": pid,
                     "name": item["name"],
                     "category": item.get("thematic", "Manuel des prélèvements"),
-                    "url": item.get("url", "")
+                    "url": item.get("url", ""),
+                    "external_restriction": get_external_restriction(pid, item)
                 })
         return results
 
@@ -484,7 +649,8 @@ def search_analyses(query, limit=15):
                 "pid": target_pid,
                 "name": item["name"],
                 "category": item.get("thematic", "Manuel des prélèvements"),
-                "url": item.get("url", "")
+                "url": item.get("url", ""),
+                "external_restriction": get_external_restriction(target_pid, item)
             })
             seen_pids.add(target_pid)
 
@@ -496,7 +662,8 @@ def search_analyses(query, limit=15):
             "pid": q_norm,
             "name": item["name"],
             "category": item.get("thematic", "Manuel des prélèvements"),
-            "url": item.get("url", "")
+            "url": item.get("url", ""),
+            "external_restriction": get_external_restriction(q_norm, item)
         })
         seen_pids.add(q_norm)
 
@@ -528,7 +695,8 @@ def search_analyses(query, limit=15):
                 "pid": pid,
                 "name": item["name"],
                 "category": item.get("thematic", "Manuel des prélèvements"),
-                "url": item.get("url", "")
+                "url": item.get("url", ""),
+                "external_restriction": get_external_restriction(pid, item)
             })
             seen_pids.add(pid)
             if len(results) >= limit:
@@ -547,10 +715,14 @@ def calculate_tubes(selected_pids, site="Tous les sites", is_pediatric=False):
         return {
             "total_tubes": 0,
             "total_bottles": 0,
+            "total_urine": 0,
+            "total_fecal": 0,
+            "total_other": 0,
             "total_containers": 0,
             "tubes": [],
             "special_instructions": [],
-            "analyses_included": []
+            "analyses_included": [],
+            "external_incompatibilities": []
         }
 
     # Deduplicate and expand panel references
@@ -817,6 +989,22 @@ def calculate_tubes(selected_pids, site="Tous les sites", is_pediatric=False):
             dedup_alerts.append(al)
             seen_alerts.add(al)
 
+    # Compute external prelevement incompatibilities (on ice, decant, hospital only)
+    external_incompatibilities = []
+    for pid in unique_pids:
+        item = catalog[pid]
+        restr = get_external_restriction(pid, item)
+        if restr.get("is_incompatible"):
+            external_incompatibilities.append({
+                "pid": pid,
+                "name": item.get("name", pid.upper()),
+                "type": restr["type"],
+                "badge": restr["badge"],
+                "badge_class": restr["badge_class"],
+                "reason": restr["reason"],
+                "url": item.get("url", "")
+            })
+
     total_all_containers = total_blood_tubes + total_bottles_count + total_urine_count + total_fecal_count + total_other_count
 
     return {
@@ -829,6 +1017,7 @@ def calculate_tubes(selected_pids, site="Tous les sites", is_pediatric=False):
         "tubes": tube_results,
         "special_instructions": dedup_alerts,
         "analyses_included": analyses_summary,
+        "external_incompatibilities": external_incompatibilities,
         "site_applied": site,
         "is_pediatric": is_pediatric
     }
