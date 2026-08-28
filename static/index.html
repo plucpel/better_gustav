@@ -251,11 +251,7 @@
               <p class="text-[11px] text-sky-200/80">Formulaire officiel 03-108 (2026-05) avec vos analyses pré-cochées</p>
             </div>
           </div>
-          <div class="flex items-center space-x-2">
-            <button id="openDymoModalHeroBtn" class="bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs px-3.5 py-1.5 rounded-lg shadow transition flex items-center space-x-1.5" title="Imprimer les étiquettes de tubes pour imprimante Dymo">
-              <i class="fa-solid fa-tags text-[11px]"></i>
-              <span>Étiquettes Dymo (30336)</span>
-            </button>
+          <div class="flex items-center space-x-2 sm:ml-auto">
             <button id="openRequisitionModalBtn" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs px-3.5 py-1.5 rounded-lg shadow transition flex items-center space-x-1.5">
               <i class="fa-solid fa-pen-to-square text-[11px]"></i>
               <span>Requête PDF</span>
@@ -263,6 +259,11 @@
             <button id="quickDownloadPdfBtn" class="bg-white/15 hover:bg-white/25 text-white font-semibold text-xs px-3 py-1.5 rounded-lg border border-white/20 transition flex items-center space-x-1.5" title="Téléchargement rapide de la requête PDF">
               <i class="fa-solid fa-file-arrow-down text-[11px]"></i>
               <span>Télécharger</span>
+            </button>
+            <div class="w-px h-5 bg-white/20 mx-1 hidden sm:block"></div>
+            <button id="openDymoModalHeroBtn" class="bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs px-3.5 py-1.5 rounded-lg shadow transition flex items-center space-x-1.5" title="Imprimer les étiquettes de tubes pour imprimante Dymo">
+              <i class="fa-solid fa-tags text-[11px]"></i>
+              <span>Étiquettes Dymo (30336)</span>
             </button>
           </div>
         </div>
@@ -573,10 +574,6 @@
           <button id="cancelRequisitionBtn" class="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition">
             Annuler
           </button>
-          <button id="btnOpenDymoFromRequisition" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow transition flex items-center space-x-1.5" title="Ouvrir l'aperçu et l'impression des étiquettes Dymo">
-            <i class="fa-solid fa-tags text-[11px]"></i>
-            <span>Étiquettes Dymo</span>
-          </button>
           <button id="previewPdfBtn" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold shadow transition flex items-center space-x-1.5">
             <i class="fa-solid fa-eye text-[11px]"></i>
             <span>Aperçu PDF</span>
@@ -584,6 +581,10 @@
           <button id="downloadPdfModalBtn" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow transition flex items-center space-x-1.5">
             <i class="fa-solid fa-file-arrow-down text-xs"></i>
             <span>Générer &amp; Télécharger PDF</span>
+          </button>
+          <button id="btnOpenDymoFromRequisition" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow transition flex items-center space-x-1.5" title="Ouvrir l'aperçu et l'impression des étiquettes Dymo">
+            <i class="fa-solid fa-tags text-[11px]"></i>
+            <span>Étiquettes Dymo</span>
           </button>
         </div>
       </div>
