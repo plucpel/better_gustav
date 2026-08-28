@@ -131,7 +131,18 @@ def prepare_label_items(
         
     pname = str(pdict.get("patient_name", "")).strip()
     if not pname:
-        pname = "PATIENT (NON NOMMÉ)"
+        nom = str(pdict.get("nom", "")).strip()
+        prenom = str(pdict.get("prenom", "")).strip()
+        if nom and prenom:
+            pname = f"{nom.upper()}, {prenom}"
+        elif nom:
+            pname = nom.upper()
+        elif prenom:
+            pname = prenom
+        elif pdict.get("nom_prenom"):
+            pname = str(pdict.get("nom_prenom")).strip()
+        else:
+            pname = "PATIENT (NON NOMMÉ)"
     dossier = str(pdict.get("dossier", "")).strip()
     
     sample_date = str(pdict.get("sample_date", "")).strip()
