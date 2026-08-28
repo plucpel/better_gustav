@@ -146,14 +146,44 @@ def test_app():
     assert "Lambert" in found_rev[0]["doctor_name"]
     print(f"  -> Inverted name search 'Lambert Alexandra' found: {found_rev[0]['doctor_name']}")
 
-    print("\n=== 11. Testing POST /api/auth/logout ===")
+    print("\n=== 11. Testing POST /api/labels/preview and /api/labels/pdf (Dymo 30336) ===")
+    label_req = {
+        "pids": ["fsc", "elec", "ptrin"],
+        "site": "Hôpital Enfant-Jésus (HEJ)",
+        "is_pediatric": False,
+        "format": "30336",
+        "patient_info": {
+            "patient_name": "Tremblay, Jean",
+            "ramq": "TREJ 8005 1512",
+            "dob": "1980-05-15",
+            "sex": "M",
+            "dossier": "1234567",
+            "nurse_name": "Julie Gagnon, Inf.",
+            "sample_location": "GMF Saint-Vallier"
+        }
+    }
+    r_prev = client.post("/api/labels/preview", json=label_req)
+    assert r_prev.status_code == 200
+    prev_data = r_prev.json()
+    assert prev_data["total_labels"] == 3
+    assert len(prev_data["labels"]) == 3
+    assert prev_data["format"]["name"].startswith("Dymo 30336")
+    print(f"  -> /api/labels/preview generated {prev_data['total_labels']} labels successfully.")
+
+    r_pdf = client.post("/api/labels/pdf", json=label_req)
+    assert r_pdf.status_code == 200
+    assert r_pdf.headers["content-type"] == "application/pdf"
+    assert len(r_pdf.content) > 1000
+    print(f"  -> /api/labels/pdf returned valid PDF binary ({len(r_pdf.content)} bytes).")
+
+    print("\n=== 12. Testing POST /api/auth/logout ===")
     r_logout = client.post("/api/auth/logout")
     assert r_logout.status_code == 200
     r_after_logout = client.get("/api/panels")
     assert r_after_logout.status_code == 401
     print("  -> Session successfully cleared after logout.")
 
-    print("\n ALL API, AUTH & CALCULATION TESTS PASSED PERFECTLY!")
+    print("\n🎉 ALL API, AUTH, CALCULATION & DYMO LABEL TESTS PASSED PERFECTLY!")
 
 if __name__ == "__main__":
     test_app()
