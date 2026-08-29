@@ -433,6 +433,7 @@ class LabelsRequest(BaseModel):
     site: Optional[Annotated[str, Field(max_length=120)]] = "Tous les sites"
     is_pediatric: Optional[bool] = False
     format: Optional[Annotated[str, Field(max_length=20)]] = "30336"
+    quantity: Optional[int] = None
     patient_info: Optional[PatientInfo] = None
 
 @app.post("/api/labels/preview")
@@ -444,7 +445,8 @@ async def api_labels_preview(req: LabelsRequest):
         pids=req.pids,
         site=req.site or "Tous les sites",
         is_pediatric=bool(req.is_pediatric),
-        patient_info=patient_dict
+        patient_info=patient_dict,
+        custom_quantity=req.quantity
     )
     return {
         "status": "success",
@@ -475,7 +477,8 @@ async def api_labels_pdf_post(req: LabelsRequest):
         site=req.site or "Tous les sites",
         is_pediatric=bool(req.is_pediatric),
         patient_info=patient_dict,
-        format_name=format_key
+        format_name=format_key,
+        custom_quantity=req.quantity
     )
     filename = format_labels_pdf_filename(patient_dict)
     ascii_safe_name = filename.encode("ascii", "ignore").decode("ascii").strip() or "Etiquettes_Dymo_30336.pdf"

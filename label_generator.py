@@ -1,6 +1,10 @@
 """
 GUSTAV - Dymo Tube Label Generator (Optilab / CHU de Québec Standard).
-Generates high-resolution vector PDF labels (300 DPI) for Dymo LabelWriter thermal printers (Rolls 30336 and 30334).
+Generates high-contrast, clean 3-line vector PDF labels for Dymo LabelWriter thermal printers (Rolls 30336 and 30334).
+Format per label:
+Line 1: Stephan Gilbert (GHA-2568)  [Bold]
+Line 2: GILS 6607 0514              [Regular]
+Line 3: 5 juillet 1966 , M          [Regular]
 """
 
 import io
@@ -9,7 +13,7 @@ import fitz  # PyMuPDF
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 
-from tube_calculator import calculate_tubes, load_catalog
+from tube_calculator import calculate_tubes
 from requisition_filler import format_dob_str, extract_ramq_info
 
 # Standard Dymo Roll Dimensions (in Points: 72 points = 1 inch = 25.4 mm)
@@ -30,47 +34,8 @@ LABEL_FORMATS = {
     }
 }
 
-# Code 128 Pattern Table (Values 0 to 106)
-CODE128_PATTERNS = [
-    '212222', '222122', '222221', '121223', '121322', '131222', '122213', '122312', '132212', '221213',
-    '221312', '231212', '112232', '122132', '122231', '113222', '123122', '123221', '223211', '221132',
-    '221231', '213212', '223112', '312131', '311222', '321122', '321221', '312212', '322112', '322211',
-    '212123', '212321', '232121', '111323', '131123', '131321', '112313', '132113', '132311', '211313',
-    '231113', '231311', '112133', '112331', '132131', '113123', '113321', '133121', '313121', '211331',
-    '231131', '213113', '213311', '213131', '311123', '311321', '331121', '312113', '312311', '332111',
-    '314111', '221411', '431111', '111224', '111422', '121124', '121421', '141122', '141221', '112214',
-    '112412', '122114', '122411', '142112', '142211', '241211', '221114', '413111', '241112', '134111',
-    '111242', '121142', '121241', '114212', '124112', '124211', '411212', '421112', '421211', '212141',
-    '214121', '412121', '111143', '111341', '131141', '114113', '114311', '411113', '411311', '113141',
-    '114131', '311141', '411131', '211412', '211214', '211232', '2331112'
-]
-
-def encode_code128_b(text: str) -> List[int]:
-    """Encodes ASCII string into Code 128 (Subset B) binary modules array."""
-    clean_text = ''.join([c for c in text if 32 <= ord(c) <= 126])
-    if not clean_text:
-        return []
-    values = [104]  # Start B
-    for c in clean_text:
-        values.append(ord(c) - 32)
-    checksum = values[0]
-    for i, v in enumerate(values[1:], 1):
-        checksum += v * i
-    values.append(checksum % 103)
-    values.append(106)  # Stop
-
-    modules = []
-    for v in values:
-        pat = CODE128_PATTERNS[v]
-        is_bar = True
-        for digit in pat:
-            width = int(digit)
-            modules.extend([1 if is_bar else 0] * width)
-            is_bar = not is_bar
-    return modules
-
 def format_ramq_display(raw_ramq: Optional[str]) -> str:
-    """Formats RAMQ string into standard 4-4-4 format: 'TREJ 8005 1512'."""
+    """Formats RAMQ string into standard 4-4-4 format: 'GILS 6607 0514'."""
     if not raw_ramq:
         return ""
     clean = re.sub(r"[^A-Za-z0-9]", "", str(raw_ramq)).upper()
@@ -78,41 +43,70 @@ def format_ramq_display(raw_ramq: Optional[str]) -> str:
         return f"{clean[:4]} {clean[4:8]} {clean[8:12]}"
     return clean
 
-def extract_primary_alert(tube: Dict[str, Any], cat_key: str) -> str:
-    """Extracts high-priority alert for label badge (Sur glace, Abri lumière, Délai, Banque de sang)."""
-    if cat_key == "EDTA_ROSE":
-        return "⚠️ BANQUE DE SANG : INITIALES & DATE"
+def format_french_dob(dob_str: Optional[str]) -> str:
+    """
+    Formats ISO date (YYYY-MM-DD) into French text format:
+    '1966-07-05' -> '5 juillet 1966'
+    '1966-02-19' -> '19 février 1966'
+    """
+    if not dob_str:
+        return ""
+    parts = str(dob_str).strip().split("-")
+    if len(parts) != 3:
+        return str(dob_str)
+    year, month, day = parts
+    try:
+        d = int(day)
+        m = int(month)
+        y = int(year)
+    except ValueError:
+        return str(dob_str)
     
-    specific_alerts = tube.get("specific_alerts", [])
-    for al in specific_alerts:
-        al_lower = al.lower()
-        if "glace" in al_lower:
-            return "🧊 SUR GLACE"
-        if "lumière" in al_lower or "lumiere" in al_lower:
-            return "🌑 ABRI DE LA LUMIÈRE"
-        if "30 min" in al_lower or "immédiat" in al_lower or "délai" in al_lower:
-            return "⏱️ DÉLAI D'ACHEMINEMENT CRITIQUE"
-            
-    special_inst = tube.get("special_instructions", "")
-    if "glace" in special_inst.lower():
-        return "🧊 SUR GLACE"
-    if "lumière" in special_inst.lower() or "lumiere" in special_inst.lower():
-        return "🌑 ABRI DE LA LUMIÈRE"
+    months_fr = [
+        "", "janvier", "février", "mars", "avril", "mai", "juin",
+        "juillet", "août", "septembre", "octobre", "novembre", "décembre"
+    ]
+    if 1 <= m <= 12:
+        return f"{d} {months_fr[m]} {y}"
+    return str(dob_str)
+
+def format_patient_line_1(pname: str, dossier: str) -> str:
+    """
+    Formats first line: 'Stephan Gilbert (GHA-2568)' or 'Bruno Giguère ()'.
+    Converts 'Nom, Prénom' to 'Prénom Nom'.
+    """
+    pname = pname.strip()
+    if "," in pname:
+        parts = [p.strip() for p in pname.split(",", 1)]
+        if len(parts) == 2 and parts[1]:
+            formatted_name = f"{parts[1]} {parts[0]}"
+        else:
+            formatted_name = pname
+    else:
+        formatted_name = pname
         
-    return ""
+    dos_clean = str(dossier or "").strip()
+    return f"{formatted_name} ({dos_clean})"
 
 def prepare_label_items(
     pids: List[str],
     site: str = "Tous les sites",
     is_pediatric: bool = False,
-    patient_info: Optional[Dict[str, Any]] = None
+    patient_info: Optional[Dict[str, Any]] = None,
+    custom_quantity: Optional[int] = None
 ) -> List[Dict[str, Any]]:
     """
     Computes tubes and converts them into an ordered list of individual label payloads.
-    Expands tube counts (e.g. 2 x Citrate -> 2 separate labels).
+    Generates one label per tube calculated (or custom_quantity if provided).
     """
     calc_res = calculate_tubes(selected_pids=pids, site=site, is_pediatric=is_pediatric)
     tubes = calc_res.get("tubes", [])
+    
+    total_tubes = sum(max(1, t.get("tube_count", 1)) for t in tubes)
+    if custom_quantity and custom_quantity > 0:
+        label_count = custom_quantity
+    else:
+        label_count = max(1, total_tubes)
     
     pdict = patient_info or {}
     raw_ramq = str(pdict.get("ramq", "")).strip()
@@ -123,6 +117,8 @@ def prepare_label_items(
     ramq_info = extract_ramq_info(raw_ramq)
     raw_dob = pdict.get("dob") or ramq_info.get("dob", "")
     formatted_dob = format_dob_str(raw_dob)
+    french_dob = format_french_dob(raw_dob)
+    
     sex = str(pdict.get("sex") or ramq_info.get("sex", "")).strip().upper()
     if sex in ["MASCULIN", "HOMME"]:
         sex = "M"
@@ -134,98 +130,52 @@ def prepare_label_items(
         nom = str(pdict.get("nom", "")).strip()
         prenom = str(pdict.get("prenom", "")).strip()
         if nom and prenom:
-            pname = f"{nom.upper()}, {prenom}"
+            pname = f"{prenom} {nom}"
         elif nom:
-            pname = nom.upper()
+            pname = nom
         elif prenom:
             pname = prenom
         elif pdict.get("nom_prenom"):
             pname = str(pdict.get("nom_prenom")).strip()
         else:
-            pname = "PATIENT (NON NOMMÉ)"
+            pname = "Patient"
     dossier = str(pdict.get("dossier", "")).strip()
     
-    sample_date = str(pdict.get("sample_date", "")).strip()
-    sample_time = str(pdict.get("sample_time", "")).strip()
-    if not sample_date and not sample_time:
-        now_dt = datetime.now()
-        datetime_str = now_dt.strftime("%Y-%m-%d %H:%M")
-    else:
-        datetime_str = f"{sample_date} {sample_time}".strip()
-        
-    nurse_name = str(pdict.get("nurse_name", "")).strip()
-    sample_loc = str(pdict.get("sample_location", "")).strip()
+    line1 = format_patient_line_1(pname, dossier)
+    line2 = ramq_disp
     
-    total_individual_labels = 0
-    expanded_items = []
+    line3_parts = []
+    if french_dob:
+        line3_parts.append(french_dob)
+    if sex:
+        line3_parts.append(f", {sex}")
+    line3 = " ".join(line3_parts).strip()
     
-    for t_idx, tube in enumerate(tubes, 1):
-        cat_key = tube.get("category_key", "SPECIMEN_DIVERS")
-        count = max(1, tube.get("tube_count", 1))
-        analyses_list = [a["name"].split(" (")[0] for a in tube.get("analyses", [])]
-        analyses_pids = [a["pid"].upper() for a in tube.get("analyses", [])]
-        
-        # Build concise test acronyms string
-        if len(analyses_pids) <= 8:
-            analyses_str = ", ".join(analyses_pids)
-        else:
-            analyses_str = ", ".join(analyses_pids[:7]) + f" (+{len(analyses_pids)-7})"
-            
-        cap_name = tube.get("cap_color_name", "Bouchon standard")
-        max_vol = tube.get("max_volume", "")
-        alert_str = extract_primary_alert(tube, cat_key)
-        
-        for sub_i in range(1, count + 1):
-            total_individual_labels += 1
-            
-            # Specific label naming for blood cultures
-            if cat_key == "HEMOCULTURE" and count == 2:
-                bottle_type = "Aérobie (Vert/Bleu)" if sub_i == 1 else "Anaérobie (Jaune/Violet)"
-                specimen_title = f"Hémoculture {sub_i}/2 ({bottle_type})"
-            elif count > 1:
-                specimen_title = f"{tube.get('name', 'Tube')} ({sub_i}/{count})"
-            else:
-                specimen_title = tube.get("name", "Tube")
-                
-            expanded_items.append({
-                "category_key": cat_key,
-                "order_step": tube.get("order_step", 99),
-                "specimen_title": specimen_title,
-                "cap_color_name": cap_name,
-                "color_code": tube.get("color_code", "#0284C7"),
-                "max_volume": max_vol,
-                "analyses_str": analyses_str,
-                "analyses_full_count": len(analyses_list),
-                "alert_str": alert_str,
-                "sub_index": sub_i,
-                "sub_count": count
-            })
-            
-    # Assign overall sequence index (e.g. "Tube 1/3", "Tube 2/3")
-    final_label_payloads = []
-    for seq_i, item in enumerate(expanded_items, 1):
-        final_label_payloads.append({
+    final_labels = []
+    for seq_i in range(1, label_count + 1):
+        final_labels.append({
             "sequence_index": seq_i,
-            "total_sequence": total_individual_labels,
-            "tube_index_str": f"Tube {seq_i}/{total_individual_labels}",
+            "total_sequence": label_count,
             "patient_name": pname,
+            "dossier": dossier,
             "ramq_raw": ramq_clean,
             "ramq_display": ramq_disp,
             "dob": formatted_dob,
+            "french_dob": french_dob,
             "sex": sex,
-            "dossier": dossier,
-            "time_str": datetime_str,
-            "nurse_str": nurse_name,
-            "location_str": sample_loc,
-            **item
+            "line1": line1,
+            "line2": line2,
+            "line3": line3
         })
         
-    return final_label_payloads
+    return final_labels
 
 def _draw_single_dymo_page(page: fitz.Page, label_data: Dict[str, Any], format_name: str = "30336"):
     """
-    Renders a clean, high-contrast, large-font label for Dymo 30336.
-    Contains strictly: Name, DOB, RAMQ, and 1/X numbering. No barcode.
+    Renders the exact 3-line patient label matching the phlebotomist standard:
+    Line 1: Stephan Gilbert (GHA-2568)  [Bold 8.5pt]
+    Line 2: GILS 6607 0514              [Regular 8.5pt]
+    Line 3: 5 juillet 1966 , M          [Regular 8.5pt]
     """
     cfg = LABEL_FORMATS.get(format_name, LABEL_FORMATS["30336"])
     w = cfg["width_pt"]
@@ -234,56 +184,63 @@ def _draw_single_dymo_page(page: fitz.Page, label_data: Dict[str, Any], format_n
     # 0. Clean white background
     page.draw_rect(fitz.Rect(0, 0, w, h), color=(1, 1, 1), fill=(1, 1, 1))
     
-    # 1. Name & Numbering (Top Row)
-    pname = str(label_data.get("patient_name", "")).strip().upper()
-    if not pname:
-        pname = "PATIENT (NON NOMMÉ)"
-    pname_trunc = pname[:24]
+    # 1. Line 1: Name (Dossier)
+    line1 = label_data.get("line1")
+    if not line1:
+        pname = str(label_data.get("patient_name", "")).strip()
+        dossier = str(label_data.get("dossier", "")).strip()
+        line1 = format_patient_line_1(pname, dossier)
     
-    seq_i = label_data.get("sequence_index", 1)
-    tot_seq = label_data.get("total_sequence", 1)
-    num_str = f"{seq_i}/{tot_seq}"
-    
-    # Patient Name (Bold, prominent)
-    page.insert_text(fitz.Point(6, 19), pname_trunc, fontname="helv", fontsize=9.5, color=(0, 0, 0))
-    
-    # 1/X Numbering (Top Right Badge)
-    num_w = len(num_str) * 6.2
-    badge_rect = fitz.Rect(w - 6 - num_w - 6, 7, w - 6, 23)
-    page.draw_rect(badge_rect, color=(0, 0, 0), fill=(0, 0, 0), width=0.5)
-    page.insert_text(fitz.Point(w - 6 - num_w - 3, 18.5), num_str, fontname="helv", fontsize=9.5, color=(1, 1, 1))
-    
-    # Divider line
-    page.draw_line(fitz.Point(6, 27), fitz.Point(w - 6, 27), color=(0.4, 0.4, 0.4), width=0.6)
-    
-    # 2. RAMQ (Middle Row, Large & Bold)
-    ramq_display = label_data.get("ramq_display") or label_data.get("ramq_raw", "")
-    ramq_text = f"RAMQ : {ramq_display}" if ramq_display else "RAMQ : Non spécifiée"
-    page.insert_text(fitz.Point(6, 45), ramq_text, fontname="helv", fontsize=10.0, color=(0, 0, 0))
-    
-    # 3. DOB & Sex (Bottom Row)
-    dob = label_data.get("dob", "")
-    sex = label_data.get("sex", "")
-    dob_str = f"DDN : {dob}" if dob else "DDN : Non spécifiée"
-    if sex:
-        dob_str += f" ({sex})"
-    page.insert_text(fitz.Point(6, 61), dob_str, fontname="helv", fontsize=9.0, color=(0, 0, 0))
+    # 2. Line 2: RAMQ (4-4-4)
+    line2 = label_data.get("line2")
+    if not line2:
+        line2 = label_data.get("ramq_display") or label_data.get("ramq_raw", "")
+        
+    # 3. Line 3: French Date of Birth + Sex
+    line3 = label_data.get("line3")
+    if not line3:
+        raw_dob = label_data.get("dob", "")
+        french_dob = format_french_dob(raw_dob)
+        sex = str(label_data.get("sex", "")).strip().upper()
+        if sex in ["MASCULIN", "HOMME"]:
+            sex = "M"
+        elif sex in ["FEMININ", "FEMME"]:
+            sex = "F"
+        line3_parts = []
+        if french_dob:
+            line3_parts.append(french_dob)
+        if sex:
+            line3_parts.append(f", {sex}")
+        line3 = " ".join(line3_parts).strip()
+        
+    # Coordinate layout (aligned with Dymo 30336 margin)
+    # Left margin: 10 pt
+    # Line 1: y = 22 pt, Helvetica-Bold 8.5 pt
+    # Line 2: y = 37 pt, Helvetica-Regular 8.5 pt
+    # Line 3: y = 51 pt, Helvetica-Regular 8.5 pt
+    page.insert_text(fitz.Point(10, 22), line1, fontname="hebo", fontsize=8.5, color=(0, 0, 0))
+    if line2:
+        page.insert_text(fitz.Point(10, 37), line2, fontname="helv", fontsize=8.5, color=(0, 0, 0))
+    if line3:
+        page.insert_text(fitz.Point(10, 51), line3, fontname="helv", fontsize=8.5, color=(0, 0, 0))
 
 def generate_tube_labels_pdf(
     pids: List[str],
     site: str = "Tous les sites",
     is_pediatric: bool = False,
     patient_info: Optional[Dict[str, Any]] = None,
-    format_name: str = "30336"
+    format_name: str = "30336",
+    custom_quantity: Optional[int] = None
 ) -> bytes:
     """
-    Generates a multi-page vector PDF where each page is sized to the exact Dymo label format.
+    Generates a multi-page vector PDF where each page is sized to the exact Dymo label format (54x25.4mm).
     """
     label_items = prepare_label_items(
         pids=pids,
         site=site,
         is_pediatric=is_pediatric,
-        patient_info=patient_info
+        patient_info=patient_info,
+        custom_quantity=custom_quantity
     )
     
     cfg = LABEL_FORMATS.get(format_name, LABEL_FORMATS["30336"])
@@ -293,9 +250,9 @@ def generate_tube_labels_pdf(
     doc = fitz.open()
     
     if not label_items:
-        # Empty fallback single label
+        # Fallback single label
         page = doc.new_page(width=w, height=h)
-        page.insert_text(fitz.Point(w / 2.0 - 45, h / 2.0), "Aucun tube requis", fontname="helv", fontsize=8.0)
+        page.insert_text(fitz.Point(10, 22), "Patient ()", fontname="hebo", fontsize=8.5)
     else:
         for item in label_items:
             page = doc.new_page(width=w, height=h)
@@ -310,7 +267,7 @@ def generate_tube_labels_pdf(
 def format_labels_pdf_filename(patient_info: Optional[Dict[str, Any]] = None) -> str:
     """Constructs filename for downloaded Dymo labels PDF."""
     if not patient_info:
-        return "Etiquettes_Tubes_Dymo_30336.pdf"
+        return "Etiquettes_Dymo_30336.pdf"
     pname = str(patient_info.get("patient_name") or "").strip()
     ramq = str(patient_info.get("ramq") or "").strip()
     parts = ["Etiquettes"]

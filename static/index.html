@@ -37,8 +37,13 @@
 
     @media print {
       @page {
-        size: 54mm 25.4mm;
+        size: 54mm 25.4mm landscape;
         margin: 0;
+      }
+      body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
       }
       body * {
         visibility: hidden !important;
@@ -61,8 +66,8 @@
         page-break-after: always;
         break-after: page;
         box-sizing: border-box;
-        padding: 1.2mm 1.6mm;
-        font-family: Arial, Helvetica, sans-serif;
+        padding: 2.8mm 3.5mm;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         overflow: hidden;
         background: #fff;
         color: #000;
@@ -4580,24 +4585,11 @@
 
       let html = "";
       labels.forEach((l, idx) => {
-        const seqText = `${l.sequence_index || (idx + 1)}/${l.total_sequence || labels.length}`;
         html += `
-          <div class="bg-white border-2 border-slate-300 rounded-xl p-4 shadow-sm hover:border-sky-500 transition relative flex flex-col justify-between" style="min-height: 125px;">
-            <!-- Row 1: Name & 1/X Numbering -->
-            <div class="flex items-center justify-between pb-2 border-b border-slate-200 gap-2">
-              <div class="text-sm font-black text-slate-900 truncate uppercase tracking-tight">${escapeHtml(l.patient_name)}</div>
-              <div class="bg-slate-900 text-white font-black px-2.5 py-0.5 rounded text-xs shrink-0 font-mono">${seqText}</div>
-            </div>
-
-            <!-- Row 2: RAMQ -->
-            <div class="py-2 text-base font-black text-slate-900 font-mono tracking-wide">
-              <span class="text-xs text-slate-500 font-sans font-bold uppercase tracking-normal">RAMQ : </span>${escapeHtml(l.ramq_display || l.ramq_raw || 'Non spécifiée')}
-            </div>
-
-            <!-- Row 3: DOB & Sex -->
-            <div class="text-xs font-bold text-slate-800 pt-1.5 border-t border-slate-100 flex items-center justify-between">
-              <span><span class="text-slate-500 font-medium">DDN : </span>${escapeHtml(l.dob || 'Non spécifiée')} ${l.sex ? '(' + escapeHtml(l.sex) + ')' : ''}</span>
-            </div>
+          <div class="bg-white border border-slate-300 rounded-xl p-4 shadow-sm hover:border-sky-500 transition flex flex-col justify-center space-y-1.5" style="min-height: 90px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+            <div class="text-sm font-bold text-slate-950">${escapeHtml(l.line1 || l.patient_name || 'Patient ()')}</div>
+            <div class="text-sm font-normal text-slate-900 font-mono tracking-wide">${escapeHtml(l.line2 || l.ramq_display || '')}</div>
+            <div class="text-sm font-normal text-slate-900">${escapeHtml(l.line3 || '')}</div>
           </div>
         `;
       });
@@ -4614,24 +4606,11 @@
 
       let html = "";
       labels.forEach((l, idx) => {
-        const seqText = `${l.sequence_index || (idx + 1)}/${l.total_sequence || labels.length}`;
         html += `
-          <div class="dymo-print-label" style="display: flex; flex-direction: column; justify-content: space-between; padding: 2.2mm 2.8mm; box-sizing: border-box; height: 25.4mm; width: 54mm; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #fff; color: #000;">
-            <!-- Row 1: Name & 1/X -->
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 0.6pt solid #000; padding-bottom: 0.8mm;">
-              <span style="font-size: 8.8pt; font-weight: 900; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 38mm; letter-spacing: -0.2px;">${l.patient_name}</span>
-              <span style="background: #000; color: #fff; font-size: 8.5pt; font-weight: 900; padding: 0.4mm 1.6mm; border-radius: 0.8mm; font-family: monospace;">${seqText}</span>
-            </div>
-
-            <!-- Row 2: RAMQ -->
-            <div style="font-size: 9.8pt; font-weight: 900; font-family: monospace; letter-spacing: 0.5px; margin: 1mm 0;">
-              <span style="font-size: 7.5pt; font-weight: bold; font-family: sans-serif; letter-spacing: 0;">RAMQ : </span>${l.ramq_display || l.ramq_raw || ''}
-            </div>
-
-            <!-- Row 3: DOB & Sex -->
-            <div style="font-size: 8.2pt; font-weight: bold; border-top: 0.4pt solid #777; padding-top: 0.8mm;">
-              <span style="font-size: 7.2pt; font-weight: normal; color: #333;">DDN : </span>${l.dob || ''} ${l.sex ? '(' + l.sex + ')' : ''}
-            </div>
+          <div class="dymo-print-label" style="display: flex; flex-direction: column; justify-content: center; padding: 2.8mm 3.5mm; box-sizing: border-box; height: 25.4mm; width: 54mm; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #fff; color: #000;">
+            <div style="font-size: 8.5pt; font-weight: bold; line-height: 1.2; margin-bottom: 2pt;">${escapeHtml(l.line1 || l.patient_name || 'Patient ()')}</div>
+            <div style="font-size: 8.5pt; font-weight: normal; line-height: 1.2; margin-bottom: 2pt;">${escapeHtml(l.line2 || l.ramq_display || '')}</div>
+            <div style="font-size: 8.5pt; font-weight: normal; line-height: 1.2;">${escapeHtml(l.line3 || '')}</div>
           </div>
         `;
       });
