@@ -238,17 +238,17 @@ def _draw_single_dymo_page(page: fitz.Page, label_data: Dict[str, Any], format_n
             line3_parts.append(f", {sex}")
         line3 = " ".join(line3_parts).strip()
         
-    # Coordinate layout:
+    # Coordinate layout (+15% larger font):
     # Left margin: 22 pt (~7.8 mm) ensures 0% left clipping on physical Dymo LabelWriter feed.
     # Max width: 122 pt (out of 153.07 pt total width).
-    # Line 1: y = 22 pt, Helvetica-Bold 10.5 pt
-    # Line 2: y = 38 pt, Helvetica-Regular 10.0 pt
-    # Line 3: y = 54 pt, Helvetica-Regular 10.0 pt
-    _insert_auto_fit_text(page, 22, 22, line1, fontname="hebo", max_fontsize=10.5, min_fontsize=7.5, max_width=122)
+    # Line 1: y = 23 pt, Helvetica-Bold 12.0 pt
+    # Line 2: y = 40 pt, Helvetica-Regular 11.5 pt
+    # Line 3: y = 57 pt, Helvetica-Regular 11.5 pt
+    _insert_auto_fit_text(page, 22, 23, line1, fontname="hebo", max_fontsize=12.0, min_fontsize=8.5, max_width=122)
     if line2:
-        _insert_auto_fit_text(page, 22, 38, line2, fontname="helv", max_fontsize=10.0, min_fontsize=7.5, max_width=122)
+        _insert_auto_fit_text(page, 22, 40, line2, fontname="helv", max_fontsize=11.5, min_fontsize=8.5, max_width=122)
     if line3:
-        _insert_auto_fit_text(page, 22, 54, line3, fontname="helv", max_fontsize=10.0, min_fontsize=7.5, max_width=122)
+        _insert_auto_fit_text(page, 22, 57, line3, fontname="helv", max_fontsize=11.5, min_fontsize=8.5, max_width=122)
 
 def generate_tube_labels_pdf(
     pids: List[str],

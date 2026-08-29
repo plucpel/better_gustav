@@ -4608,9 +4608,9 @@
       labels.forEach((l, idx) => {
         html += `
           <div class="dymo-print-label" style="display: flex; flex-direction: column; justify-content: center; padding: 3.5mm 3.5mm 3.5mm 7.5mm; box-sizing: border-box; height: 25.4mm; width: 54mm; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #fff; color: #000;">
-            <div style="font-size: 10.5pt; font-weight: bold; line-height: 1.25; margin-bottom: 2pt; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(l.line1 || l.patient_name || 'Patient ()')}</div>
-            <div style="font-size: 10.0pt; font-weight: normal; line-height: 1.25; margin-bottom: 2pt; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(l.line2 || l.ramq_display || '')}</div>
-            <div style="font-size: 10.0pt; font-weight: normal; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(l.line3 || '')}</div>
+            <div style="font-size: 12.0pt; font-weight: bold; line-height: 1.25; margin-bottom: 2pt; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(l.line1 || l.patient_name || 'Patient ()')}</div>
+            <div style="font-size: 11.5pt; font-weight: normal; line-height: 1.25; margin-bottom: 2pt; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(l.line2 || l.ramq_display || '')}</div>
+            <div style="font-size: 11.5pt; font-weight: normal; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(l.line3 || '')}</div>
           </div>
         `;
       });
