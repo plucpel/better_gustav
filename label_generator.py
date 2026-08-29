@@ -1,10 +1,12 @@
 """
 GUSTAV - Dymo Tube Label Generator (Optilab / CHU de Québec Standard).
 Generates high-contrast, clean 3-line vector PDF labels for Dymo LabelWriter thermal printers (Rolls 30336 and 30334).
+Dimensions: 1" x 2-1/8" (25 mm x 54 mm).
+
 Format per label:
-Line 1: Stephan Gilbert (GHA-2568)  [Bold]
-Line 2: GILS 6607 0514              [Regular]
-Line 3: 5 juillet 1966 , M          [Regular]
+Line 1: Stephan Gilbert (GHA-2568)  [Bold 10.5pt]
+Line 2: GILS 6607 0514              [Regular 10.0pt]
+Line 3: 5 juillet 1966 , M          [Regular 10.0pt]
 """
 
 import io
@@ -170,12 +172,35 @@ def prepare_label_items(
         
     return final_labels
 
+def _insert_auto_fit_text(
+    page: fitz.Page,
+    x: float,
+    y: float,
+    text: str,
+    fontname: str,
+    max_fontsize: float,
+    min_fontsize: float,
+    max_width: float,
+    color: tuple = (0, 0, 0)
+):
+    """Inserts single line of text, automatically scaling down font size if text exceeds max_width."""
+    font = fitz.Font(fontname)
+    fontsize = max_fontsize
+    while fontsize >= min_fontsize:
+        w = font.text_length(text, fontsize=fontsize)
+        if w <= max_width:
+            break
+        fontsize -= 0.5
+    page.insert_text(fitz.Point(x, y), text, fontname=fontname, fontsize=fontsize, color=color)
+
 def _draw_single_dymo_page(page: fitz.Page, label_data: Dict[str, Any], format_name: str = "30336"):
     """
     Renders the exact 3-line patient label matching the phlebotomist standard:
-    Line 1: Stephan Gilbert (GHA-2568)  [Bold 8.5pt]
-    Line 2: GILS 6607 0514              [Regular 8.5pt]
-    Line 3: 5 juillet 1966 , M          [Regular 8.5pt]
+    Line 1: Stephan Gilbert (GHA-2568)  [Bold 10.5pt]
+    Line 2: GILS 6607 0514              [Regular 10.0pt]
+    Line 3: 5 juillet 1966 , M          [Regular 10.0pt]
+    
+    Safe margin: x = 22 pt (~7.8 mm) from carrier left edge prevents physical left-clipping.
     """
     cfg = LABEL_FORMATS.get(format_name, LABEL_FORMATS["30336"])
     w = cfg["width_pt"]
@@ -213,16 +238,17 @@ def _draw_single_dymo_page(page: fitz.Page, label_data: Dict[str, Any], format_n
             line3_parts.append(f", {sex}")
         line3 = " ".join(line3_parts).strip()
         
-    # Coordinate layout (aligned with Dymo 30336 margin)
-    # Left margin: 10 pt
-    # Line 1: y = 22 pt, Helvetica-Bold 8.5 pt
-    # Line 2: y = 37 pt, Helvetica-Regular 8.5 pt
-    # Line 3: y = 51 pt, Helvetica-Regular 8.5 pt
-    page.insert_text(fitz.Point(10, 22), line1, fontname="hebo", fontsize=8.5, color=(0, 0, 0))
+    # Coordinate layout:
+    # Left margin: 22 pt (~7.8 mm) ensures 0% left clipping on physical Dymo LabelWriter feed.
+    # Max width: 122 pt (out of 153.07 pt total width).
+    # Line 1: y = 22 pt, Helvetica-Bold 10.5 pt
+    # Line 2: y = 38 pt, Helvetica-Regular 10.0 pt
+    # Line 3: y = 54 pt, Helvetica-Regular 10.0 pt
+    _insert_auto_fit_text(page, 22, 22, line1, fontname="hebo", max_fontsize=10.5, min_fontsize=7.5, max_width=122)
     if line2:
-        page.insert_text(fitz.Point(10, 37), line2, fontname="helv", fontsize=8.5, color=(0, 0, 0))
+        _insert_auto_fit_text(page, 22, 38, line2, fontname="helv", max_fontsize=10.0, min_fontsize=7.5, max_width=122)
     if line3:
-        page.insert_text(fitz.Point(10, 51), line3, fontname="helv", fontsize=8.5, color=(0, 0, 0))
+        _insert_auto_fit_text(page, 22, 54, line3, fontname="helv", max_fontsize=10.0, min_fontsize=7.5, max_width=122)
 
 def generate_tube_labels_pdf(
     pids: List[str],
@@ -252,7 +278,7 @@ def generate_tube_labels_pdf(
     if not label_items:
         # Fallback single label
         page = doc.new_page(width=w, height=h)
-        page.insert_text(fitz.Point(10, 22), "Patient ()", fontname="hebo", fontsize=8.5)
+        page.insert_text(fitz.Point(22, 22), "Patient ()", fontname="hebo", fontsize=10.5)
     else:
         for item in label_items:
             page = doc.new_page(width=w, height=h)
