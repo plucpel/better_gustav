@@ -21,7 +21,8 @@ chrome.action.onClicked.addListener(async (tab) => {
     dob: "",
     sex: "",
     dossier: "",
-    prescriber_name: ""
+    prescriber_name: "",
+    doctor_license: ""
   };
 
   if (tab && tab.id) {
@@ -31,6 +32,13 @@ chrome.action.onClicked.addListener(async (tab) => {
         target: { tabId: tab.id, allFrames: true },
         func: async () => {
           let id = "";
+          let patientName = "";
+          let ramq = "";
+          let dob = "";
+          let sex = "";
+          let dossier = "";
+          let prescriber = "";
+          let doctorLicense = "";
 
           // A. From URL params
           try {
@@ -50,21 +58,51 @@ chrome.action.onClicked.addListener(async (tab) => {
           }
 
           // C. From scripts / InitSetting
-          if (!id) {
-            try {
-              const scripts = document.querySelectorAll("script");
-              for (const s of scripts) {
-                const text = s.textContent || "";
-                if (text.includes("idPatient")) {
-                  const m = text.match(/"idPatient"\s*:\s*(\d+)/i) || text.match(/idPatient\s*=\s*(\d+)/i);
-                  if (m && m[1] && m[1] !== "0") { id = m[1]; break; }
+          try {
+            const scripts = document.querySelectorAll("script");
+            for (const s of scripts) {
+              const text = s.textContent || "";
+              if (!id && text.includes("idPatient")) {
+                const m = text.match(/"idPatient"\s*:\s*(\d+)/i) || text.match(/idPatient\s*=\s*(\d+)/i);
+                if (m && m[1] && m[1] !== "0") id = m[1];
+              }
+            }
+          } catch (e) {}
+
+          // D. Prescriber info from global variables
+          try {
+            if (window.__logon_user_code) {
+              prescriber = String(window.__logon_user_code).replace(/-/g, " ");
+            }
+            if (window.__logon_user_professional_id) {
+              doctorLicense = String(window.__logon_user_professional_id);
+            }
+          } catch (e) {}
+
+          // E. Look for Bearer / Auth tokens in storage
+          let authToken = "";
+          try {
+            for (let i = 0; i < sessionStorage.length; i++) {
+              const k = sessionStorage.key(i);
+              const val = sessionStorage.getItem(k);
+              if (val && (k.toLowerCase().includes("token") || k.toLowerCase().includes("auth") || val.startsWith("ey") || val.startsWith("Bearer "))) {
+                authToken = val.replace(/^Bearer\s+/i, "");
+                break;
+              }
+            }
+            if (!authToken) {
+              for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                const val = localStorage.getItem(k);
+                if (val && (k.toLowerCase().includes("token") || k.toLowerCase().includes("auth") || val.startsWith("ey") || val.startsWith("Bearer "))) {
+                  authToken = val.replace(/^Bearer\s+/i, "");
+                  break;
                 }
               }
-            } catch (e) {}
-          }
+            }
+          } catch (e) {}
 
-          // D. Query Medesync API with multi-host fallback
-          let apiData = null;
+          // F. Query Medesync API with multi-host fallback
           if (id && /^\d+$/.test(id)) {
             const currentHost = window.location.hostname;
             const hostsToTry = [
@@ -74,61 +112,90 @@ chrome.action.onClicked.addListener(async (tab) => {
               'https://secure-api.medesync.com'
             ];
 
+            const reqHeaders = { 'Accept': 'application/json' };
+            if (authToken) {
+              reqHeaders['Authorization'] = `Bearer ${authToken}`;
+            }
+
             for (const h of hostsToTry) {
               try {
                 const resp = await fetch(`${h}/api/v3/patients/getBasicInfos/${id}`, {
                   credentials: 'include',
-                  headers: { 'Accept': 'application/json' }
+                  headers: reqHeaders
                 });
                 if (resp.ok) {
                   const data = await resp.json();
                   if (data && (data.nam || data.fullName || data.lastName || data.firstName)) {
-                    apiData = data;
+                    patientName = data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim();
+                    ramq = data.nam || "";
+                    dob = data.dobRaw || "";
+                    sex = data.sexeShort || (data.isMale ? "M" : "F");
+                    dossier = data.chartNumber || "";
                     break;
                   }
                 }
-              } catch (err) {}
+              } catch (err) {
+                // Silently continue to next host or fallback
+              }
             }
           }
 
-          // E. Deep DOM Regex Extraction (Fallback if API is unavailable)
-          const bodyText = (document.body ? document.body.innerText : "") + " " + document.title;
-          
-          // RAMQ Regex (e.g. ABCD 1234 5678 or ABCD12345678)
-          let extractedRamq = "";
-          const ramqMatch = bodyText.match(/\b([A-Z]{4})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\b/i) ||
-                            bodyText.match(/\b([A-Z]{4})\s*(\d{4})\s*(\d{4})\b/i) ||
-                            bodyText.match(/\b([A-Z]{4}\d{8})\b/i);
-          if (ramqMatch) {
-            extractedRamq = ramqMatch[0].replace(/\s+/g, "");
-          }
-
-          // Date of Birth Regex (YYYY-MM-DD or DD/MM/YYYY)
-          let extractedDob = "";
-          const dobMatch = bodyText.match(/\b(19\d{2}|20\d{2})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])\b/) ||
-                           bodyText.match(/\b(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/(19\d{2}|20\d{2})\b/);
-          if (dobMatch) {
-            if (dobMatch[0].includes("/")) {
-              const parts = dobMatch[0].split("/");
-              extractedDob = `${parts[2]}-${parts[1]}-${parts[0]}`;
-            } else {
-              extractedDob = dobMatch[0];
+          // G. Deep DOM Regex Extraction (Fallback if API is unauthorized or blocked)
+          try {
+            const bodyText = (document.body ? document.body.innerText : "") + " " + document.title;
+            
+            // RAMQ Regex (e.g. ABCD 1234 5678 or ABCD12345678)
+            if (!ramq) {
+              const ramqMatch = bodyText.match(/\b([A-Z]{4})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\b/i) ||
+                                bodyText.match(/\b([A-Z]{4})\s*(\d{4})\s*(\d{4})\b/i) ||
+                                bodyText.match(/\b([A-Z]{4}\d{8})\b/i);
+              if (ramqMatch) {
+                ramq = ramqMatch[0].replace(/\s+/g, "");
+              }
             }
-          }
 
-          // Prescriber
-          let prescriber = "";
-          if (window.__logon_user_code) {
-            prescriber = String(window.__logon_user_code).replace(/-/g, " ");
-          }
+            // Date of Birth Regex (YYYY-MM-DD or DD/MM/YYYY)
+            if (!dob) {
+              const dobMatch = bodyText.match(/\b(19\d{2}|20\d{2})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])\b/) ||
+                               bodyText.match(/\b(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/(19\d{2}|20\d{2})\b/);
+              if (dobMatch) {
+                if (dobMatch[0].includes("/")) {
+                  const parts = dobMatch[0].split("/");
+                  dob = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                } else {
+                  dob = dobMatch[0];
+                }
+              }
+            }
+
+            // Dossier
+            if (!dossier) {
+              const dosMatch = bodyText.match(/\b(?:Dossier|Chart|No dossier)[\s:#]+(\d+)\b/i);
+              if (dosMatch) dossier = dosMatch[1];
+            }
+
+            // Patient Name from header / banner elements
+            if (!patientName) {
+              const nameEl = document.getElementById("patient_file") || 
+                             document.querySelector(".patient_name") || 
+                             document.querySelector(".patient-name") ||
+                             document.querySelector(".patient-banner");
+              if (nameEl && nameEl.innerText) {
+                const lines = nameEl.innerText.split("\n").map(l => l.trim()).filter(Boolean);
+                if (lines.length > 0) patientName = lines[0];
+              }
+            }
+          } catch (e) {}
 
           return {
             medesync_id: id || "",
-            apiData: apiData,
-            extractedRamq: extractedRamq,
-            extractedDob: extractedDob,
-            prescriber_name: prescriber,
-            pageTitle: document.title || ""
+            patient_name: patientName || "",
+            ramq: ramq || "",
+            dob: dob || "",
+            sex: sex || "",
+            dossier: dossier || "",
+            prescriber_name: prescriber || "",
+            doctor_license: doctorLicense || ""
           };
         }
       });
@@ -137,30 +204,15 @@ chrome.action.onClicked.addListener(async (tab) => {
         for (const res of injectionResults) {
           if (!res || !res.result) continue;
           const r = res.result;
-
-          if (r.apiData) {
-            const b = r.apiData;
-            patientPayload.medesync_id = String(b.id || r.medesync_id || "");
-            patientPayload.patient_name = b.fullName || `${b.firstName || ''} ${b.lastName || ''}`.trim();
-            patientPayload.nom = b.lastName || "";
-            patientPayload.prenom = b.firstName || "";
-            patientPayload.ramq = b.nam || r.extractedRamq || "";
-            patientPayload.dob = b.dobRaw || r.extractedDob || "";
-            patientPayload.sex = b.sexeShort || (b.isMale ? "M" : "F");
-            patientPayload.dossier = b.chartNumber || "";
-            patientPayload.prescriber_name = r.prescriber_name || "";
-            break; // Found complete API data!
-          } else if (r.medesync_id || r.extractedRamq) {
-            patientPayload.medesync_id = r.medesync_id || "";
-            patientPayload.ramq = r.extractedRamq || "";
-            patientPayload.dob = r.extractedDob || "";
-            patientPayload.prescriber_name = r.prescriber_name || "";
+          if (r.ramq || r.patient_name || r.medesync_id) {
+            Object.assign(patientPayload, r);
+            if (r.ramq && r.patient_name) break; // Found comprehensive data
           }
         }
       }
 
     } catch (err) {
-      console.warn("[GUSTAV Background] Scripting tab failed, launching directly:", err);
+      console.warn("[GUSTAV Background] Scripting tab completed with fallback:", err);
     }
   }
 
@@ -168,7 +220,7 @@ chrome.action.onClicked.addListener(async (tab) => {
   try {
     await handleLaunchGustav(patientPayload);
   } catch (err) {
-    console.error("[GUSTAV Background] Direct launch error:", err);
+    console.error("[GUSTAV Background] Launch failed:", err);
   }
 });
 
@@ -189,7 +241,7 @@ async function getStoredSettings() {
     chrome.storage.sync.get(["gustavUrl", "extensionSecret"], (items) => {
       resolve({
         gustavUrl: (items.gustavUrl || DEFAULT_GUSTAV_URL).replace(/\/+$/, ""),
-        extensionSecret: items.extensionSecret || DEFAULT_EXTENSION_SECRET
+        extensionSecret: (items.extensionSecret && items.extensionSecret.trim()) ? items.extensionSecret.trim() : DEFAULT_EXTENSION_SECRET
       });
     });
   });
