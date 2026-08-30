@@ -1732,6 +1732,19 @@
                   }
                 } catch (e) {}
               }
+            } else if (p.prescriber_name || p.doctor_name) {
+              const docName = (p.prescriber_name || p.doctor_name).trim();
+              const reqDocNameEl = document.getElementById("reqDoctorName");
+              if (reqDocNameEl) reqDocNameEl.value = docName;
+              try {
+                const docRes = await fetch(`/api/prescribers/search?q=${encodeURIComponent(docName)}&limit=5`);
+                if (docRes.ok) {
+                  const matches = await docRes.json();
+                  if (matches && matches.length > 0) {
+                    applyPrescriber(matches[0]);
+                  }
+                }
+              } catch (e) {}
             }
             if (p.site && siteSelect) {
               const siteMatch = Array.from(siteSelect.options).find(opt => 
