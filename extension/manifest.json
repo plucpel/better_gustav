@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "GUSTAV - Passerelle Medesync",
+  "version": "1.0.0",
+  "description": "Intégration transparente et sécurisée entre Medesync DME et le calculateur de prélèvements GUSTAV.",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://*.medesync.com/*",
+    "https://*.telushealth.com/*",
+    "http://chatterbox:8000/*",
+    "http://localhost:8000/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.medesync.com/*",
+        "https://*.telushealth.com/*"
+      ],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Configuration GUSTAV"
+  }
+}

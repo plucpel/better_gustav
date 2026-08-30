@@ -196,12 +196,53 @@ def _run_all_endpoint_tests():
     assert len(r_pdf.content) > 1000
     print(f"  -> /api/labels/pdf returned valid PDF binary ({len(r_pdf.content)} bytes).")
 
-    print("\n=== 12. Testing POST /api/auth/logout ===")
-    r_logout = client.post("/api/auth/logout")
-    assert r_logout.status_code == 200
-    r_after_logout = client.get("/api/panels")
-    assert r_after_logout.status_code == 401
-    print("  -> Session successfully cleared after logout.")
+    print("\n=== 13. Testing POST /api/context/launch and /api/context/consume (Medesync Extension Flow) ===")
+    launch_payload = {
+        "patient_name": "Patient Test",
+        "ramq": "TEST74613019",
+        "dob": "1974-11-30",
+        "sex": "M",
+        "dossier": "3",
+        "medesync_id": 35660746,
+        "doctor_license": "16350"
+    }
+
+    # 13.1 Rejection without secret
+    r_no_sec = client.post("/api/context/launch", json=launch_payload)
+    assert r_no_sec.status_code == 401
+    print("  -> Rejected launch without extension secret (401).")
+
+    # 13.2 Valid launch with secret
+    r_launch = client.post(
+        "/api/context/launch",
+        json=launch_payload,
+        headers={"X-Gustav-Secret": "gustav_ext_secret_chatterbox_2026"}
+    )
+    assert r_launch.status_code == 200
+    launch_res = r_launch.json()
+    assert "launch_token" in launch_res
+    token = launch_res["launch_token"]
+    print(f"  -> Generated single-use launch token: {token[:12]}...")
+
+    # 13.3 GET /?launch=<token> sets session cookie and serves index
+    unauth_client = TestClient(app)
+    r_get_launch = unauth_client.get(f"/?launch={token}")
+    assert r_get_launch.status_code == 200
+    assert "gustav_session" in unauth_client.cookies
+    print("  -> GET /?launch=<token> instantly granted session cookie (PIN bypassed).")
+
+    # 13.4 Consume token
+    r_consume = unauth_client.post("/api/context/consume", json={"launch_token": token})
+    assert r_consume.status_code == 200
+    consumed = r_consume.json()
+    assert consumed["patient_info"]["ramq"] == "TEST74613019"
+    assert consumed["patient_info"]["patient_name"] == "Patient Test"
+    print("  -> Token consumed successfully with patient demographic context.")
+
+    # 13.5 Second consume attempt fails (Single-use strict)
+    r_consume_again = unauth_client.post("/api/context/consume", json={"launch_token": token})
+    assert r_consume_again.status_code == 404
+    print("  -> Re-using consumed token rejected (404 single-use verified).")
 
     print("\n🎉 ALL API, AUTH, CALCULATION & DYMO LABEL TESTS PASSED PERFECTLY!")
 

@@ -1592,6 +1592,106 @@
       const urlParams = new URLSearchParams(window.location.search);
       if (!urlParams.toString()) return;
 
+      // 0. Secure single-use launch token from Chrome Extension
+      const launchToken = urlParams.get("launch");
+      if (launchToken) {
+        try {
+          const resp = await fetch("/api/context/consume", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ launch_token: launchToken.trim() })
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            const p = data.patient_info || {};
+            
+            const pName = p.patient_name || (p.prenom && p.nom ? `${p.prenom} ${p.nom}` : (p.nom || p.prenom || ""));
+            if (pName) {
+              const reqNameEl = document.getElementById("reqPatientName");
+              if (reqNameEl) reqNameEl.value = pName;
+              const dymoNameEl = document.getElementById("dymoPatientName");
+              if (dymoNameEl) dymoNameEl.value = pName;
+            }
+            if (p.ramq) {
+              const reqRamqEl = document.getElementById("reqRamq");
+              if (reqRamqEl) {
+                reqRamqEl.value = p.ramq;
+                reqRamqEl.dispatchEvent(new Event("input", { bubbles: true }));
+              }
+              const dymoRamqEl = document.getElementById("dymoRamq");
+              if (dymoRamqEl) {
+                dymoRamqEl.value = p.ramq;
+                dymoRamqEl.dispatchEvent(new Event("input", { bubbles: true }));
+              }
+            }
+            if (p.dossier) {
+              const reqDossierEl = document.getElementById("reqDossier");
+              if (reqDossierEl) reqDossierEl.value = p.dossier;
+            }
+            if (p.dob) {
+              const reqDobEl = document.getElementById("reqDob");
+              if (reqDobEl) reqDobEl.value = p.dob;
+              const dymoDobEl = document.getElementById("dymoDob");
+              if (dymoDobEl) dymoDobEl.value = p.dob;
+            }
+            if (p.sex) {
+              const reqSexEl = document.getElementById("reqSex");
+              if (reqSexEl) reqSexEl.value = p.sex;
+              const dymoSexEl = document.getElementById("dymoSex");
+              if (dymoSexEl) dymoSexEl.value = p.sex;
+            }
+            if (p.doctor_license) {
+              const reqDocLicEl = document.getElementById("reqDoctorLicense");
+              if (reqDocLicEl) {
+                reqDocLicEl.value = p.doctor_license;
+                try {
+                  const licRes = await fetch(`/api/prescribers/search?q=${encodeURIComponent(p.doctor_license.trim())}&limit=5`);
+                  if (licRes.ok) {
+                    const matches = await licRes.json();
+                    if (matches && matches.length > 0) {
+                      const exact = matches.find(m => String(m.doctor_license || "").trim() === p.doctor_license.trim()) || matches[0];
+                      applyPrescriber(exact);
+                    }
+                  }
+                } catch (e) {}
+              }
+            }
+            if (p.site && siteSelect) {
+              const siteMatch = Array.from(siteSelect.options).find(opt => 
+                opt.value.toLowerCase().includes(p.site.toLowerCase()) || 
+                opt.text.toLowerCase().includes(p.site.toLowerCase())
+              );
+              if (siteMatch) {
+                siteSelect.value = siteMatch.value;
+                currentSite = siteMatch.value;
+                summarySiteLabel.innerText = currentSite;
+              }
+            }
+            if (p.pids && Array.isArray(p.pids)) {
+              p.pids.forEach(pid => selectedAnalyses.add(pid));
+              renderSelectedAnalysesList();
+              updateSummary();
+            }
+
+            window._medesyncContext = {
+              nom: pName,
+              ramq: p.ramq || "",
+              licence: p.doctor_license || "",
+              dossier: p.dossier || "",
+              medesync_id: p.medesync_id || "",
+              source: "medesync_extension"
+            };
+            showMedesyncBanner(window._medesyncContext);
+
+            // Clean address bar immediately (0 trace in URL history)
+            history.replaceState({}, document.title, window.location.pathname);
+            return;
+          }
+        } catch (err) {
+          console.warn("Failed to consume launch token:", err);
+        }
+      }
+
       const nom = urlParams.get("nom") || urlParams.get("name") || urlParams.get("patient");
       const ramq = urlParams.get("ramq") || urlParams.get("nam");
       const licence = urlParams.get("licence") || urlParams.get("license") || urlParams.get("permis") || urlParams.get("doctor_license");

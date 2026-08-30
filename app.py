@@ -36,10 +36,23 @@ os.makedirs(STATIC_DIR, exist_ok=True)
 INDEX_HTML = os.path.join(STATIC_DIR, "index.html")
 LOGIN_HTML = os.path.join(STATIC_DIR, "login.html")
 
+import time
+
 # Security & Authentication Configuration
 GUSTAV_PIN = os.getenv("GUSTAV_PIN", "415263")
 GUSTAV_SECRET_KEY = os.getenv("GUSTAV_SECRET_KEY", secrets.token_hex(32))
+GUSTAV_EXTENSION_SECRET = os.getenv("GUSTAV_EXTENSION_SECRET", "gustav_ext_secret_chatterbox_2026")
 COOKIE_NAME = "gustav_session"
+
+# Ephemeral launch tokens storage (token -> { "payload": dict, "created_at": float })
+LAUNCH_TOKENS: Dict[str, Dict[str, Any]] = {}
+LAUNCH_TOKEN_TTL_SECONDS = 60.0
+
+def purge_expired_launch_tokens():
+    now = time.time()
+    expired = [k for k, v in LAUNCH_TOKENS.items() if now - v.get("created_at", 0) > LAUNCH_TOKEN_TTL_SECONDS]
+    for k in expired:
+        LAUNCH_TOKENS.pop(k, None)
 
 def generate_session_token() -> str:
     return hmac.new(GUSTAV_SECRET_KEY.encode(), (GUSTAV_PIN or "").encode(), hashlib.sha256).hexdigest()
@@ -56,9 +69,9 @@ def is_authenticated(request: Request) -> bool:
 # Security & Authentication Middleware
 @app.middleware("http")
 async def security_and_auth_middleware(request: Request, call_next):
-    # Intercept protected API endpoints (except /api/auth/*)
+    # Intercept protected API endpoints (except /api/auth/* and /api/context/*)
     path = request.url.path
-    if path.startswith("/api/") and not path.startswith("/api/auth/"):
+    if path.startswith("/api/") and not (path.startswith("/api/auth/") or path.startswith("/api/context/")):
         if not is_authenticated(request):
             return Response(
                 content='{"detail": "Non authentifié"}',
@@ -75,6 +88,25 @@ async def security_and_auth_middleware(request: Request, call_next):
 
 class LoginRequest(BaseModel):
     pin: Annotated[str, Field(max_length=50)]
+
+class ContextLaunchRequest(BaseModel):
+    patient_name: Optional[str] = ""
+    nom: Optional[str] = ""
+    prenom: Optional[str] = ""
+    ramq: Optional[str] = ""
+    dob: Optional[str] = ""
+    sex: Optional[str] = ""
+    dossier: Optional[str] = ""
+    medesync_id: Optional[Any] = ""
+    doctor_license: Optional[str] = ""
+    doctor_name: Optional[str] = ""
+    prescriber_name: Optional[str] = ""
+    site: Optional[str] = ""
+    pids: Optional[List[str]] = []
+    clinical_info: Optional[str] = ""
+
+class ContextConsumeRequest(BaseModel):
+    launch_token: str
 
 @app.post("/api/auth/login")
 async def api_auth_login(req: LoginRequest, response: Response):
@@ -101,6 +133,63 @@ async def api_auth_logout(response: Response):
 async def api_auth_status(request: Request):
     """Vérifier l'état d'authentification."""
     return {"authenticated": is_authenticated(request)}
+
+@app.post("/api/context/launch")
+async def api_context_launch(req: ContextLaunchRequest, request: Request):
+    """
+    Reçoit le contexte patient depuis l'extension Chrome sécurisée par clé secrète.
+    Génère un jeton éphémère (60s) à usage unique.
+    """
+    secret_hdr = request.headers.get("X-Gustav-Secret") or request.headers.get("x-gustav-secret")
+    if GUSTAV_EXTENSION_SECRET:
+        if not secret_hdr or not secrets.compare_digest(secret_hdr.strip(), GUSTAV_EXTENSION_SECRET):
+            raise HTTPException(status_code=401, detail="Clé d'extension non autorisée")
+
+    purge_expired_launch_tokens()
+
+    token = secrets.token_urlsafe(32)
+    LAUNCH_TOKENS[token] = {
+        "payload": req.model_dump(),
+        "created_at": time.time()
+    }
+
+    return {
+        "status": "success",
+        "launch_token": token,
+        "launch_url": f"/?launch={token}"
+    }
+
+@app.post("/api/context/consume")
+async def api_context_consume(req: ContextConsumeRequest, response: Response):
+    """
+    Consomme le jeton éphémère, accorde la session (Bypass du PIN),
+    détruit immédiatement le jeton et retourne le contexte patient.
+    """
+    purge_expired_launch_tokens()
+
+    token = req.launch_token.strip()
+    if not token or token not in LAUNCH_TOKENS:
+        raise HTTPException(status_code=404, detail="Jeton de lancement invalide ou expiré")
+
+    token_data = LAUNCH_TOKENS.pop(token)  # Single use strict destruction
+    now = time.time()
+    if now - token_data.get("created_at", 0) > LAUNCH_TOKEN_TTL_SECONDS:
+        raise HTTPException(status_code=410, detail="Jeton de lancement expiré")
+
+    # Émettre le cookie de session authentifié (Bypass instantané du PIN)
+    session_token = generate_session_token()
+    response.set_cookie(
+        key=COOKIE_NAME,
+        value=session_token,
+        httponly=True,
+        samesite="lax"
+    )
+
+    return {
+        "status": "success",
+        "authenticated": True,
+        "patient_info": token_data.get("payload", {})
+    }
 
 class CalculateRequest(BaseModel):
     pids: List[Annotated[str, Field(max_length=64)]] = Field(..., max_length=100)
@@ -134,7 +223,26 @@ class RequisitionRequest(BaseModel):
     patient_info: Optional[PatientInfo] = None
 
 @app.get("/")
-async def serve_index(request: Request):
+async def serve_index(request: Request, launch: Optional[str] = None):
+    # If a valid single-use launch token is provided, authenticate immediately and serve main app
+    if launch:
+        token = launch.strip()
+        if token in LAUNCH_TOKENS:
+            token_data = LAUNCH_TOKENS.get(token, {})
+            now = time.time()
+            if now - token_data.get("created_at", 0) <= LAUNCH_TOKEN_TTL_SECONDS:
+                session_token = generate_session_token()
+                if os.path.exists(INDEX_HTML):
+                    with open(INDEX_HTML, "r", encoding="utf-8") as f:
+                        resp = HTMLResponse(content=f.read(), media_type="text/html; charset=utf-8")
+                        resp.set_cookie(
+                            key=COOKIE_NAME,
+                            value=session_token,
+                            httponly=True,
+                            samesite="lax"
+                        )
+                        return resp
+
     if not is_authenticated(request):
         if os.path.exists(LOGIN_HTML):
             with open(LOGIN_HTML, "r", encoding="utf-8") as f:
