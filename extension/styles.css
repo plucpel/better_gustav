@@ -2,6 +2,7 @@
  * GUSTAV - Medesync Launcher Styles
  */
 
+/* Inline Injected Button (Inside Patient Header / Tabs) */
 .gustav-btn-medesync {
   display: inline-flex;
   align-items: center;
@@ -32,19 +33,55 @@
   transform: translateY(0);
 }
 
-.gustav-btn-medesync .gustav-icon {
-  font-size: 14px;
+/* Floating Quick Action Button (Persistent at bottom-right of Medesync) */
+.gustav-floating-pill {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  z-index: 2147483647 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+  border-radius: 9999px !important;
+  padding: 10px 18px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 16px rgba(2, 132, 199, 0.45) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  text-decoration: none !important;
+  user-select: none !important;
 }
 
-.gustav-btn-medesync .gustav-text {
+.gustav-floating-pill:hover {
+  transform: translateY(-2px) scale(1.04) !important;
+  box-shadow: 0 6px 22px rgba(2, 132, 199, 0.6) !important;
+  background: linear-gradient(135deg, #0369a1 0%, #075985 100%) !important;
+}
+
+.gustav-floating-pill:active {
+  transform: translateY(0) scale(1) !important;
+}
+
+.gustav-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.gustav-text {
   letter-spacing: 0.5px;
+  font-weight: 800;
 }
 
 .gustav-spinner {
   display: inline-block;
-  width: 12px;
-  height: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
   border-radius: 50%;
   border-top-color: #fff;
   animation: gustav-spin 0.8s linear infinite;

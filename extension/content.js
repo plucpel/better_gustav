@@ -1,19 +1,82 @@
 /**
  * GUSTAV - Medesync Content Script (Manifest V3)
- * Injects one-click GUSTAV launcher into Medesync patient charts.
+ * Injects GUSTAV launch triggers into Medesync EMR across top window and frames.
  */
 
 (function () {
-  console.log("[GUSTAV] Content script initialized on Medesync.");
+  const isTopWindow = (window === window.top);
+  console.log(`[GUSTAV] Content script loaded on: ${window.location.href} (isTop: ${isTopWindow})`);
 
-  function getPatientIdFromUrl() {
-    const params = new URLSearchParams(window.location.search);
-    return params.get("id") || params.get("idPatient") || params.get("IdPatient");
+  /**
+   * Search for active patient ID across multiple Medesync DOM structures
+   */
+  function findActivePatientId() {
+    // 1. From URL Query Parameters
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const urlId = params.get("id") || params.get("idPatient") || params.get("IdPatient");
+      if (urlId && /^\d+$/.test(urlId) && urlId !== "0") return urlId;
+    } catch (e) {}
+
+    // 2. From ASP.NET form action attribute
+    try {
+      const aspnetForm = document.getElementById("aspnetForm") || document.forms["aspnetForm"];
+      if (aspnetForm && aspnetForm.action) {
+        const m = aspnetForm.action.match(/[?&]id=(\d+)/i);
+        if (m && m[1]) return m[1];
+      }
+    } catch (e) {}
+
+    // 3. From Medesync inline init scripts (e.g. Medesync.Patient.InitSetting)
+    try {
+      const scripts = document.querySelectorAll("script");
+      for (const s of scripts) {
+        const text = s.textContent || "";
+        if (text.includes("idPatient")) {
+          const m = text.match(/"idPatient"\s*:\s*(\d+)/i) || text.match(/idPatient\s*=\s*(\d+)/i);
+          if (m && m[1] && m[1] !== "0") return m[1];
+        }
+      }
+    } catch (e) {}
+
+    // 4. From any child iframes if in top window
+    if (isTopWindow) {
+      try {
+        const iframes = document.querySelectorAll("iframe");
+        for (const frame of iframes) {
+          const src = frame.getAttribute("src") || "";
+          const m = src.match(/[?&]id=(\d+)/i) || src.match(/[?&]idPatient=(\d+)/i);
+          if (m && m[1] && m[1] !== "0") return m[1];
+        }
+      } catch (e) {}
+    }
+
+    return null;
   }
 
-  async function fetchPatientBasicInfos(patientId) {
+  /**
+   * Extract prescriber info from Medesync global variables
+   */
+  function extractPrescriberName() {
     try {
-      const resp = await fetch(`/api/v3/patients/getBasicInfos/${patientId}`, {
+      if (window.__logon_user_code) {
+        return String(window.__logon_user_code).replace(/-/g, " ");
+      }
+    } catch (e) {}
+    return "";
+  }
+
+  /**
+   * Fetch patient demographics from ambient Medesync session API
+   */
+  async function fetchPatientBasicInfos(patientId) {
+    if (!patientId) return null;
+    const apiHost = window.location.hostname.includes("-api") 
+      ? window.location.origin 
+      : `https://${window.location.hostname}`;
+
+    try {
+      const resp = await fetch(`${apiHost}/api/v3/patients/getBasicInfos/${patientId}`, {
         headers: { "Accept": "application/json" }
       });
       if (resp.ok) {
@@ -25,25 +88,74 @@
     return null;
   }
 
-  function extractPrescriberName() {
+  /**
+   * Action triggered on click: constructs payload and messages background worker
+   */
+  async function handleLaunchClick(btnElement) {
+    const origHtml = btnElement.innerHTML;
+    btnElement.innerHTML = `<span class="gustav-spinner"></span> Lancement...`;
+    btnElement.disabled = true;
+
     try {
-      // Look for Medesync global variables or UI elements
-      if (window.__logon_user_code) {
-        return String(window.__logon_user_code).replace(/-/g, " ");
+      const patientId = findActivePatientId();
+      let patientPayload = {
+        medesync_id: patientId || "",
+        patient_name: "",
+        nom: "",
+        prenom: "",
+        ramq: "",
+        dob: "",
+        sex: "",
+        dossier: "",
+        prescriber_name: extractPrescriberName()
+      };
+
+      if (patientId) {
+        const basicInfos = await fetchPatientBasicInfos(patientId);
+        if (basicInfos) {
+          patientPayload.patient_name = basicInfos.fullName || `${basicInfos.firstName || ''} ${basicInfos.lastName || ''}`.trim();
+          patientPayload.nom = basicInfos.lastName || "";
+          patientPayload.prenom = basicInfos.firstName || "";
+          patientPayload.ramq = basicInfos.nam || "";
+          patientPayload.dob = basicInfos.dobRaw || "";
+          patientPayload.sex = basicInfos.sexeShort || (basicInfos.isMale ? "M" : "F");
+          patientPayload.dossier = basicInfos.chartNumber || "";
+        }
       }
-    } catch (e) {}
-    return "";
+
+      // Send to background service worker
+      chrome.runtime.sendMessage({
+        action: "LAUNCH_GUSTAV",
+        patient: patientPayload
+      }, (response) => {
+        if (chrome.runtime.lastError) {
+          alert("Erreur extension GUSTAV : " + chrome.runtime.lastError.message);
+        } else if (response && !response.success) {
+          alert("Erreur lors du lancement de GUSTAV : " + (response.error || "Inconnue"));
+        }
+      });
+
+    } catch (err) {
+      alert("Erreur GUSTAV : " + err.message);
+    } finally {
+      setTimeout(() => {
+        btnElement.innerHTML = origHtml;
+        btnElement.disabled = false;
+      }, 1200);
+    }
   }
 
-  function injectGustavButton(patientId) {
+  /**
+   * Inject Inline Button in Patient Header
+   */
+  function injectInlineButton(patientId) {
     if (document.getElementById("gustav-medesync-launcher-btn")) return;
 
-    // Search for ideal container in Medesync DOM
     const targetContainer = 
       document.getElementById("patient_file") || 
       document.querySelector(".patient-section") || 
       document.querySelector("#mainContent .ui-tabs-nav") ||
-      document.querySelector("body");
+      document.querySelector(".patient-header");
 
     if (!targetContainer) return;
 
@@ -56,85 +168,72 @@
     `;
     btn.title = "Calculer les tubes et générer la requête dans GUSTAV (Sécurisé)";
 
-    btn.addEventListener("click", async (e) => {
+    btn.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
-
-      const origHtml = btn.innerHTML;
-      btn.innerHTML = `<span class="gustav-spinner"></span> Lancement...`;
-      btn.disabled = true;
-
-      try {
-        let basicInfos = await fetchPatientBasicInfos(patientId);
-
-        let patientPayload = {
-          medesync_id: patientId,
-          patient_name: "",
-          nom: "",
-          prenom: "",
-          ramq: "",
-          dob: "",
-          sex: "",
-          dossier: "",
-          prescriber_name: extractPrescriberName()
-        };
-
-        if (basicInfos) {
-          patientPayload.patient_name = basicInfos.fullName || `${basicInfos.firstName || ''} ${basicInfos.lastName || ''}`.trim();
-          patientPayload.nom = basicInfos.lastName || "";
-          patientPayload.prenom = basicInfos.firstName || "";
-          patientPayload.ramq = basicInfos.nam || "";
-          patientPayload.dob = basicInfos.dobRaw || "";
-          patientPayload.sex = basicInfos.sexeShort || (basicInfos.isMale ? "M" : "F");
-          patientPayload.dossier = basicInfos.chartNumber || "";
-        }
-
-        // Send to background service worker
-        chrome.runtime.sendMessage({
-          action: "LAUNCH_GUSTAV",
-          patient: patientPayload
-        }, (response) => {
-          if (chrome.runtime.lastError) {
-            alert("Erreur de connexion avec l'extension GUSTAV : " + chrome.runtime.lastError.message);
-          } else if (response && !response.success) {
-            alert("Erreur lors du lancement de GUSTAV : " + (response.error || "Inconnue"));
-          }
-        });
-
-      } catch (err) {
-        alert("Erreur GUSTAV : " + err.message);
-      } finally {
-        setTimeout(() => {
-          btn.innerHTML = origHtml;
-          btn.disabled = false;
-        }, 1200);
-      }
+      handleLaunchClick(btn);
     });
 
-    // Insertion
-    if (targetContainer.id === "patient_file" || targetContainer.classList.contains("patient-section")) {
-      targetContainer.prepend(btn);
-    } else {
-      targetContainer.appendChild(btn);
-    }
-
-    console.log("[GUSTAV] Launcher button successfully injected for patient ID:", patientId);
+    targetContainer.prepend(btn);
+    console.log("[GUSTAV] Inline button injected into patient header (Patient ID:", patientId, ")");
   }
 
-  // Observer & Auto-check on route changes in Medesync SPA
-  function checkAndInject() {
-    const patientId = getPatientIdFromUrl();
+  /**
+   * Inject Persistent Floating Quick Launcher (in top-level window)
+   */
+  function injectFloatingLauncher() {
+    if (!isTopWindow || document.getElementById("gustav-floating-launcher")) return;
+
+    const pill = document.createElement("div");
+    pill.id = "gustav-floating-launcher";
+    pill.className = "gustav-floating-pill";
+    pill.innerHTML = `
+      <span class="gustav-icon">🧪</span>
+      <span class="gustav-text">GUSTAV</span>
+    `;
+    pill.title = "Ouvrir le Calculateur GUSTAV (Synchronisation automatique Medesync)";
+
+    pill.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handleLaunchClick(pill);
+    });
+
+    document.body.appendChild(pill);
+    console.log("[GUSTAV] Persistent floating badge successfully injected.");
+  }
+
+  /**
+   * Main Check & Injection Cycle
+   */
+  function scanAndInject() {
+    // 1. Always ensure the persistent floating pill is on screen in the top window
+    injectFloatingLauncher();
+
+    // 2. Look for patient chart container
+    const patientId = findActivePatientId();
     if (patientId) {
-      injectGustavButton(patientId);
+      injectInlineButton(patientId);
     }
   }
 
-  checkAndInject();
+  // Initial Run
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", scanAndInject);
+  } else {
+    scanAndInject();
+  }
 
-  // Periodic check / MutationObserver to support client-side navigation
+  // Observe SPA route / DOM mutations
   const observer = new MutationObserver(() => {
-    checkAndInject();
+    scanAndInject();
   });
 
-  observer.observe(document.body, { childList: true, subtree: true });
+  if (document.body) {
+    observer.observe(document.body, { childList: true, subtree: true });
+  } else {
+    window.addEventListener("load", () => {
+      if (document.body) observer.observe(document.body, { childList: true, subtree: true });
+    });
+  }
 })();
