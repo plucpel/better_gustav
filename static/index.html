@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gustav - Calculateur de Tubes de Prélèvement | CHU de Québec</title>
+  <title>Gustav - Calculateur de Tubes de Prélèvement | Infirmia</title>
+  <link rel="icon" type="image/svg+xml" href="/static/images/infirmia-logo.svg">
   <!-- Tailwind CSS & FontAwesome & ZXing Barcode Library -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -14,13 +15,24 @@
         extend: {
           colors: {
             brand: {
-              50: '#f0f9ff',
-              100: '#e0f2fe',
-              500: '#0284c7',
-              600: '#0369a1',
-              700: '#075985',
-              800: '#0c4a6e',
-              900: '#082f49',
+              50: '#f0faf9',
+              100: '#e6f7f7',
+              200: '#bfeeed',
+              300: '#8fe0dd',
+              400: '#4ac9c5',
+              500: '#04ada9',
+              600: '#038e8a',
+              700: '#02716e',
+              800: '#025957',
+              900: '#063a39',
+              950: '#021b1a',
+            },
+            infirmia: {
+              teal: '#04ada9',
+              darkTeal: '#037a77',
+              lightTeal: '#e6f8f8',
+              coral: '#fc637d',
+              charcoal: '#1f2937'
             }
           }
         }
@@ -80,18 +92,23 @@
 <body class="h-full flex flex-col text-slate-800 bg-slate-100">
 
   <!-- Top Navigation / Header -->
-  <header class="bg-gradient-to-r from-sky-900 via-sky-800 to-indigo-900 text-white shadow-lg sticky top-0 z-40">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+  <header class="bg-gradient-to-r from-[#03201f] via-[#043331] to-[#04ada9] text-white shadow-lg sticky top-0 z-40 border-b border-[#04ada9]/30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
       <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-xl bg-white/10 backdrop-blur border border-white/20 flex items-center justify-center shadow-inner">
-          <i class="fa-solid fa-vial-virus text-sky-300 text-xl"></i>
+        <div class="flex items-center bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 shadow-inner">
+          <img src="/static/images/infirmia-logo.png" alt="Logo Infirmia" class="h-7 w-auto object-contain brightness-0 invert" onerror="this.style.display='none'; document.getElementById('headerLogoFallback').style.display='flex';" />
+          <div id="headerLogoFallback" class="hidden items-center justify-center">
+            <i class="fa-solid fa-vial-virus text-[#4ac9c5] text-xl"></i>
+          </div>
         </div>
         <div>
           <div class="flex items-center space-x-2">
-            <h1 class="text-xl font-bold tracking-tight text-white">GUSTAV</h1>
-            <span class="bg-sky-400/20 text-sky-200 border border-sky-400/30 text-xs px-2 py-0.5 rounded-full font-medium">Manuel des prélèvements</span>
+            <h1 class="text-xl font-extrabold tracking-tight text-white flex items-center gap-1.5">
+              <span>GUSTAV</span>
+            </h1>
+            <span class="bg-[#04ada9]/30 text-teal-100 border border-[#04ada9]/50 text-[11px] px-2 py-0.5 rounded-full font-bold">Infirmia</span>
           </div>
-          <p class="text-xs text-sky-200/80">CHU de Québec-Université Laval • Calculateur de Tubes & Ordre de Prélèvement</p>
+          <p class="text-xs text-teal-100/80">Réseau de Soins Infirmiers • Calculateur de Tubes & Ordre de Tirage (CHU de Québec / CDLS)</p>
         </div>
       </div>
 
@@ -99,7 +116,7 @@
       <div class="flex items-center space-x-3">
         <!-- Site Selector -->
         <div class="flex items-center bg-white/10 backdrop-blur rounded-lg px-3 py-1.5 border border-white/15 text-sm">
-          <i class="fa-solid fa-hospital text-sky-300 mr-2 text-xs"></i>
+          <i class="fa-solid fa-hospital text-[#4ac9c5] mr-2 text-xs"></i>
           <select id="siteSelect" class="bg-transparent text-white font-medium focus:outline-none cursor-pointer text-xs sm:text-sm">
             <option value="Tous les sites" class="text-slate-800">Tous les sites (Standard CHU)</option>
             <option value="Hôpital Enfant-Jésus (HEJ)" class="text-slate-800">Hôpital Enfant-Jésus (HEJ)</option>
@@ -114,19 +131,19 @@
 
         <!-- Pediatric Toggle -->
         <button id="pediatricBtn" class="flex items-center space-x-2 bg-white/10 hover:bg-white/20 transition-all rounded-lg px-3 py-1.5 border border-white/15 text-xs sm:text-sm font-medium">
-          <i class="fa-solid fa-child text-sky-300"></i>
+          <i class="fa-solid fa-child text-[#4ac9c5]"></i>
           <span id="pediatricLabel">Adulte</span>
         </button>
 
         <!-- Admin & Profiles Directory Button -->
         <button id="btnOpenAdminModal" class="flex items-center space-x-1.5 bg-white/10 hover:bg-white/20 transition-all rounded-lg px-3 py-1.5 border border-white/15 text-xs sm:text-sm font-medium" title="Gérer le répertoire des médecins et préleveurs">
-          <i class="fa-solid fa-address-book text-sky-300"></i>
+          <i class="fa-solid fa-address-book text-[#4ac9c5]"></i>
           <span>Répertoire &amp; Admin</span>
         </button>
 
         <!-- Lock / Logout Session Button -->
         <button id="btnLockApp" class="flex items-center space-x-1.5 bg-white/10 hover:bg-rose-500/20 hover:border-rose-400/30 transition-all rounded-lg px-3 py-1.5 border border-white/15 text-xs sm:text-sm font-medium" title="Verrouiller la session (retour à l'écran PIN)">
-          <i class="fa-solid fa-lock text-sky-300"></i>
+          <i class="fa-solid fa-lock text-[#4ac9c5]"></i>
           <span>Verrouiller</span>
         </button>
       </div>
@@ -167,10 +184,10 @@
       <!-- Search Box Card -->
       <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
         <label class="block text-sm font-semibold text-slate-700 mb-1.5">
-          <i class="fa-solid fa-magnifying-glass text-sky-600 mr-1.5"></i>
+          <i class="fa-solid fa-magnifying-glass text-[#04ada9] mr-1.5"></i>
           Sélectionner des analyses sanguines
         </label>
-        <p class="text-xs text-slate-500 mb-3">Tapez le nom, l'acronyme (ex: <span class="font-mono text-sky-700 bg-sky-50 px-1 rounded">FSC</span>, <span class="font-mono text-sky-700 bg-sky-50 px-1 rounded">iono</span>, <span class="font-mono text-sky-700 bg-sky-50 px-1 rounded">tropo</span>, <span class="font-mono text-sky-700 bg-sky-50 px-1 rounded">INR</span>, <span class="font-mono text-sky-700 bg-sky-50 px-1 rounded">créat</span>) ou choisissez un panel.</p>
+        <p class="text-xs text-slate-500 mb-3">Tapez le nom, l'acronyme (ex: <span class="font-mono text-[#02716e] bg-[#f0faf9] px-1 rounded">FSC</span>, <span class="font-mono text-[#02716e] bg-[#f0faf9] px-1 rounded">iono</span>, <span class="font-mono text-[#02716e] bg-[#f0faf9] px-1 rounded">tropo</span>, <span class="font-mono text-[#02716e] bg-[#f0faf9] px-1 rounded">INR</span>, <span class="font-mono text-[#02716e] bg-[#f0faf9] px-1 rounded">créat</span>) ou choisissez un panel.</p>
         
         <!-- Search Input -->
         <div class="relative">
@@ -179,7 +196,7 @@
               type="text"
               id="analysisInput"
               placeholder="Ex: FSC, iono, troponine, ferritine, bilan hépatique..."
-              class="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-300 focus:border-sky-500 focus:ring-2 focus:ring-sky-200 text-sm font-medium transition-all shadow-inner outline-none"
+              class="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-300 focus:border-[#04ada9] focus:ring-2 focus:ring-[#04ada9]/30 text-sm font-medium transition-all shadow-inner outline-none"
               autocomplete="off"
             />
             <div class="absolute left-3.5 text-slate-400 pointer-events-none">
@@ -209,7 +226,7 @@
       <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
         <div class="flex items-center justify-between mb-3">
           <div class="flex items-center space-x-2">
-            <span class="w-6 h-6 rounded-full bg-sky-100 text-sky-700 font-bold text-xs flex items-center justify-center" id="basketCount">0</span>
+            <span class="w-6 h-6 rounded-full bg-[#e6f7f7] text-[#02716e] font-bold text-xs flex items-center justify-center" id="basketCount">0</span>
             <h2 class="text-sm font-bold text-slate-800">Analyses sélectionnées</h2>
           </div>
           <button id="clearBasketBtn" class="text-xs text-rose-600 hover:text-rose-800 font-medium transition flex items-center space-x-1 disabled:opacity-40" disabled>
@@ -232,7 +249,7 @@
     <div class="lg:col-span-7 space-y-5">
       
       <!-- Summary Hero Card -->
-      <div class="bg-gradient-to-br from-slate-900 via-sky-950 to-indigo-950 text-white rounded-2xl p-6 shadow-md border border-slate-800 relative overflow-hidden">
+      <div class="bg-gradient-to-br from-[#021b1a] via-[#042827] to-[#063a39] text-white rounded-2xl p-6 shadow-md border border-slate-800 relative overflow-hidden">
         <div class="absolute -right-6 -bottom-6 opacity-10 text-9xl">
           <i class="fa-solid fa-vials"></i>
         </div>
@@ -249,7 +266,7 @@
             <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight" id="heroSummaryTitle">
               0 Tube Requis
             </h2>
-            <p class="text-xs sm:text-sm text-sky-200/80 mt-0.5" id="heroSummarySubtitle">
+            <p class="text-xs sm:text-sm text-teal-200/80 mt-0.5" id="heroSummarySubtitle">
               Ajoutez des analyses pour calculer les tubes et l'ordre de prélèvement.
             </p>
           </div>
@@ -258,7 +275,7 @@
           <div class="flex items-center space-x-3 bg-white/10 backdrop-blur rounded-xl p-3 border border-white/10 shadow-inner">
             <div class="text-center px-2">
               <div class="text-2xl font-black text-white" id="countTubes">0</div>
-              <div class="text-[10px] uppercase tracking-wider text-sky-200 font-semibold">Tubes</div>
+              <div class="text-[10px] uppercase tracking-wider text-teal-200 font-semibold">Tubes</div>
             </div>
             <div class="w-px h-8 bg-white/20"></div>
             <div class="text-center px-2">
@@ -279,7 +296,7 @@
                 <span>Requête OPTILAB pré-remplie</span>
                 <span id="heroReqCheckBadge" class="bg-emerald-400/20 text-emerald-200 border border-emerald-400/30 text-[10px] px-2 py-0.5 rounded-full font-bold">0 cases cochées</span>
               </div>
-              <p class="text-[11px] text-sky-200/80">Formulaire officiel 03-108 (2026-05) avec vos analyses pré-cochées</p>
+              <p class="text-[11px] text-teal-200/80">Formulaire officiel 03-108 (2026-05) avec vos analyses pré-cochées</p>
             </div>
           </div>
           <div class="flex items-center space-x-2 sm:ml-auto">
@@ -292,7 +309,7 @@
               <span>Télécharger</span>
             </button>
             <div class="w-px h-5 bg-white/20 mx-1 hidden sm:block"></div>
-            <button id="openDymoModalHeroBtn" class="bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs px-3.5 py-1.5 rounded-lg shadow transition flex items-center space-x-1.5" title="Imprimer les étiquettes de tubes pour imprimante Dymo">
+            <button id="openDymoModalHeroBtn" class="bg-[#04ada9] hover:bg-[#039693] text-white font-bold text-xs px-3.5 py-1.5 rounded-lg shadow transition flex items-center space-x-1.5" title="Imprimer les étiquettes de tubes pour imprimante Dymo">
               <i class="fa-solid fa-tags text-[11px]"></i>
               <span>Étiquettes Dymo (30336)</span>
             </button>
@@ -331,14 +348,14 @@
       <div id="quickGlanceCard" class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hidden">
         <div class="flex items-center justify-between mb-3 pb-2.5 border-b border-slate-100">
           <div class="flex items-center space-x-2">
-            <span class="w-6 h-6 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center text-xs">
+            <span class="w-6 h-6 rounded-lg bg-[#e6f7f7] text-[#02716e] flex items-center justify-center text-xs">
               <i class="fa-solid fa-eye"></i>
             </span>
             <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-800">
               Aperçu Rapide • Tubes & Couleurs à préparer
             </h3>
           </div>
-          <span class="text-[11px] font-semibold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-100">
+          <span class="text-[11px] font-semibold text-[#02716e] bg-[#f0faf9] px-2 py-0.5 rounded-full border border-[#04ada9]/20">
             Ordre de prélèvement (1 → fin)
           </span>
         </div>
@@ -374,7 +391,7 @@
     <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] shadow-2xl flex flex-col overflow-hidden border border-slate-200">
       <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
         <div class="flex items-center space-x-2">
-          <i class="fa-solid fa-file-waveform text-sky-400"></i>
+          <i class="fa-solid fa-file-waveform text-[#4ac9c5]"></i>
           <h3 class="text-base font-bold text-white" id="modalTitle">Fiche d'analyse</h3>
         </div>
         <button id="closeModalBtn" class="text-slate-400 hover:text-white transition">
@@ -385,7 +402,7 @@
         <!-- Dynamic modal content -->
       </div>
       <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex justify-end space-x-2">
-        <a id="modalExternalLink" href="#" target="_blank" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-semibold transition flex items-center space-x-1.5">
+        <a id="modalExternalLink" href="#" target="_blank" class="px-4 py-2 bg-[#04ada9] hover:bg-[#038e8a] text-white rounded-lg text-xs font-semibold transition flex items-center space-x-1.5">
           <i class="fa-solid fa-external-link-alt"></i>
           <span>Ouvrir dans Gustav Live</span>
         </a>
@@ -396,14 +413,14 @@
   <!-- Modal for OPTILAB PDF Requisition -->
   <div id="requisitionModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4">
     <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] shadow-2xl flex flex-col overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
-      <div class="px-6 py-4 bg-gradient-to-r from-slate-900 via-sky-950 to-indigo-950 text-white flex items-center justify-between">
+      <div class="px-6 py-4 bg-gradient-to-r from-[#03201f] via-[#043331] to-[#04ada9] text-white flex items-center justify-between">
         <div class="flex items-center space-x-3">
           <div class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300 shadow-inner">
             <i class="fa-solid fa-file-signature text-base"></i>
           </div>
           <div>
             <h3 class="text-base font-bold text-white">Requête d'Analyses Médicales (OPTILAB)</h3>
-            <p class="text-xs text-sky-200/80">REQUÊTE D'ANALYSES - GÉNÉRALES - LABORATOIRE MULTIDISCIPLINAIRE (03-108 / 2026-05)</p>
+            <p class="text-xs text-teal-200/80">REQUÊTE D'ANALYSES - GÉNÉRALES - LABORATOIRE MULTIDISCIPLINAIRE (03-108 / 2026-05)</p>
           </div>
         </div>
         <button id="closeRequisitionModalBtn" class="text-slate-400 hover:text-white transition">
@@ -451,13 +468,13 @@
           
           <!-- 1. Section Usager -->
           <div class="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-            <div class="bg-sky-50/80 px-4 py-2 border-b border-sky-100 flex items-center justify-between flex-wrap gap-2">
+            <div class="bg-[#f0faf9]/90 px-4 py-2 border-b border-[#04ada9]/20 flex items-center justify-between flex-wrap gap-2">
               <div class="flex items-center space-x-2">
-                <i class="fa-solid fa-user text-sky-700 text-xs"></i>
-                <span class="text-xs font-bold text-sky-900 uppercase tracking-wider">1. Usager (Patient)</span>
+                <i class="fa-solid fa-user text-[#02716e] text-xs"></i>
+                <span class="text-xs font-bold text-[#063a39] uppercase tracking-wider">1. Usager (Patient)</span>
               </div>
               <div class="flex items-center space-x-2">
-                <button type="button" id="btnOpenRamqScanner" class="text-xs bg-sky-600 hover:bg-sky-700 active:scale-95 text-white px-2.5 py-1 rounded-lg font-semibold flex items-center space-x-1.5 transition shadow-xs cursor-pointer">
+                <button type="button" id="btnOpenRamqScanner" class="text-xs bg-[#04ada9] hover:bg-[#038e8a] active:scale-95 text-white px-2.5 py-1 rounded-lg font-semibold flex items-center space-x-1.5 transition shadow-xs cursor-pointer">
                   <i class="fa-solid fa-camera text-[11px]"></i>
                   <span>Scanner carte RAMQ</span>
                 </button>
@@ -470,23 +487,23 @@
             <div class="p-3.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs bg-white" autocomplete="off">
               <div class="sm:col-span-2">
                 <label class="block font-semibold text-slate-700 mb-0.5">Nom et prénom</label>
-                <input type="text" id="reqPatientName" name="patient_query_text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="Ex: Tremblay, Jean" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+                <input type="text" id="reqPatientName" name="patient_query_text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="Ex: Tremblay, Jean" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#04ada9]/30 focus:border-[#04ada9] outline-none text-xs" />
               </div>
               <div>
                 <label class="block font-semibold text-slate-700 mb-0.5">RAMQ</label>
-                <input type="text" id="reqRamq" name="patient_ramq_text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="Ex: TREJ 8005 1512" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+                <input type="text" id="reqRamq" name="patient_ramq_text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="Ex: TREJ 8005 1512" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#04ada9]/30 focus:border-[#04ada9] outline-none text-xs" />
               </div>
               <div>
                 <label class="block font-semibold text-slate-700 mb-0.5">Dossier</label>
-                <input type="text" id="reqDossier" name="patient_chart_text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="Ex: 1234567" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+                <input type="text" id="reqDossier" name="patient_chart_text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="Ex: 1234567" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#04ada9]/30 focus:border-[#04ada9] outline-none text-xs" />
               </div>
               <div>
                 <label class="block font-semibold text-slate-700 mb-0.5">Date de naissance</label>
-                <input type="text" id="reqDob" name="patient_dob_text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="AAAA-MM-JJ" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+                <input type="text" id="reqDob" name="patient_dob_text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="AAAA-MM-JJ" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#04ada9]/30 focus:border-[#04ada9] outline-none text-xs" />
               </div>
               <div>
                 <label class="block font-semibold text-slate-700 mb-0.5">Sexe</label>
-                <select id="reqSex" name="patient_sex_text" autocomplete="off" data-lpignore="true" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs bg-white">
+                <select id="reqSex" name="patient_sex_text" autocomplete="off" data-lpignore="true" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#04ada9]/30 focus:border-[#04ada9] outline-none text-xs bg-white">
                   <option value="">Non spécifié</option>
                   <option value="M">Masculin (M)</option>
                   <option value="F">Féminin (F)</option>
@@ -494,15 +511,15 @@
               </div>
               <div>
                 <label class="block font-semibold text-slate-700 mb-0.5">Site</label>
-                <input type="text" id="reqSite" name="patient_site_text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="Ex: Hôpital Enfant-Jésus (HEJ)" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+                <input type="text" id="reqSite" name="patient_site_text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="Ex: Hôpital Enfant-Jésus (HEJ)" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#04ada9]/30 focus:border-[#04ada9] outline-none text-xs" />
               </div>
               <div>
                 <label class="block font-semibold text-slate-700 mb-0.5">Nº chambre/civière</label>
-                <input type="text" id="reqRoom" name="patient_room_text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="Ex: Civière 14" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+                <input type="text" id="reqRoom" name="patient_room_text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="Ex: Civière 14" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#04ada9]/30 focus:border-[#04ada9] outline-none text-xs" />
               </div>
               <div class="sm:col-span-2 lg:col-span-4">
                 <label class="block font-semibold text-slate-700 mb-0.5">Renseignements cliniques / Diagnostic</label>
-                <input type="text" id="reqClinicalInfo" name="patient_diag_text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="Ex: Bilan pré-opératoire, suspicion DRS, douleur abdominale..." class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs" />
+                <input type="text" id="reqClinicalInfo" name="patient_diag_text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="Ex: Bilan pré-opératoire, suspicion DRS, douleur abdominale..." class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#04ada9]/30 focus:border-[#04ada9] outline-none text-xs" />
               </div>
             </div>
           </div>
@@ -644,7 +661,7 @@
             <i class="fa-solid fa-cloud-arrow-up text-xs"></i>
             <span>Renvoyer à Medesync</span>
           </button>
-          <button id="btnOpenDymoFromRequisition" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow transition flex items-center space-x-1.5" title="Ouvrir l'aperçu et l'impression des étiquettes Dymo">
+          <button id="btnOpenDymoFromRequisition" class="px-4 py-2 rounded-xl bg-[#04ada9] hover:bg-[#039693] text-white text-xs font-bold shadow transition flex items-center space-x-1.5" title="Ouvrir l'aperçu et l'impression des étiquettes Dymo">
             <i class="fa-solid fa-tags text-[11px]"></i>
             <span>Étiquettes Dymo</span>
           </button>
@@ -660,14 +677,14 @@
     <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[92vh] shadow-2xl flex flex-col overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
       
       <!-- Dymo Modal Header -->
-      <div class="px-6 py-4 bg-gradient-to-r from-slate-900 via-sky-950 to-indigo-950 text-white flex items-center justify-between">
+      <div class="px-6 py-4 bg-gradient-to-r from-[#03201f] via-[#043331] to-[#04ada9] text-white flex items-center justify-between">
         <div class="flex items-center space-x-3">
-          <div class="w-9 h-9 rounded-xl bg-sky-500/20 border border-sky-400/30 flex items-center justify-center text-sky-300 shadow-inner">
+          <div class="w-9 h-9 rounded-xl bg-[#f0faf9]0/20 border border-[#04ada9]/30 flex items-center justify-center text-[#4ac9c5] shadow-inner">
             <i class="fa-solid fa-tags text-base"></i>
           </div>
           <div>
             <h3 class="text-base font-bold text-white">Étiquettes de Tubes (Dymo LabelWriter)</h3>
-            <p class="text-xs text-sky-200/80">Format Dymo 30336 (1" x 2-1/8" • 54 x 25.4 mm) • Standard Optilab &amp; CHU de Québec</p>
+            <p class="text-xs text-teal-200/80">Format Dymo 30336 (1" x 2-1/8" • 54 x 25.4 mm) • Standard Optilab &amp; CHU de Québec</p>
           </div>
         </div>
         <button id="closeDymoModalBtn" class="text-slate-400 hover:text-white transition">
@@ -683,7 +700,7 @@
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center space-x-2">
               <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                <i class="fa-solid fa-user text-sky-600 mr-1.5"></i>Identification de l'usager
+                <i class="fa-solid fa-user text-[#04ada9] mr-1.5"></i>Identification de l'usager
               </span>
               <span id="dymoSyncBadge" class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] px-2 py-0.5 rounded font-semibold flex items-center space-x-1">
                 <i class="fa-solid fa-arrows-rotate text-[9px]"></i>
@@ -691,13 +708,13 @@
               </span>
             </div>
             <div class="flex items-center space-x-2 flex-wrap gap-1.5">
-              <button type="button" id="btnDymoScanRamq" class="text-xs bg-sky-600 hover:bg-sky-700 active:scale-95 text-white px-2.5 py-1 rounded-lg font-semibold flex items-center space-x-1.5 transition shadow-xs cursor-pointer">
+              <button type="button" id="btnDymoScanRamq" class="text-xs bg-[#04ada9] hover:bg-[#038e8a] active:scale-95 text-white px-2.5 py-1 rounded-lg font-semibold flex items-center space-x-1.5 transition shadow-xs cursor-pointer">
                 <i class="fa-solid fa-camera text-[11px]"></i>
                 <span>Scanner RAMQ</span>
               </button>
               <!-- Fixed Format Badge (30336) -->
               <div class="flex items-center space-x-1.5 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700">
-                <i class="fa-solid fa-tag text-sky-600"></i>
+                <i class="fa-solid fa-tag text-[#04ada9]"></i>
                 <span>Format Dymo 30336 (54×25 mm)</span>
               </div>
             </div>
@@ -707,19 +724,19 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
             <div>
               <label class="block font-semibold text-slate-600 mb-0.5">Nom et prénom</label>
-              <input type="text" id="dymoPatientName" placeholder="Ex: Tremblay, Jean" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs bg-slate-50/50" />
+              <input type="text" id="dymoPatientName" placeholder="Ex: Tremblay, Jean" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#04ada9]/30 focus:border-[#04ada9] outline-none text-xs bg-slate-50/50" />
             </div>
             <div>
               <label class="block font-semibold text-slate-600 mb-0.5">RAMQ (Code-barres)</label>
-              <input type="text" id="dymoRamq" placeholder="Ex: TREJ 8005 1512" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs font-mono font-bold bg-slate-50/50" />
+              <input type="text" id="dymoRamq" placeholder="Ex: TREJ 8005 1512" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#04ada9]/30 focus:border-[#04ada9] outline-none text-xs font-mono font-bold bg-slate-50/50" />
             </div>
             <div>
               <label class="block font-semibold text-slate-600 mb-0.5">Date de naissance</label>
-              <input type="text" id="dymoDob" placeholder="AAAA-MM-JJ" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs bg-slate-50/50" />
+              <input type="text" id="dymoDob" placeholder="AAAA-MM-JJ" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#04ada9]/30 focus:border-[#04ada9] outline-none text-xs bg-slate-50/50" />
             </div>
             <div>
               <label class="block font-semibold text-slate-600 mb-0.5">Sexe</label>
-              <select id="dymoSex" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-200 focus:border-sky-500 outline-none text-xs bg-white">
+              <select id="dymoSex" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#04ada9]/30 focus:border-[#04ada9] outline-none text-xs bg-white">
                 <option value="">Non spécifié</option>
                 <option value="M">Masculin (M)</option>
                 <option value="F">Féminin (F)</option>
@@ -753,7 +770,7 @@
       <!-- Dymo Modal Footer -->
       <div class="px-6 py-3.5 bg-slate-100 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center space-x-2 text-xs text-slate-500">
-          <i class="fa-solid fa-circle-info text-sky-600"></i>
+          <i class="fa-solid fa-circle-info text-[#04ada9]"></i>
           <span>Format 30336 : Laisse 15.4 mm de fenêtre transparente libre sur tube 13mm.</span>
         </div>
         <div class="flex items-center space-x-2.5">
@@ -787,7 +804,7 @@
       <div class="px-6 py-4 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white flex items-center justify-between">
         <div class="flex items-center space-x-3">
           <div class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center border border-white/15">
-            <i class="fa-solid fa-address-book text-sky-300"></i>
+            <i class="fa-solid fa-address-book text-[#4ac9c5]"></i>
           </div>
           <div>
             <h3 class="text-base font-bold">Répertoire &amp; Administration</h3>
@@ -817,7 +834,7 @@
           <span id="adminLocationsBadge" class="bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded-full text-[10px]">0</span>
         </button>
         <button id="adminTabExtension" class="px-4 py-2 text-xs font-semibold rounded-t-lg text-slate-600 hover:text-slate-900 flex items-center space-x-2 transition">
-          <i class="fa-solid fa-puzzle-piece text-sky-600"></i>
+          <i class="fa-solid fa-puzzle-piece text-[#04ada9]"></i>
           <span>Extension Medesync</span>
         </button>
       </div>
@@ -935,13 +952,13 @@
       <!-- Admin Tab Content: Extension Medesync -->
       <div id="adminContentExtension" class="hidden flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar">
         <!-- Info card -->
-        <div class="bg-sky-50 border border-sky-200 rounded-2xl p-5 flex items-start gap-4">
-          <div class="w-12 h-12 rounded-xl bg-sky-500 text-white flex items-center justify-center text-2xl shrink-0 shadow-md">
+        <div class="bg-[#f0faf9] border border-[#04ada9]/30 rounded-2xl p-5 flex items-start gap-4">
+          <div class="w-12 h-12 rounded-xl bg-[#f0faf9]0 text-white flex items-center justify-center text-2xl shrink-0 shadow-md">
             <i class="fa-solid fa-puzzle-piece"></i>
           </div>
           <div class="space-y-1">
             <h4 class="text-sm font-bold text-sky-950">Extension Chrome GUSTAV pour Medesync DME</h4>
-            <p class="text-xs text-sky-900 leading-relaxed">
+            <p class="text-xs text-[#063a39] leading-relaxed">
               Cette extension officielle permet d'injecter un bouton direct <strong>« 🧪 GUSTAV »</strong> dans les dossiers patients de Medesync. Elle synchronise instantanément les renseignements du patient (RAMQ, Nom, Date de naissance, Prescripteur) avec bypass automatique du PIN et sans laisser aucune trace dans l'historique ou les logs.
             </p>
           </div>
@@ -1117,7 +1134,7 @@
       <!-- Header -->
       <div class="px-4 py-3 bg-slate-800/90 border-b border-slate-700/80 flex items-center justify-between">
         <div class="flex items-center space-x-2.5">
-          <div class="w-7 h-7 rounded-lg bg-sky-500/20 border border-sky-400/30 flex items-center justify-center text-sky-400">
+          <div class="w-7 h-7 rounded-lg bg-[#f0faf9]0/20 border border-[#04ada9]/30 flex items-center justify-center text-[#4ac9c5]">
             <i class="fa-solid fa-camera text-xs"></i>
           </div>
           <div>
@@ -1136,14 +1153,14 @@
           <video id="ramqScannerVideo" playsinline autoplay muted style="transform: scaleX(-1);" class="w-full h-full object-cover transition-transform duration-200"></video>
           
           <!-- Scanning Reticle / Card Frame -->
-          <div id="ramqReticle" class="absolute inset-x-4 inset-y-10 sm:inset-x-8 sm:inset-y-12 border-2 border-dashed border-sky-400/80 rounded-xl pointer-events-none flex flex-col items-center justify-between p-2 transition-all duration-300 shadow-[0_0_25px_rgba(56,189,248,0.35)] bg-sky-950/15">
-            <div class="w-full flex justify-between text-[10px] text-sky-300 font-mono select-none">
+          <div id="ramqReticle" class="absolute inset-x-4 inset-y-10 sm:inset-x-8 sm:inset-y-12 border-2 border-dashed border-[#04ada9]/80 rounded-xl pointer-events-none flex flex-col items-center justify-between p-2 transition-all duration-300 shadow-[0_0_25px_rgba(56,189,248,0.35)] bg-sky-950/15">
+            <div class="w-full flex justify-between text-[10px] text-[#4ac9c5] font-mono select-none">
               <span>┌ CADREZ LE CODE-BARRES ICI</span>
               <span>┐</span>
             </div>
             <!-- Animated Laser Bar -->
             <div id="ramqLaserBar" class="w-full h-0.5 bg-gradient-to-r from-transparent via-sky-400 to-transparent shadow-[0_0_12px_#38bdf8] animate-pulse"></div>
-            <div class="w-full flex justify-between text-[10px] text-sky-300 font-mono select-none">
+            <div class="w-full flex justify-between text-[10px] text-[#4ac9c5] font-mono select-none">
               <span>└</span>
               <span>┘</span>
             </div>
@@ -1151,7 +1168,7 @@
 
           <!-- Loading / Status Overlay -->
           <div id="ramqScannerLoading" class="absolute inset-0 bg-slate-900/95 flex flex-col items-center justify-center space-y-2.5 p-4 text-center">
-            <i class="fa-solid fa-spinner fa-spin text-sky-400 text-2xl"></i>
+            <i class="fa-solid fa-spinner fa-spin text-[#4ac9c5] text-2xl"></i>
             <span id="ramqLoadingText" class="text-xs text-slate-200 font-medium">Activation de la caméra...</span>
           </div>
         </div>
@@ -1172,7 +1189,7 @@
         <div class="w-full flex items-center justify-between gap-1.5 text-xs">
           <div class="flex items-center space-x-1.5 flex-1 min-w-0">
             <i class="fa-solid fa-video text-slate-400 text-xs"></i>
-            <select id="ramqCameraSelect" class="bg-slate-800 text-slate-200 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-sky-500 w-full truncate cursor-pointer"></select>
+            <select id="ramqCameraSelect" class="bg-slate-800 text-slate-200 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-[#04ada9] w-full truncate cursor-pointer"></select>
           </div>
           <!-- Digital Zoom Selector -->
           <div class="flex items-center space-x-1 bg-slate-800 p-0.5 rounded-lg border border-slate-700">
@@ -1180,7 +1197,7 @@
             <button type="button" id="btnZoom2x" class="px-2 py-1 text-[11px] font-bold rounded text-slate-400 hover:text-white cursor-pointer">2x</button>
             <button type="button" id="btnZoom3x" class="px-2 py-1 text-[11px] font-bold rounded text-slate-400 hover:text-white cursor-pointer">3x</button>
           </div>
-          <button id="btnToggleMirror" title="Inverser l'effet miroir" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-sky-400 rounded-lg border border-slate-700 text-xs transition flex items-center space-x-1 cursor-pointer">
+          <button id="btnToggleMirror" title="Inverser l'effet miroir" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-[#4ac9c5] rounded-lg border border-slate-700 text-xs transition flex items-center space-x-1 cursor-pointer">
             <i class="fa-solid fa-arrows-left-right"></i>
             <span class="hidden sm:inline">Miroir</span>
           </button>
@@ -1191,8 +1208,8 @@
         </div>
 
         <!-- Guidance Banner for Webcams -->
-        <div class="w-full bg-sky-950/70 border border-sky-500/40 rounded-xl p-2.5 text-[11px] text-sky-200 flex items-start space-x-2 shadow-inner">
-          <i class="fa-solid fa-circle-info text-sky-400 mt-0.5 shrink-0 text-xs"></i>
+        <div class="w-full bg-sky-950/70 border border-[#04ada9]/40 rounded-xl p-2.5 text-[11px] text-teal-200 flex items-start space-x-2 shadow-inner">
+          <i class="fa-solid fa-circle-info text-[#4ac9c5] mt-0.5 shrink-0 text-xs"></i>
           <div>
             <strong>Distance optimale :</strong> Tenez la carte à <strong>30–40 cm</strong> (longueur de bras). Les webcams d'ordinateurs portables ont un focus fixe et deviennent floues si la carte est trop près. Utilisez le zoom <strong>2x / 3x</strong> si nécessaire.
           </div>
@@ -1210,8 +1227,8 @@
             <span>Saisie / Coller manuellement un code brut</span>
           </summary>
           <div class="mt-2 space-y-2">
-            <textarea id="ramqManualPayload" rows="2" placeholder="Coller le texte du code-barres ou le numéro RAMQ ici..." class="w-full p-2 bg-slate-800 text-slate-100 border border-slate-700 rounded-lg text-xs font-mono outline-none focus:border-sky-500"></textarea>
-            <button id="btnProcessManualPayload" class="w-full py-1.5 bg-sky-600 hover:bg-sky-500 text-white font-semibold rounded-lg text-xs transition cursor-pointer">Appliquer le code</button>
+            <textarea id="ramqManualPayload" rows="2" placeholder="Coller le texte du code-barres ou le numéro RAMQ ici..." class="w-full p-2 bg-slate-800 text-slate-100 border border-slate-700 rounded-lg text-xs font-mono outline-none focus:border-[#04ada9]"></textarea>
+            <button id="btnProcessManualPayload" class="w-full py-1.5 bg-[#04ada9] hover:bg-[#039693] text-white font-semibold rounded-lg text-xs transition cursor-pointer">Appliquer le code</button>
           </div>
         </details>
       </div>
@@ -1952,9 +1969,9 @@
 
       for (const [key, panel] of Object.entries(panelsData)) {
         const btn = document.createElement("button");
-        btn.className = "text-xs bg-slate-100 hover:bg-sky-100 hover:text-sky-800 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200 transition flex items-center space-x-1.5 font-medium";
+        btn.className = "text-xs bg-slate-100 hover:bg-[#e6f7f7] hover:text-[#025957] text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200 transition flex items-center space-x-1.5 font-medium";
         const iconClass = icons[key] || "fa-plus-circle";
-        btn.innerHTML = `<i class="fa-solid ${iconClass} text-sky-600 text-[10px]"></i><span>${escapeHtml(panel.name.split('(')[0].trim())}</span>`;
+        btn.innerHTML = `<i class="fa-solid ${iconClass} text-[#04ada9] text-[10px]"></i><span>${escapeHtml(panel.name.split('(')[0].trim())}</span>`;
         btn.addEventListener("click", () => {
           panel.pids.forEach(p => selectedAnalyses.add(p));
           updateBasket();
@@ -2006,7 +2023,7 @@
 
       items.forEach((item, idx) => {
         const div = document.createElement("div");
-        div.className = "px-4 py-2.5 hover:bg-sky-50 cursor-pointer flex items-center justify-between text-xs transition";
+        div.className = "px-4 py-2.5 hover:bg-[#f0faf9] cursor-pointer flex items-center justify-between text-xs transition";
         div.dataset.index = idx;
 
         if (item.type === "panel") {
@@ -2038,7 +2055,7 @@
 
           div.innerHTML = `
             <div class="flex items-center space-x-2.5 min-w-0">
-              <span class="w-6 h-6 rounded ${isAdded ? 'bg-emerald-100 text-emerald-700' : 'bg-sky-100 text-sky-700'} flex items-center justify-center font-bold text-[10px] uppercase font-mono flex-shrink-0">${escapeHtml(item.pid.slice(0,3))}</span>
+              <span class="w-6 h-6 rounded ${isAdded ? 'bg-emerald-100 text-emerald-700' : 'bg-[#e6f7f7] text-[#02716e]'} flex items-center justify-center font-bold text-[10px] uppercase font-mono flex-shrink-0">${escapeHtml(item.pid.slice(0,3))}</span>
               <div class="min-w-0">
                 <div class="font-semibold text-slate-800 flex items-center flex-wrap gap-1">
                   <span>${escapeHtml(item.name)}</span>
@@ -2047,7 +2064,7 @@
                 <div class="text-[10px] text-slate-400 font-mono truncate">${escapeHtml(item.pid)} • ${escapeHtml(item.category || 'Manuel des prélèvements')}</div>
               </div>
             </div>
-            <button class="text-xs font-semibold ${isAdded ? 'text-emerald-600' : 'text-sky-600 hover:text-sky-800'} px-2 py-1 rounded flex-shrink-0 ml-2">
+            <button class="text-xs font-semibold ${isAdded ? 'text-emerald-600' : 'text-[#04ada9] hover:text-[#025957]'} px-2 py-1 rounded flex-shrink-0 ml-2">
               <i class="fa-solid ${isAdded ? 'fa-check' : 'fa-plus'}"></i>
             </button>
           `;
@@ -2103,10 +2120,10 @@
     function updateHighlight(items) {
       items.forEach((it, idx) => {
         if (idx === highlightedIndex) {
-          it.classList.add("bg-sky-100");
+          it.classList.add("bg-[#e6f7f7]");
           it.scrollIntoView({ block: "nearest" });
         } else {
-          it.classList.remove("bg-sky-100");
+          it.classList.remove("bg-[#e6f7f7]");
         }
       });
     }
@@ -2156,7 +2173,7 @@
             </button>
           `;
         } else {
-          chip.className = "bg-white border border-slate-200 hover:border-sky-300 shadow-sm rounded-lg px-2.5 py-1 text-xs flex items-center space-x-2 text-slate-800 transition group";
+          chip.className = "bg-white border border-slate-200 hover:border-[#04ada9]/40 shadow-sm rounded-lg px-2.5 py-1 text-xs flex items-center space-x-2 text-slate-800 transition group";
           chip.innerHTML = `
             <span class="font-medium truncate max-w-[200px]" title="${pid}">${pid.toUpperCase()}</span>
             <button class="text-slate-400 hover:text-rose-600 transition" title="Supprimer">
@@ -2422,7 +2439,7 @@
               <span class="font-semibold text-slate-800 truncate">${escapeHtml(a.name)}</span>
               <span class="text-[10px] text-slate-400 font-mono">(${escapeHtml(a.pid)})</span>
             </div>
-            <button onclick="openFicheModal('${a.pid}')" class="text-sky-600 hover:text-sky-800 text-[11px] font-semibold flex items-center space-x-1 pl-2">
+            <button onclick="openFicheModal('${a.pid}')" class="text-[#04ada9] hover:text-[#025957] text-[11px] font-semibold flex items-center space-x-1 pl-2">
               <i class="fa-solid fa-circle-info"></i>
               <span>Fiche</span>
             </button>
@@ -2510,7 +2527,7 @@
               <span><strong class="text-slate-700">Additif :</strong> ${tube.additive}</span>
             </div>
             <div class="flex items-start space-x-2 text-slate-500">
-              <i class="fa-solid fa-info-circle text-sky-600 mt-0.5"></i>
+              <i class="fa-solid fa-info-circle text-[#04ada9] mt-0.5"></i>
               <span>${tube.special_instructions}</span>
             </div>
           </div>
@@ -2526,8 +2543,8 @@
           </div>
 
           ${tube.consolidation_note ? `
-            <div class="mt-2.5 bg-sky-50/70 border border-sky-200/60 rounded-xl px-3 py-2 text-[11px] text-sky-900 flex items-start space-x-2">
-              <i class="fa-solid fa-code-merge text-sky-600 mt-0.5"></i>
+            <div class="mt-2.5 bg-[#f0faf9]/70 border border-[#04ada9]/30/60 rounded-xl px-3 py-2 text-[11px] text-[#063a39] flex items-start space-x-2">
+              <i class="fa-solid fa-code-merge text-[#04ada9] mt-0.5"></i>
               <span>${escapeHtml(tube.consolidation_note)}</span>
             </div>
           ` : ''}
@@ -2550,7 +2567,7 @@
       let containersHtml = data.containers.map(c => `
         <tr class="border-b border-slate-100 text-xs">
           <td class="py-2 font-semibold text-slate-700">${c.sites || 'Tous les sites'}</td>
-          <td class="py-2 text-sky-700 font-bold">${c.container}</td>
+          <td class="py-2 text-[#02716e] font-bold">${c.container}</td>
           <td class="py-2 text-center">${c.count}</td>
           <td class="py-2">${c.specimen}</td>
           <td class="py-2 font-mono">${c.quantity || '-'}</td>
@@ -2629,7 +2646,7 @@
           let formBadgeColor = "bg-indigo-100 text-indigo-900 border-indigo-200";
           if (form.form_id === "micro_gen") formBadgeColor = "bg-emerald-100 text-emerald-900 border-emerald-200";
           else if (form.form_id === "micro_mol") formBadgeColor = "bg-purple-100 text-purple-900 border-purple-200";
-          else if (form.form_id === "spec_multi") formBadgeColor = "bg-sky-100 text-sky-900 border-sky-200";
+          else if (form.form_id === "spec_multi") formBadgeColor = "bg-[#e6f7f7] text-[#063a39] border-[#04ada9]/30";
           else if (form.form_id === "banque_sang") formBadgeColor = "bg-rose-100 text-rose-900 border-rose-200";
 
           groupContainer.innerHTML = `
@@ -3023,7 +3040,7 @@
           <div class="min-w-0 pr-2">
             <div class="font-bold text-slate-800 flex items-center space-x-1.5">
               <span>${escapeHtml(doc.doctor_name)}</span>
-              <span class="text-[10px] px-1.5 py-0.2 rounded font-medium ${isCmq ? 'bg-sky-100 text-sky-800 border border-sky-200' : 'bg-indigo-100 text-indigo-800 border border-indigo-200'}">
+              <span class="text-[10px] px-1.5 py-0.2 rounded font-medium ${isCmq ? 'bg-[#e6f7f7] text-[#025957] border border-[#04ada9]/30' : 'bg-indigo-100 text-indigo-800 border border-indigo-200'}">
                 ${isCmq ? 'CMQ' : 'Clinique'}
               </span>
             </div>
@@ -4272,7 +4289,7 @@
       playSuccessBeep();
 
       // Visual feedback on reticle
-      ramqReticle.classList.remove("border-sky-400/70", "shadow-[0_0_25px_rgba(56,189,248,0.25)]");
+      ramqReticle.classList.remove("border-[#04ada9]/70", "shadow-[0_0_25px_rgba(56,189,248,0.25)]");
       ramqReticle.classList.add("border-emerald-400", "bg-emerald-500/20", "shadow-[0_0_35px_rgba(52,211,153,0.6)]");
       
       const identityLabel = parsed.patient_name ? `${parsed.patient_name} (${parsed.ramq})` : parsed.ramq;
@@ -4320,7 +4337,7 @@
 
       if (isManual) {
         ramqScannerStatus.innerText = "🔍 Analyse de l'image en cours...";
-        ramqScannerStatus.className = "w-full text-center text-xs text-sky-300 bg-sky-900/60 py-2 px-3 rounded-lg border border-sky-600/80 font-bold animate-pulse";
+        ramqScannerStatus.className = "w-full text-center text-xs text-[#4ac9c5] bg-sky-900/60 py-2 px-3 rounded-lg border border-sky-600/80 font-bold animate-pulse";
       }
 
       try {
@@ -4431,7 +4448,7 @@
       ramqScannerLoading.classList.remove("hidden");
       ramqLoadingText.innerText = "Activation de la caméra...";
       ramqReticle.classList.remove("border-emerald-400", "bg-emerald-500/20", "shadow-[0_0_35px_rgba(52,211,153,0.6)]");
-      ramqReticle.classList.add("border-sky-400/80", "shadow-[0_0_25px_rgba(56,189,248,0.35)]");
+      ramqReticle.classList.add("border-[#04ada9]/80", "shadow-[0_0_25px_rgba(56,189,248,0.35)]");
       ramqScannerStatus.innerText = scannerMode === "2d"
         ? "Mode 2D : Pointez la caméra vers le code-barres PDF417 au dos de la carte"
         : "Pointez la caméra vers le code-barres (1D ou 2D)";
@@ -4525,7 +4542,7 @@
     btnToggleMirror.addEventListener("click", () => {
       isMirrored = !isMirrored;
       updateVideoTransform();
-      btnToggleMirror.classList.toggle("text-sky-400", isMirrored);
+      btnToggleMirror.classList.toggle("text-[#4ac9c5]", isMirrored);
       btnToggleMirror.classList.toggle("text-slate-400", !isMirrored);
     });
 
@@ -4824,7 +4841,7 @@
       if (dymoLabelsGrid) {
         dymoLabelsGrid.innerHTML = `
           <div class="col-span-2 flex flex-col items-center justify-center py-10 text-slate-400 space-y-2">
-            <i class="fa-solid fa-spinner fa-spin text-2xl text-sky-600"></i>
+            <i class="fa-solid fa-spinner fa-spin text-2xl text-[#04ada9]"></i>
             <p class="text-xs font-semibold">Génération de l'aperçu Dymo...</p>
           </div>
         `;
@@ -4870,7 +4887,7 @@
       let html = "";
       labels.forEach((l, idx) => {
         html += `
-          <div class="bg-white border border-slate-300 rounded-xl p-4 shadow-sm hover:border-sky-500 transition flex flex-col justify-center space-y-1.5" style="min-height: 90px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+          <div class="bg-white border border-slate-300 rounded-xl p-4 shadow-sm hover:border-[#04ada9] transition flex flex-col justify-center space-y-1.5" style="min-height: 90px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
             <div class="text-sm font-bold text-slate-950">${escapeHtml(l.line1 || l.patient_name || 'Patient ()')}</div>
             <div class="text-sm font-normal text-slate-900 font-mono tracking-wide">${escapeHtml(l.line2 || l.ramq_display || '')}</div>
             <div class="text-sm font-normal text-slate-900">${escapeHtml(l.line3 || '')}</div>

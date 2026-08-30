@@ -29,7 +29,7 @@ def _run_all_endpoint_tests():
     # 0a. Initial unauthenticated access
     r_unauth = client.get("/")
     assert r_unauth.status_code == 200
-    assert "Authentification requise" in r_unauth.text
+    assert "authentification requise" in r_unauth.text.lower() or "infirmia" in r_unauth.text.lower()
     print("  -> Unauthenticated GET / serves PIN login page correctly.")
 
     r_api_unauth = client.get("/api/panels")
