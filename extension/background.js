@@ -1,6 +1,7 @@
 /**
  * GUSTAV - Medesync Background Service Worker (Manifest V3)
  * Direct 1-Click Launch Handler from Chrome Toolbar Icon
+ * 100% In-Memory DOM & Script Extraction (Zero Medesync API calls)
  */
 
 const DEFAULT_GUSTAV_URL = "https://gustav.plucpel.net";
@@ -27,10 +28,10 @@ chrome.action.onClicked.addListener(async (tab) => {
 
   if (tab && tab.id) {
     try {
-      // 1. Execute deep DOM & API inspection across all frames on the active Medesync tab
+      // Execute 100% in-memory DOM & Script extraction across all frames
       const injectionResults = await chrome.scripting.executeScript({
         target: { tabId: tab.id, allFrames: true },
-        func: async () => {
+        func: () => {
           let id = "";
           let patientName = "";
           let ramq = "";
@@ -40,24 +41,24 @@ chrome.action.onClicked.addListener(async (tab) => {
           let prescriber = "";
           let doctorLicense = "";
 
-          // A. From URL params
+          // 1. Patient ID from URL params
           try {
             const params = new URLSearchParams(window.location.search);
             id = params.get("id") || params.get("idPatient") || params.get("IdPatient") || "";
           } catch (e) {}
 
-          // B. From ASP.NET forms
+          // 2. Patient ID from ASP.NET form action
           if (!id) {
             try {
-              const aspnetForm = document.getElementById("aspnetForm") || document.forms["aspnetForm"];
-              if (aspnetForm && aspnetForm.action) {
-                const m = aspnetForm.action.match(/[?&]id=(\d+)/i);
+              const form = document.getElementById("aspnetForm") || document.forms["aspnetForm"];
+              if (form && form.action) {
+                const m = form.action.match(/[?&]id=(\d+)/i);
                 if (m) id = m[1];
               }
             } catch (e) {}
           }
 
-          // C. From scripts / InitSetting
+          // 3. Patient ID from script tags (Medesync.Patient.InitSetting)
           try {
             const scripts = document.querySelectorAll("script");
             for (const s of scripts) {
@@ -69,7 +70,7 @@ chrome.action.onClicked.addListener(async (tab) => {
             }
           } catch (e) {}
 
-          // D. Prescriber info from global variables
+          // 4. Prescriber info from Medesync global variables
           try {
             if (window.__logon_user_code) {
               prescriber = String(window.__logon_user_code).replace(/-/g, " ");
@@ -79,113 +80,62 @@ chrome.action.onClicked.addListener(async (tab) => {
             }
           } catch (e) {}
 
-          // E. Look for Bearer / Auth tokens in storage
-          let authToken = "";
-          try {
-            for (let i = 0; i < sessionStorage.length; i++) {
-              const k = sessionStorage.key(i);
-              const val = sessionStorage.getItem(k);
-              if (val && (k.toLowerCase().includes("token") || k.toLowerCase().includes("auth") || val.startsWith("ey") || val.startsWith("Bearer "))) {
-                authToken = val.replace(/^Bearer\s+/i, "");
-                break;
-              }
-            }
-            if (!authToken) {
-              for (let i = 0; i < localStorage.length; i++) {
-                const k = localStorage.key(i);
-                const val = localStorage.getItem(k);
-                if (val && (k.toLowerCase().includes("token") || k.toLowerCase().includes("auth") || val.startsWith("ey") || val.startsWith("Bearer "))) {
-                  authToken = val.replace(/^Bearer\s+/i, "");
-                  break;
-                }
-              }
-            }
-          } catch (e) {}
+          // 5. Patient Data from DOM Text & Specific Elements
+          const bodyText = (document.body ? document.body.innerText : "") + " " + document.title;
 
-          // F. Query Medesync API with multi-host fallback
-          if (id && /^\d+$/.test(id)) {
-            const currentHost = window.location.hostname;
-            const hostsToTry = [
-              `https://${currentHost.replace('.medesync.com', '-api.medesync.com')}`,
-              `https://${currentHost}`,
-              'https://secure2-api.medesync.com',
-              'https://secure-api.medesync.com'
-            ];
-
-            const reqHeaders = { 'Accept': 'application/json' };
-            if (authToken) {
-              reqHeaders['Authorization'] = `Bearer ${authToken}`;
-            }
-
-            for (const h of hostsToTry) {
-              try {
-                const resp = await fetch(`${h}/api/v3/patients/getBasicInfos/${id}`, {
-                  credentials: 'include',
-                  headers: reqHeaders
-                });
-                if (resp.ok) {
-                  const data = await resp.json();
-                  if (data && (data.nam || data.fullName || data.lastName || data.firstName)) {
-                    patientName = data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim();
-                    ramq = data.nam || "";
-                    dob = data.dobRaw || "";
-                    sex = data.sexeShort || (data.isMale ? "M" : "F");
-                    dossier = data.chartNumber || "";
-                    break;
-                  }
-                }
-              } catch (err) {
-                // Silently continue to next host or fallback
-              }
-            }
+          // RAMQ Regex (format: ABCD 1234 5678 or ABCD12345678 or ABCD 12 34 56 78)
+          const ramqMatch = bodyText.match(/\b([A-Za-z]{4})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\b/) ||
+                            bodyText.match(/\b([A-Za-z]{4})\s*(\d{4})\s*(\d{4})\b/) ||
+                            bodyText.match(/\b([A-Za-z]{4}\d{8})\b/);
+          if (ramqMatch) {
+            ramq = ramqMatch[0].replace(/\s+/g, "").toUpperCase();
           }
 
-          // G. Deep DOM Regex Extraction (Fallback if API is unauthorized or blocked)
-          try {
-            const bodyText = (document.body ? document.body.innerText : "") + " " + document.title;
-            
-            // RAMQ Regex (e.g. ABCD 1234 5678 or ABCD12345678)
-            if (!ramq) {
-              const ramqMatch = bodyText.match(/\b([A-Z]{4})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\b/i) ||
-                                bodyText.match(/\b([A-Z]{4})\s*(\d{4})\s*(\d{4})\b/i) ||
-                                bodyText.match(/\b([A-Z]{4}\d{8})\b/i);
-              if (ramqMatch) {
-                ramq = ramqMatch[0].replace(/\s+/g, "");
-              }
-            }
+          // Date of Birth (ISO YYYY-MM-DD, DD/MM/YYYY, or French text '30 novembre 1974')
+          const isoDobMatch = bodyText.match(/\b(19\d{2}|20\d{2})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])\b/);
+          const slashDobMatch = bodyText.match(/\b(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/(19\d{2}|20\d{2})\b/);
+          const frenchDobMatch = bodyText.match(/(\d{1,2})\s+(janvier|f[eé]vrier|mars|avril|mai|juin|juillet|ao[uû]t|septembre|octobre|novembre|d[eé]cembre)\s+(\d{4})/i);
 
-            // Date of Birth Regex (YYYY-MM-DD or DD/MM/YYYY)
-            if (!dob) {
-              const dobMatch = bodyText.match(/\b(19\d{2}|20\d{2})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])\b/) ||
-                               bodyText.match(/\b(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/(19\d{2}|20\d{2})\b/);
-              if (dobMatch) {
-                if (dobMatch[0].includes("/")) {
-                  const parts = dobMatch[0].split("/");
-                  dob = `${parts[2]}-${parts[1]}-${parts[0]}`;
-                } else {
-                  dob = dobMatch[0];
-                }
-              }
-            }
+          if (isoDobMatch) {
+            dob = isoDobMatch[0];
+          } else if (slashDobMatch) {
+            const p = slashDobMatch[0].split("/");
+            dob = `${p[2]}-${p[1]}-${p[0]}`;
+          } else if (frenchDobMatch) {
+            const months = {
+              'janvier': '01', 'fevrier': '02', 'février': '02', 'mars': '03',
+              'avril': '04', 'mai': '05', 'juin': '06', 'juillet': '07',
+              'aout': '08', 'août': '08', 'septembre': '09', 'octobre': '10',
+              'novembre': '11', 'decembre': '12', 'décembre': '12'
+            };
+            const d = String(frenchDobMatch[1]).padStart(2, "0");
+            const m = months[frenchDobMatch[2].toLowerCase()] || "01";
+            const y = frenchDobMatch[3];
+            dob = `${y}-${m}-${d}`;
+          }
 
-            // Dossier
-            if (!dossier) {
-              const dosMatch = bodyText.match(/\b(?:Dossier|Chart|No dossier)[\s:#]+(\d+)\b/i);
-              if (dosMatch) dossier = dosMatch[1];
-            }
+          // Sex (Homme / Femme / M / F)
+          if (/\b(?:Genre|Sexe)\s*:\s*(?:Homme|M|Masculin)\b/i.test(bodyText) || /\bHomme\b/i.test(bodyText)) {
+            sex = "M";
+          } else if (/\b(?:Genre|Sexe)\s*:\s*(?:Femme|F|Féminin)\b/i.test(bodyText) || /\bFemme\b/i.test(bodyText)) {
+            sex = "F";
+          }
 
-            // Patient Name from header / banner elements
-            if (!patientName) {
-              const nameEl = document.getElementById("patient_file") || 
-                             document.querySelector(".patient_name") || 
-                             document.querySelector(".patient-name") ||
-                             document.querySelector(".patient-banner");
-              if (nameEl && nameEl.innerText) {
-                const lines = nameEl.innerText.split("\n").map(l => l.trim()).filter(Boolean);
-                if (lines.length > 0) patientName = lines[0];
-              }
-            }
-          } catch (e) {}
+          // Dossier / Chart Number (format: Dossier: 4629-2995 or Chart #1234)
+          const dosMatch = bodyText.match(/(?:Dossier|Chart|No dossier)[\s:#]+([\d-]+)/i);
+          if (dosMatch) {
+            dossier = dosMatch[1].trim();
+          }
+
+          // Patient Name from headers, titles, or DOM sections
+          const patientFileEl = document.getElementById("patient_file") || 
+                                document.querySelector(".patient_name") || 
+                                document.querySelector(".patient-name") ||
+                                document.querySelector(".patient-banner");
+          if (patientFileEl && patientFileEl.innerText) {
+            const lines = patientFileEl.innerText.split("\n").map(l => l.trim()).filter(Boolean);
+            if (lines.length > 0) patientName = lines[0];
+          }
 
           return {
             medesync_id: id || "",
@@ -206,33 +156,21 @@ chrome.action.onClicked.addListener(async (tab) => {
           const r = res.result;
           if (r.ramq || r.patient_name || r.medesync_id) {
             Object.assign(patientPayload, r);
-            if (r.ramq && r.patient_name) break; // Found comprehensive data
+            if (r.ramq && (r.patient_name || r.dob)) break;
           }
         }
       }
 
     } catch (err) {
-      console.warn("[GUSTAV Background] Scripting tab completed with fallback:", err);
+      console.warn("[GUSTAV Background] Extraction completed with fallback:", err);
     }
   }
 
-  // 2. Negotiate single-use launch token with Gustav server and open tab
+  // Negotiate single-use launch token with Gustav server and open tab
   try {
     await handleLaunchGustav(patientPayload);
   } catch (err) {
     console.error("[GUSTAV Background] Launch failed:", err);
-  }
-});
-
-/**
- * Message listener fallback for programmatic triggers
- */
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === "LAUNCH_GUSTAV") {
-    handleLaunchGustav(message.patient)
-      .then((res) => sendResponse(res))
-      .catch((err) => sendResponse({ success: false, error: err.message }));
-    return true;
   }
 });
 
