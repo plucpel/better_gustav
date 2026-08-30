@@ -1,6 +1,6 @@
-# Extension Chrome GUSTAV - Passerelle Medesync
+# Extension Chrome GUSTAV - Passerelle Medesync (1-Clic)
 
-Cette extension Chrome (Manifest V3) connecte de façon transparente et sécurisée votre DME Medesync (Telus Santé) à votre calculateur de prélèvements **GUSTAV**.
+Cette extension Chrome (Manifest V3) connecte de façon instantanée, transparente et sécurisée votre DME Medesync (Telus Santé) à votre calculateur de prélèvements **GUSTAV**.
 
 ---
 
@@ -11,24 +11,22 @@ Cette extension Chrome (Manifest V3) connecte de façon transparente et sécuris
 3. Activez le **Mode développeur** (interrupteur en haut à droite).
 4. Cliquez sur **« Charger l'extension non empaquetée »** (*Load unpacked*).
 5. Sélectionnez le dossier décompressé de l'extension.
+6. *(Optionnel)* Cliquez sur l'icône de pièce de puzzle en haut à droite de Chrome et **épinglez l'icône 🧪 GUSTAV** dans votre barre d'outils.
 
 ---
 
-## ⚙️ Configuration Automatique
+## ⚡ Utilisation Ultra-Rapide (1 Clic)
 
-L'extension est pré-configurée par défaut pour :
-* **URL du Serveur GUSTAV** : `https://gustav.plucpel.net`
-* **Clé Secrète** : configurée automatiquement.
-
-Si vous souhaitez changer l'URL pour un serveur local ou un domaine personnalisé, cliquez simplement sur l'icône de l'extension dans Chrome.
+1. Rendez-vous sur votre DME **Medesync** et ouvrez le dossier d'un patient.
+2. **Cliquez simplement sur l'icône 🧪 GUSTAV dans la barre d'outils Chrome** !
+3. Un nouvel onglet GUSTAV s'ouvre instantanément :
+   * **Bypass automatique du PIN** (aucune saisie de mot de passe requise).
+   * **Synchronisation complète** : Nom, RAMQ, Date de naissance, Sexe, No dossier et Prescripteur.
+   * **Sécurité Loi 25 / Vie privée** : 0 renseignement personnel dans l'URL ou l'historique de navigation.
 
 ---
 
-## 📋 Utilisation Quotidienne
+## ⚙️ Paramètres Avancés (Optionnel)
 
-1. Ouvrez un dossier patient dans Medesync (`https://secure2.medesync.com/...`).
-2. Le bouton **`[ 🧪 GUSTAV ]`** apparaît automatiquement dans la barre du patient.
-3. Un simple clic ouvre instantanément GUSTAV dans un nouvel onglet avec :
-   * **Bypass automatique du PIN** (aucune saisie de mot de passe nécessaire).
-   * **Pré-remplissage complet** : Nom, RAMQ, Date de naissance, Sexe, No dossier et Prescripteur.
-   * **Sécurité totale** : Zéro donnée personnelle dans l'URL ou l'historique du navigateur.
+L'extension est pré-configurée par défaut pour `https://gustav.plucpel.net`.
+Pour changer de serveur (ex. serveur local), faites un **clic droit sur l'icône GUSTAV > Options**.

@@ -4,8 +4,28 @@
  */
 
 (function () {
+  console.log("%c[GUSTAV EXTENSION] Content script active on:", "background: #0284c7; color: #fff; font-weight: bold; padding: 2px 6px; border-radius: 3px;", window.location.href);
+
+  function isMedesyncEnvironment() {
+    const host = window.location.hostname.toLowerCase();
+    if (host.includes("medesync") || host.includes("telus") || host.includes("dmeqc")) {
+      return true;
+    }
+    if (document.getElementById("aspnetForm") || document.getElementById("patient_file") || document.getElementById("dlgMenuBureaux")) {
+      return true;
+    }
+    if (document.title && document.title.toLowerCase().includes("medesync")) {
+      return true;
+    }
+    return false;
+  }
+
+  // Only run inside Medesync or DME environments
+  if (!isMedesyncEnvironment()) {
+    return;
+  }
+
   const isTopWindow = (window === window.top);
-  console.log(`[GUSTAV] Content script loaded on: ${window.location.href} (isTop: ${isTopWindow})`);
 
   /**
    * Search for active patient ID across multiple Medesync DOM structures
@@ -162,6 +182,7 @@
     const btn = document.createElement("button");
     btn.id = "gustav-medesync-launcher-btn";
     btn.className = "gustav-btn-medesync";
+    btn.style.cssText = "display: inline-flex !important; align-items: center !important; gap: 6px !important; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important; color: #ffffff !important; border: 1px solid #0284c7 !important; border-radius: 6px !important; padding: 5px 12px !important; font-size: 13px !important; font-weight: 700 !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important; cursor: pointer !important; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important; margin: 4px 8px !important; vertical-align: middle !important; z-index: 9999 !important;";
     btn.innerHTML = `
       <span class="gustav-icon">🧪</span>
       <span class="gustav-text">GUSTAV</span>
@@ -184,12 +205,16 @@
   function injectFloatingLauncher() {
     if (!isTopWindow || document.getElementById("gustav-floating-launcher")) return;
 
+    const parent = document.body || document.documentElement;
+    if (!parent) return;
+
     const pill = document.createElement("div");
     pill.id = "gustav-floating-launcher";
     pill.className = "gustav-floating-pill";
+    pill.style.cssText = "position: fixed !important; bottom: 20px !important; right: 20px !important; z-index: 2147483647 !important; display: inline-flex !important; align-items: center !important; gap: 8px !important; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important; color: #ffffff !important; border: 2px solid #ffffff !important; border-radius: 9999px !important; padding: 10px 18px !important; font-size: 14px !important; font-weight: 800 !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important; cursor: pointer !important; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35) !important; text-decoration: none !important; opacity: 1 !important; visibility: visible !important; user-select: none !important;";
     pill.innerHTML = `
-      <span class="gustav-icon">🧪</span>
-      <span class="gustav-text">GUSTAV</span>
+      <span class="gustav-icon" style="font-size: 16px;">🧪</span>
+      <span class="gustav-text" style="letter-spacing: 0.5px; font-weight: 800;">GUSTAV</span>
     `;
     pill.title = "Ouvrir le Calculateur GUSTAV (Synchronisation automatique Medesync)";
 
@@ -199,7 +224,7 @@
       handleLaunchClick(pill);
     });
 
-    document.body.appendChild(pill);
+    parent.appendChild(pill);
     console.log("[GUSTAV] Persistent floating badge successfully injected.");
   }
 
@@ -207,10 +232,8 @@
    * Main Check & Injection Cycle
    */
   function scanAndInject() {
-    // 1. Always ensure the persistent floating pill is on screen in the top window
     injectFloatingLauncher();
 
-    // 2. Look for patient chart container
     const patientId = findActivePatientId();
     if (patientId) {
       injectInlineButton(patientId);
@@ -224,16 +247,16 @@
     scanAndInject();
   }
 
+  // Periodic fallback check
+  setInterval(scanAndInject, 1500);
+
   // Observe SPA route / DOM mutations
   const observer = new MutationObserver(() => {
     scanAndInject();
   });
 
-  if (document.body) {
-    observer.observe(document.body, { childList: true, subtree: true });
-  } else {
-    window.addEventListener("load", () => {
-      if (document.body) observer.observe(document.body, { childList: true, subtree: true });
-    });
+  const rootTarget = document.body || document.documentElement;
+  if (rootTarget) {
+    observer.observe(rootTarget, { childList: true, subtree: true });
   }
 })();
