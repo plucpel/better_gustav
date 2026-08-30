@@ -244,6 +244,20 @@ def _run_all_endpoint_tests():
     assert r_consume_again.status_code == 404
     print("  -> Re-using consumed token rejected (404 single-use verified).")
 
+    print("\n=== 14. Testing Extension Zip Download and Config Info ===")
+    r_zip = client.get("/api/extension/download")
+    assert r_zip.status_code == 200
+    assert r_zip.headers["content-type"] == "application/zip"
+    assert len(r_zip.content) > 1000
+    print(f"  -> Extension zip archive generated successfully ({len(r_zip.content)} bytes).")
+
+    r_info = client.get("/api/extension/info")
+    assert r_info.status_code == 200
+    info_data = r_info.json()
+    assert "extension_secret" in info_data
+    assert info_data["extension_secret"] == "gustav_ext_secret_chatterbox_2026"
+    print(f"  -> Extension info returned secret key successfully.")
+
     print("\n🎉 ALL API, AUTH, CALCULATION & DYMO LABEL TESTS PASSED PERFECTLY!")
 
 if __name__ == "__main__":

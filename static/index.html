@@ -816,6 +816,10 @@
           <span>Lieux de prélèvement</span>
           <span id="adminLocationsBadge" class="bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded-full text-[10px]">0</span>
         </button>
+        <button id="adminTabExtension" class="px-4 py-2 text-xs font-semibold rounded-t-lg text-slate-600 hover:text-slate-900 flex items-center space-x-2 transition">
+          <i class="fa-solid fa-puzzle-piece text-sky-600"></i>
+          <span>Extension Medesync</span>
+        </button>
       </div>
 
       <!-- Admin Tab Content: Prescribers -->
@@ -924,6 +928,73 @@
           <div id="adminLocationsEmptyMsg" class="hidden p-8 text-center text-slate-400 text-xs">
             <i class="fa-solid fa-location-dot text-2xl mb-2 text-slate-300 block"></i>
             Aucun lieu de prélèvement enregistré.
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Tab Content: Extension Medesync -->
+      <div id="adminContentExtension" class="hidden flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar">
+        <!-- Info card -->
+        <div class="bg-sky-50 border border-sky-200 rounded-2xl p-5 flex items-start gap-4">
+          <div class="w-12 h-12 rounded-xl bg-sky-500 text-white flex items-center justify-center text-2xl shrink-0 shadow-md">
+            <i class="fa-solid fa-puzzle-piece"></i>
+          </div>
+          <div class="space-y-1">
+            <h4 class="text-sm font-bold text-sky-950">Extension Chrome GUSTAV pour Medesync DME</h4>
+            <p class="text-xs text-sky-900 leading-relaxed">
+              Cette extension officielle permet d'injecter un bouton direct <strong>« 🧪 GUSTAV »</strong> dans les dossiers patients de Medesync. Elle synchronise instantanément les renseignements du patient (RAMQ, Nom, Date de naissance, Prescripteur) avec bypass automatique du PIN et sans laisser aucune trace dans l'historique ou les logs.
+            </p>
+          </div>
+        </div>
+
+        <!-- Download & Setup Card -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-100">
+            <div>
+              <h5 class="text-sm font-bold text-slate-900">1. Télécharger l'Extension</h5>
+              <p class="text-xs text-slate-500">Téléchargez l'archive prête à l'emploi contenant le Manifest V3 et les scripts.</p>
+            </div>
+            <a href="/api/extension/download" download="gustav-medesync-extension.zip" class="px-4 py-2.5 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-md transition transform active:scale-95">
+              <i class="fa-solid fa-download"></i>
+              <span>Télécharger l'Extension (.ZIP)</span>
+            </a>
+          </div>
+
+          <!-- Paramètres de connexion -->
+          <div class="space-y-3 pt-1">
+            <h5 class="text-sm font-bold text-slate-900">2. Paramètres de Connexion pour vos Postes</h5>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-1.5">
+                <div class="text-[11px] font-bold text-slate-500 uppercase">URL du Serveur GUSTAV</div>
+                <div class="flex items-center justify-between gap-2">
+                  <code id="adminExtServerUrl" class="text-xs font-mono font-bold text-slate-800 break-all select-all">http://chatterbox:8000</code>
+                  <button id="btnCopyExtUrl" class="p-1.5 hover:bg-slate-200 rounded text-slate-500 transition" title="Copier">
+                    <i class="fa-solid fa-copy text-xs"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-1.5">
+                <div class="text-[11px] font-bold text-slate-500 uppercase">Clé Secrète Clinique (Secret Key)</div>
+                <div class="flex items-center justify-between gap-2">
+                  <code id="adminExtSecretKey" class="text-xs font-mono font-bold text-indigo-700 break-all select-all">gustav_ext_secret_chatterbox_2026</code>
+                  <button id="btnCopyExtSecret" class="p-1.5 hover:bg-slate-200 rounded text-slate-500 transition" title="Copier">
+                    <i class="fa-solid fa-copy text-xs"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Instructions d'installation -->
+          <div class="space-y-2 pt-3 border-t border-slate-100">
+            <h5 class="text-sm font-bold text-slate-900">3. Guide d'Installation Rapide (1 minute)</h5>
+            <ol class="list-decimal list-inside text-xs text-slate-600 space-y-1.5 leading-relaxed">
+              <li>Décompressez le fichier <code>gustav-medesync-extension.zip</code> sur votre poste.</li>
+              <li>Dans Google Chrome, naviguez vers <code>chrome://extensions/</code>.</li>
+              <li>Activez le <strong>« Mode développeur »</strong> (en haut à droite).</li>
+              <li>Cliquez sur <strong>« Charger l'extension non empaquetée »</strong> et sélectionnez le dossier décompressé.</li>
+              <li>Cliquez sur l'icône de l'extension dans Chrome pour vérifier ou coller l'URL du serveur et la clé secrète.</li>
+            </ol>
           </div>
         </div>
       </div>
@@ -2629,9 +2700,15 @@
     const adminTabPrescribers = document.getElementById("adminTabPrescribers");
     const adminTabNurses = document.getElementById("adminTabNurses");
     const adminTabLocations = document.getElementById("adminTabLocations");
+    const adminTabExtension = document.getElementById("adminTabExtension");
     const adminContentPrescribers = document.getElementById("adminContentPrescribers");
     const adminContentNurses = document.getElementById("adminContentNurses");
     const adminContentLocations = document.getElementById("adminContentLocations");
+    const adminContentExtension = document.getElementById("adminContentExtension");
+    const adminExtServerUrl = document.getElementById("adminExtServerUrl");
+    const adminExtSecretKey = document.getElementById("adminExtSecretKey");
+    const btnCopyExtUrl = document.getElementById("btnCopyExtUrl");
+    const btnCopyExtSecret = document.getElementById("btnCopyExtSecret");
     const adminPrescribersBadge = document.getElementById("adminPrescribersBadge");
     const adminNursesBadge = document.getElementById("adminNursesBadge");
     const adminLocationsBadge = document.getElementById("adminLocationsBadge");
@@ -2968,10 +3045,12 @@
       adminTabPrescribers.className = "px-4 py-2 text-xs font-semibold rounded-t-lg text-slate-600 hover:text-slate-900 flex items-center space-x-2 transition";
       adminTabNurses.className = "px-4 py-2 text-xs font-semibold rounded-t-lg text-slate-600 hover:text-slate-900 flex items-center space-x-2 transition";
       adminTabLocations.className = "px-4 py-2 text-xs font-semibold rounded-t-lg text-slate-600 hover:text-slate-900 flex items-center space-x-2 transition";
+      if (adminTabExtension) adminTabExtension.className = "px-4 py-2 text-xs font-semibold rounded-t-lg text-slate-600 hover:text-slate-900 flex items-center space-x-2 transition";
       
       adminContentPrescribers.classList.add("hidden");
       adminContentNurses.classList.add("hidden");
       adminContentLocations.classList.add("hidden");
+      if (adminContentExtension) adminContentExtension.classList.add("hidden");
 
       if (tab === "prescribers") {
         adminTabPrescribers.className = "px-4 py-2 text-xs font-bold rounded-t-lg border-b-2 border-indigo-600 bg-white text-indigo-950 flex items-center space-x-2 shadow-2xs";
@@ -2982,6 +3061,30 @@
       } else if (tab === "locations") {
         adminTabLocations.className = "px-4 py-2 text-xs font-bold rounded-t-lg border-b-2 border-teal-600 bg-white text-teal-950 flex items-center space-x-2 shadow-2xs";
         adminContentLocations.classList.remove("hidden");
+      } else if (tab === "extension") {
+        if (adminTabExtension) adminTabExtension.className = "px-4 py-2 text-xs font-bold rounded-t-lg border-b-2 border-sky-600 bg-white text-sky-950 flex items-center space-x-2 shadow-2xs";
+        if (adminContentExtension) adminContentExtension.classList.remove("hidden");
+        loadExtensionInfo();
+      }
+    }
+
+    async function loadExtensionInfo() {
+      if (adminExtServerUrl) {
+        adminExtServerUrl.innerText = window.location.origin;
+      }
+      try {
+        const res = await fetch("/api/extension/info");
+        if (res.ok) {
+          const info = await res.json();
+          if (adminExtSecretKey && info.extension_secret) {
+            adminExtSecretKey.innerText = info.extension_secret;
+          }
+          if (adminExtServerUrl && info.server_url) {
+            adminExtServerUrl.innerText = window.location.origin || info.server_url;
+          }
+        }
+      } catch (e) {
+        console.debug("Could not fetch extension info:", e);
       }
     }
 
@@ -3426,6 +3529,23 @@
     adminTabPrescribers.addEventListener("click", () => switchAdminTab("prescribers"));
     adminTabNurses.addEventListener("click", () => switchAdminTab("nurses"));
     adminTabLocations.addEventListener("click", () => switchAdminTab("locations"));
+    if (adminTabExtension) adminTabExtension.addEventListener("click", () => switchAdminTab("extension"));
+    if (btnCopyExtUrl) {
+      btnCopyExtUrl.addEventListener("click", () => {
+        if (adminExtServerUrl) {
+          navigator.clipboard.writeText(adminExtServerUrl.innerText);
+          showMedesyncNotification("URL du serveur copiée dans le presse-papier !");
+        }
+      });
+    }
+    if (btnCopyExtSecret) {
+      btnCopyExtSecret.addEventListener("click", () => {
+        if (adminExtSecretKey) {
+          navigator.clipboard.writeText(adminExtSecretKey.innerText);
+          showMedesyncNotification("Clé secrète copiée dans le presse-papier !");
+        }
+      });
+    }
     adminPrescriberSearch.addEventListener("input", renderAdminPrescribersTable);
     adminNurseSearch.addEventListener("input", renderAdminNursesTable);
     adminLocationSearch.addEventListener("input", renderAdminLocationsTable);

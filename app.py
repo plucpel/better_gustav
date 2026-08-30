@@ -191,6 +191,44 @@ async def api_context_consume(req: ContextConsumeRequest, response: Response):
         "patient_info": token_data.get("payload", {})
     }
 
+import zipfile
+import io
+
+@app.get("/api/extension/download")
+async def api_download_extension():
+    """Package the extension/ directory into a zip archive for clinic installation."""
+    extension_dir = os.path.join(os.path.dirname(__file__), "extension")
+    if not os.path.exists(extension_dir):
+        raise HTTPException(status_code=404, detail="Dossier d'extension introuvable")
+
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for root, dirs, files in os.walk(extension_dir):
+            for file in files:
+                if file.startswith("."):
+                    continue
+                file_path = os.path.join(root, file)
+                arcname = os.path.relpath(file_path, extension_dir)
+                zip_file.write(file_path, arcname)
+
+    zip_buffer.seek(0)
+    return Response(
+        content=zip_buffer.getvalue(),
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": "attachment; filename=gustav-medesync-extension.zip"
+        }
+    )
+
+@app.get("/api/extension/info")
+async def api_extension_info(request: Request):
+    """Fournir l'URL et la clé secrète configurée pour l'extension."""
+    base_url = str(request.base_url).rstrip("/")
+    return {
+        "server_url": base_url,
+        "extension_secret": GUSTAV_EXTENSION_SECRET
+    }
+
 class CalculateRequest(BaseModel):
     pids: List[Annotated[str, Field(max_length=64)]] = Field(..., max_length=100)
     site: Optional[Annotated[str, Field(max_length=120)]] = "Tous les sites"
