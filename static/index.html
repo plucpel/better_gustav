@@ -1604,7 +1604,6 @@
       if (!banner || !bannerText) return;
 
       const parts = [];
-      if (context.dossier) parts.push(`Dossier #${escapeHtml(context.dossier)}`);
       if (context.nom) parts.push(escapeHtml(context.nom));
       if (context.ramq) parts.push(escapeHtml(context.ramq));
       
@@ -1717,10 +1716,6 @@
                 dymoRamqEl.value = p.ramq;
                 dymoRamqEl.dispatchEvent(new Event("input", { bubbles: true }));
               }
-            }
-            if (p.dossier) {
-              const reqDossierEl = document.getElementById("reqDossier");
-              if (reqDossierEl) reqDossierEl.value = p.dossier;
             }
             if (p.dob) {
               const reqDobEl = document.getElementById("reqDob");
@@ -1855,11 +1850,7 @@
 
       // 3. Dossier / Chart
       if (dossier) {
-        const reqDossierEl = document.getElementById("reqDossier");
-        if (reqDossierEl) {
-          reqDossierEl.value = dossier.trim();
-          hasPatientData = true;
-        }
+        // Removed auto-population for reqDossier
       }
 
       // Save context & Show banner
@@ -2723,8 +2714,6 @@
           ramqEl.value = ctx.ramq;
           ramqEl.dispatchEvent(new Event("input", { bubbles: true }));
         }
-        const dosEl = document.getElementById("reqDossier");
-        if (dosEl && !dosEl.value && ctx.dossier) dosEl.value = ctx.dossier;
         if (ctx.dob) {
           const dobEl = document.getElementById("reqDob");
           if (dobEl) dobEl.value = ctx.dob;
