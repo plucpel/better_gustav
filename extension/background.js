@@ -1,7 +1,7 @@
 /**
  * GUSTAV - Medesync Background Service Worker (Manifest V3)
  * Universal 1-Click Patient Context Extraction from Any Medesync Tab
- * Version 1.3.0
+ * Version 1.3.1
  */
 
 const DEFAULT_GUSTAV_URL = "https://gustav.plucpel.net";
@@ -23,7 +23,9 @@ chrome.action.onClicked.addListener(async (tab) => {
     sex: "",
     dossier: "",
     prescriber_name: "",
-    doctor_license: ""
+    doctor_license: "",
+    nurse_name: "",
+    nurse_license: ""
   };
 
   if (tab && tab.id) {
@@ -50,6 +52,8 @@ chrome.action.onClicked.addListener(async (tab) => {
           let dossier = "";
           let prescriber = "";
           let doctorLicense = "";
+          let nurseName = "";
+          let nurseLicense = "";
 
           // --- A. PATIENT ID DETECTION ---
           try {
@@ -85,20 +89,28 @@ chrome.action.onClicked.addListener(async (tab) => {
             }
           } catch (e) {}
 
-          // --- B. PRESCRIBER DETECTION ---
+          // --- B. PRÉLEVEUR (LOGGED-IN NURSE/PROFESSIONAL) ---
           try {
             if (window.__logon_user_code) {
-              prescriber = String(window.__logon_user_code).replace(/-/g, " ");
+              nurseName = String(window.__logon_user_code).replace(/-/g, " ");
             }
             if (window.__logon_user_professional_id) {
-              doctorLicense = String(window.__logon_user_professional_id);
+              nurseLicense = String(window.__logon_user_professional_id);
             }
           } catch (e) {}
 
-          // --- C. PERSISTENT TOP BANNER EXTRACTION (WORKS ON ALL TABS) ---
-          // Format from screenshot:
-          // Line 1: "Patient Test 30 nov. 1974 (51 ans, 9 mois) | Homme"
-          // Line 2: "NAM: TEST 7461 3019 | N° dossier: 3"
+          // --- C. PRESCRIBING DOCTOR (PROFESSIONNEL TRAITANT) ---
+          try {
+            const traitantSelect = document.querySelector("select[name*='ProfessionnelTraitant' i], select[id*='ProfessionnelTraitant' i], select[name*='ddlProfessionnelTraitant' i]");
+            if (traitantSelect && traitantSelect.selectedIndex > 0) {
+              const opt = traitantSelect.options[traitantSelect.selectedIndex];
+              if (opt && opt.text && !opt.text.toLowerCase().includes("sélection")) {
+                prescriber = opt.text.trim();
+              }
+            }
+          } catch (e) {}
+
+          // --- D. PERSISTENT TOP BANNER EXTRACTION (WORKS ON ALL TABS) ---
           const months = {
             'janv': '01', 'janvier': '01',
             'fevr': '02', 'févr': '02', 'fevrier': '02', 'février': '02',
@@ -118,8 +130,7 @@ chrome.action.onClicked.addListener(async (tab) => {
           const lines = bodyText.split("\n").map(l => l.trim()).filter(Boolean);
 
           for (const line of lines) {
-            // Check for persistent header line with Name + DOB + Sex:
-            // e.g. "Patient Test 30 nov. 1974 (51 ans, 9 mois) | Homme"
+            // Header line with Name + DOB + Sex
             const bannerMatch = line.match(/^([A-Za-z\u00c0-\u00ff\s\'-]{2,50}?)\s+(\d{1,2})\s+(janv|f[eé]vr|fevr|mars|avr|mai|juin|juil|ao[uû]t|aout|sept|oct|nov|d[eé]c|dec|janvier|f[eé]vrier|février|avril|mai|juin|juillet|août|septembre|octobre|novembre|d[eé]cembre)\.?\s+(\d{4})/i);
             if (bannerMatch) {
               const rawName = bannerMatch[1].trim();
@@ -133,7 +144,7 @@ chrome.action.onClicked.addListener(async (tab) => {
               dob = `${y}-${mVal}-${d}`;
             }
 
-            // Check for RAMQ in line (NAM: TEST 7461 3019 or TEST 7461 3019)
+            // RAMQ in line (NAM: TEST 7461 3019 or TEST 7461 3019)
             if (!ramq) {
               const rMatch = line.match(/(?:NAM|RAMQ)[\s:#]*([A-Za-z]{4}\s*\d{2}\s*\d{2}\s*\d{2}\s*\d{2}|[A-Za-z]{4}\s*\d{4}\s*\d{4}|[A-Za-z]{4}\d{8})/i) ||
                              line.match(/\b([A-Za-z]{4}\s*\d{4}\s*\d{4})\b/);
@@ -142,7 +153,7 @@ chrome.action.onClicked.addListener(async (tab) => {
               }
             }
 
-            // Check for Dossier (N° dossier: 3 or No. dossier 3)
+            // Dossier (N° dossier: 3 or No. dossier 3)
             if (!dossier) {
               const dMatch = line.match(/(?:N[°o]\.?\s*dossier|No\.\s*dossier|Dossier)[\s:#]+([\d-]+)/i);
               if (dMatch) {
@@ -150,7 +161,7 @@ chrome.action.onClicked.addListener(async (tab) => {
               }
             }
 
-            // Check for Sex
+            // Sex
             if (!sex) {
               const sMatch = line.match(/\|\s*(Homme|Femme|Masculin|F[eé]minin|M|F)\b/i) ||
                              line.match(/(?:Genre|Sexe)\s*:\s*(Homme|Femme|M|F)\b/i);
@@ -161,9 +172,8 @@ chrome.action.onClicked.addListener(async (tab) => {
             }
           }
 
-          // --- D. FORM INPUTS (WHEN ON "INFORMATIONS GÉNÉRALES" TAB) ---
+          // --- E. FORM INPUTS (WHEN ON "INFORMATIONS GÉNÉRALES" TAB) ---
           try {
-            // Prénom / Nom inputs
             const prenomInput = document.querySelector("input[name*='Prenom' i], input[id*='Prenom' i], input[name*='FirstName' i]");
             if (prenomInput && prenomInput.value) prenom = prenomInput.value.trim();
 
@@ -174,7 +184,6 @@ chrome.action.onClicked.addListener(async (tab) => {
               patientName = `${prenom} ${nom}`;
             }
 
-            // RAMQ input
             if (!ramq) {
               const ramqInput = document.querySelector("input[name*='Ramq' i], input[id*='Ramq' i], input[name*='Nam' i]");
               if (ramqInput && ramqInput.value) {
@@ -182,7 +191,6 @@ chrome.action.onClicked.addListener(async (tab) => {
               }
             }
 
-            // DOB input
             if (!dob) {
               const dobInput = document.querySelector("input[name*='DateNaissance' i], input[id*='DateNaissance' i], input[name*='Dob' i]");
               if (dobInput && dobInput.value) {
@@ -199,14 +207,13 @@ chrome.action.onClicked.addListener(async (tab) => {
               }
             }
 
-            // Dossier input
             if (!dossier) {
               const dosInput = document.querySelector("input[name*='Dossier' i], input[id*='Dossier' i], input[name*='Chart' i]");
               if (dosInput && dosInput.value) dossier = dosInput.value.trim();
             }
           } catch (e) {}
 
-          // --- E. TAB TITLE CLEANUP ---
+          // --- F. TAB TITLE CLEANUP ---
           if (!patientName && document.title && !document.title.toLowerCase().includes("medesync")) {
             patientName = document.title.replace(/\s*[-–|].*$/, "").trim();
           }
@@ -221,7 +228,9 @@ chrome.action.onClicked.addListener(async (tab) => {
             sex: sex || "",
             dossier: dossier || "",
             prescriber_name: prescriber || "",
-            doctor_license: doctorLicense || ""
+            doctor_license: doctorLicense || "",
+            nurse_name: nurseName || "",
+            nurse_license: nurseLicense || ""
           };
         }
       });
@@ -231,7 +240,6 @@ chrome.action.onClicked.addListener(async (tab) => {
           if (!res || !res.result) continue;
           const r = res.result;
 
-          // Merge non-empty fields with preference for fuller data
           if (r.patient_name && !patientPayload.patient_name) patientPayload.patient_name = r.patient_name;
           if (r.nom && !patientPayload.nom) patientPayload.nom = r.nom;
           if (r.prenom && !patientPayload.prenom) patientPayload.prenom = r.prenom;
@@ -242,6 +250,8 @@ chrome.action.onClicked.addListener(async (tab) => {
           if (r.medesync_id && !patientPayload.medesync_id) patientPayload.medesync_id = r.medesync_id;
           if (r.prescriber_name && !patientPayload.prescriber_name) patientPayload.prescriber_name = r.prescriber_name;
           if (r.doctor_license && !patientPayload.doctor_license) patientPayload.doctor_license = r.doctor_license;
+          if (r.nurse_name && !patientPayload.nurse_name) patientPayload.nurse_name = r.nurse_name;
+          if (r.nurse_license && !patientPayload.nurse_license) patientPayload.nurse_license = r.nurse_license;
         }
       }
 

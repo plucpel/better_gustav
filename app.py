@@ -107,6 +107,9 @@ class ContextLaunchRequest(BaseModel):
     doctor_license: Optional[str] = ""
     doctor_name: Optional[str] = ""
     prescriber_name: Optional[str] = ""
+    nurse_name: Optional[str] = ""
+    nurse_license: Optional[str] = ""
+    preleveur_name: Optional[str] = ""
     site: Optional[str] = ""
     pids: Optional[List[str]] = []
     clinical_info: Optional[str] = ""

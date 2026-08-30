@@ -1746,6 +1746,18 @@
                 }
               } catch (e) {}
             }
+            const nurseName = (p.nurse_name || p.preleveur_name || "").trim();
+            if (nurseName) {
+              const reqNurseNameEl = document.getElementById("reqNurseName");
+              if (reqNurseNameEl) reqNurseNameEl.value = nurseName;
+              if (cachedNurses && cachedNurses.length > 0) {
+                const foundNurse = cachedNurses.find(n => 
+                  (n.nurse_name || "").toLowerCase().includes(nurseName.toLowerCase()) ||
+                  nurseName.toLowerCase().includes((n.nurse_name || "").toLowerCase())
+                );
+                if (foundNurse) applyNurse(foundNurse);
+              }
+            }
             if (p.site && siteSelect) {
               const siteMatch = Array.from(siteSelect.options).find(opt => 
                 opt.value.toLowerCase().includes(p.site.toLowerCase()) || 
@@ -1767,10 +1779,12 @@
               nom: pName,
               ramq: p.ramq || "",
               licence: p.doctor_license || "",
+              doctor_name: p.doctor_name || p.prescriber_name || "",
+              nurse_name: nurseName,
+              nurse_license: p.nurse_license || "",
               dossier: p.dossier || "",
               dob: p.dob || "",
               sex: p.sex || "",
-              doctor_name: p.doctor_name || p.prescriber_name || "",
               medesync_id: p.medesync_id || "",
               source: "medesync_extension"
             };
@@ -2701,6 +2715,10 @@
         if (ctx.sex) {
           const sexEl = document.getElementById("reqSex");
           if (sexEl) sexEl.value = ctx.sex;
+        }
+        if (ctx.nurse_name) {
+          const nurseEl = document.getElementById("reqNurseName");
+          if (nurseEl && !nurseEl.value) nurseEl.value = ctx.nurse_name;
         }
       }
 
