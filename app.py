@@ -69,12 +69,12 @@ def is_authenticated(request: Request) -> bool:
 # Security & Authentication Middleware
 @app.middleware("http")
 async def security_and_auth_middleware(request: Request, call_next):
-    # Intercept protected API endpoints (except /api/auth/*, /api/context/*, and /api/extension/*)
+    # Intercept protected API endpoints (except /api/auth/*, /api/context/*, and /api/extension/download)
     path = request.url.path
     if path.startswith("/api/") and not (
         path.startswith("/api/auth/") or 
         path.startswith("/api/context/") or 
-        path.startswith("/api/extension/")
+        path == "/api/extension/download"
     ):
         if not is_authenticated(request):
             return Response(

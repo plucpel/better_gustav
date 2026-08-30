@@ -78,7 +78,6 @@ CLINICAL_PANELS = {
         "pids": ["gazar", "lacc"]
     },
     "bilan_urinaire": {
-        "name": "Bilan urinaire (Sommaire & Culture)",
         "name": "Bilan urinaire (Sommaire & Microscopie + Culture d'urine)",
         "description": "SMU (culot urinaire) et Culture d'urine (ECBU)",
         "pids": ["anuri", "curi"],

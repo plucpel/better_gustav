@@ -251,12 +251,19 @@ def _run_all_endpoint_tests():
     assert len(r_zip.content) > 1000
     print(f"  -> Extension zip archive generated successfully ({len(r_zip.content)} bytes).")
 
+    # 14b. Unauthenticated access to /api/extension/info must be blocked (401)
+    fresh_unauth = TestClient(app)
+    r_info_unauth = fresh_unauth.get("/api/extension/info")
+    assert r_info_unauth.status_code == 401
+    print("  -> Unauthenticated /api/extension/info blocked with 401 (Security check verified).")
+
+    # 14c. Authenticated access to /api/extension/info succeeds (200)
     r_info = client.get("/api/extension/info")
     assert r_info.status_code == 200
     info_data = r_info.json()
     assert "extension_secret" in info_data
     assert info_data["extension_secret"] == "gustav_ext_secret_chatterbox_2026"
-    print(f"  -> Extension info returned secret key successfully.")
+    print(f"  -> Authenticated extension info returned secret key successfully.")
 
     print("\n🎉 ALL API, AUTH, CALCULATION & DYMO LABEL TESTS PASSED PERFECTLY!")
 
