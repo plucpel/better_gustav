@@ -1755,10 +1755,14 @@
               ramq: p.ramq || "",
               licence: p.doctor_license || "",
               dossier: p.dossier || "",
+              dob: p.dob || "",
+              sex: p.sex || "",
+              doctor_name: p.doctor_name || p.prescriber_name || "",
               medesync_id: p.medesync_id || "",
               source: "medesync_extension"
             };
             showMedesyncBanner(window._medesyncContext);
+            showMedesyncNotification(`Patient synchronisé : ${pName || 'Inconnu'} ${p.ramq ? '(' + p.ramq + ')' : ''}`);
 
             // Clean address bar immediately (0 trace in URL history)
             history.replaceState({}, document.title, window.location.pathname);
@@ -2664,6 +2668,24 @@
 
       const activeLocation = localStorage.getItem(STORAGE_KEY_ACTIVE_LOCATION);
       renderLocationDropdown(activeLocation);
+
+      // Ensure active Medesync patient context is applied if fields are empty
+      if (window._medesyncContext) {
+        const ctx = window._medesyncContext;
+        const nameEl = document.getElementById("reqPatientName");
+        if (nameEl && !nameEl.value && ctx.nom) nameEl.value = ctx.nom;
+        const ramqEl = document.getElementById("reqRamq");
+        if (ramqEl && !ramqEl.value && ctx.ramq) {
+          ramqEl.value = ctx.ramq;
+          ramqEl.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        const dosEl = document.getElementById("reqDossier");
+        if (dosEl && !dosEl.value && ctx.dossier) dosEl.value = ctx.dossier;
+        const dobEl = document.getElementById("reqDob");
+        if (dobEl && !dobEl.value && ctx.dob) dobEl.value = ctx.dob;
+        const sexEl = document.getElementById("reqSex");
+        if (sexEl && !sexEl.value && ctx.sex) sexEl.value = ctx.sex;
+      }
 
       requisitionModal.classList.remove("hidden");
     }

@@ -26,10 +26,10 @@ chrome.action.onClicked.addListener(async (tab) => {
 
   if (tab && tab.id) {
     try {
-      // 1. Execute DOM / frame inspection script on the active tab
+      // 1. Execute deep DOM & API inspection across all frames on the active Medesync tab
       const injectionResults = await chrome.scripting.executeScript({
         target: { tabId: tab.id, allFrames: true },
-        func: () => {
+        func: async () => {
           let id = "";
 
           // A. From URL params
@@ -63,67 +63,99 @@ chrome.action.onClicked.addListener(async (tab) => {
             } catch (e) {}
           }
 
-          // D. Direct DOM inspection (RAMQ, Dossier, Prescriber)
-          let ramq = "";
-          let dossier = "";
-          let prescriber = "";
+          // D. Query Medesync API with multi-host fallback
+          let apiData = null;
+          if (id && /^\d+$/.test(id)) {
+            const currentHost = window.location.hostname;
+            const hostsToTry = [
+              `https://${currentHost.replace('.medesync.com', '-api.medesync.com')}`,
+              `https://${currentHost}`,
+              'https://secure2-api.medesync.com',
+              'https://secure-api.medesync.com'
+            ];
 
-          try {
-            const ramqEl = document.getElementById("Ramq") || document.querySelector(".patient-ramq");
-            if (ramqEl) ramq = ramqEl.innerText.trim();
-          } catch (e) {}
-
-          try {
-            if (window.__logon_user_code) {
-              prescriber = String(window.__logon_user_code).replace(/-/g, " ");
+            for (const h of hostsToTry) {
+              try {
+                const resp = await fetch(`${h}/api/v3/patients/getBasicInfos/${id}`, {
+                  credentials: 'include',
+                  headers: { 'Accept': 'application/json' }
+                });
+                if (resp.ok) {
+                  const data = await resp.json();
+                  if (data && (data.nam || data.fullName || data.lastName || data.firstName)) {
+                    apiData = data;
+                    break;
+                  }
+                }
+              } catch (err) {}
             }
-          } catch (e) {}
+          }
+
+          // E. Deep DOM Regex Extraction (Fallback if API is unavailable)
+          const bodyText = (document.body ? document.body.innerText : "") + " " + document.title;
+          
+          // RAMQ Regex (e.g. ABCD 1234 5678 or ABCD12345678)
+          let extractedRamq = "";
+          const ramqMatch = bodyText.match(/\b([A-Z]{4})\s*(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})\b/i) ||
+                            bodyText.match(/\b([A-Z]{4})\s*(\d{4})\s*(\d{4})\b/i) ||
+                            bodyText.match(/\b([A-Z]{4}\d{8})\b/i);
+          if (ramqMatch) {
+            extractedRamq = ramqMatch[0].replace(/\s+/g, "");
+          }
+
+          // Date of Birth Regex (YYYY-MM-DD or DD/MM/YYYY)
+          let extractedDob = "";
+          const dobMatch = bodyText.match(/\b(19\d{2}|20\d{2})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])\b/) ||
+                           bodyText.match(/\b(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/(19\d{2}|20\d{2})\b/);
+          if (dobMatch) {
+            if (dobMatch[0].includes("/")) {
+              const parts = dobMatch[0].split("/");
+              extractedDob = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            } else {
+              extractedDob = dobMatch[0];
+            }
+          }
+
+          // Prescriber
+          let prescriber = "";
+          if (window.__logon_user_code) {
+            prescriber = String(window.__logon_user_code).replace(/-/g, " ");
+          }
 
           return {
             medesync_id: id || "",
-            ramq: ramq,
-            dossier: dossier,
+            apiData: apiData,
+            extractedRamq: extractedRamq,
+            extractedDob: extractedDob,
             prescriber_name: prescriber,
-            hostname: window.location.hostname
+            pageTitle: document.title || ""
           };
         }
       });
 
       if (injectionResults && injectionResults.length > 0) {
         for (const res of injectionResults) {
-          if (res.result && res.result.medesync_id) {
-            Object.assign(patientPayload, res.result);
-            break;
+          if (!res || !res.result) continue;
+          const r = res.result;
+
+          if (r.apiData) {
+            const b = r.apiData;
+            patientPayload.medesync_id = String(b.id || r.medesync_id || "");
+            patientPayload.patient_name = b.fullName || `${b.firstName || ''} ${b.lastName || ''}`.trim();
+            patientPayload.nom = b.lastName || "";
+            patientPayload.prenom = b.firstName || "";
+            patientPayload.ramq = b.nam || r.extractedRamq || "";
+            patientPayload.dob = b.dobRaw || r.extractedDob || "";
+            patientPayload.sex = b.sexeShort || (b.isMale ? "M" : "F");
+            patientPayload.dossier = b.chartNumber || "";
+            patientPayload.prescriber_name = r.prescriber_name || "";
+            break; // Found complete API data!
+          } else if (r.medesync_id || r.extractedRamq) {
+            patientPayload.medesync_id = r.medesync_id || "";
+            patientPayload.ramq = r.extractedRamq || "";
+            patientPayload.dob = r.extractedDob || "";
+            patientPayload.prescriber_name = r.prescriber_name || "";
           }
-        }
-        if (!patientPayload.medesync_id && injectionResults[0].result) {
-          Object.assign(patientPayload, injectionResults[0].result);
-        }
-      }
-
-      // 2. If patient ID is found, query Medesync basicInfos endpoint within page session
-      if (patientPayload.medesync_id && /^\d+$/.test(patientPayload.medesync_id)) {
-        const [apiRes] = await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          func: async (patientId) => {
-            try {
-              const r = await fetch(`/api/v3/patients/getBasicInfos/${patientId}`);
-              if (r.ok) return await r.json();
-            } catch (e) {}
-            return null;
-          },
-          args: [patientPayload.medesync_id]
-        });
-
-        if (apiRes && apiRes.result) {
-          const b = apiRes.result;
-          patientPayload.patient_name = b.fullName || `${b.firstName || ''} ${b.lastName || ''}`.trim();
-          patientPayload.nom = b.lastName || "";
-          patientPayload.prenom = b.firstName || "";
-          patientPayload.ramq = b.nam || patientPayload.ramq || "";
-          patientPayload.dob = b.dobRaw || "";
-          patientPayload.sex = b.sexeShort || (b.isMale ? "M" : "F");
-          patientPayload.dossier = b.chartNumber || patientPayload.dossier || "";
         }
       }
 
@@ -132,7 +164,7 @@ chrome.action.onClicked.addListener(async (tab) => {
     }
   }
 
-  // 3. Negotiate single-use launch token with Gustav server and open tab
+  // 2. Negotiate single-use launch token with Gustav server and open tab
   try {
     await handleLaunchGustav(patientPayload);
   } catch (err) {
