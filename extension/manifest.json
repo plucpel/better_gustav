@@ -9,6 +9,7 @@
   "host_permissions": [
     "https://*.medesync.com/*",
     "https://*.telushealth.com/*",
+    "https://gustav.plucpel.net/*",
     "http://chatterbox:8000/*",
     "http://localhost:8000/*",
     "https://*/*"

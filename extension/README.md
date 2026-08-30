@@ -1,34 +1,34 @@
 # Extension Chrome GUSTAV - Passerelle Medesync
 
-Cette extension Chrome (Manifest V3) connecte de façon sécurisée votre DME Medesync (Telus Santé) à votre calculateur de prélèvements **GUSTAV**.
+Cette extension Chrome (Manifest V3) connecte de façon transparente et sécurisée votre DME Medesync (Telus Santé) à votre calculateur de prélèvements **GUSTAV**.
 
 ---
 
-## 🚀 Installation dans Google Chrome (Poste Clinique)
+## 🚀 Installation dans Google Chrome (1 minute)
 
-1. Ouvrez Google Chrome et rendez-vous sur : `chrome://extensions/`
-2. Activez le **Mode développeur** (interrupteur en haut à droite).
-3. Cliquez sur **« Charger l'extension non empaquetée »** (*Load unpacked*).
-4. Sélectionnez le dossier :
-   📁 `/Users/ppelleti/Documents/Gustav/extension/`
+1. Téléchargez ou décompressez l'archive `gustav-medesync-extension.zip`.
+2. Dans Google Chrome, ouvrez l'onglet : **`chrome://extensions/`**
+3. Activez le **Mode développeur** (interrupteur en haut à droite).
+4. Cliquez sur **« Charger l'extension non empaquetée »** (*Load unpacked*).
+5. Sélectionnez le dossier décompressé de l'extension.
 
 ---
 
-## ⚙️ Configuration
+## ⚙️ Configuration Automatique
 
-1. Cliquez sur l'icône de l'extension **GUSTAV** dans la barre d'outils Chrome.
-2. Vérifiez ou personnalisez :
-   * **URL du Serveur GUSTAV** : `http://chatterbox:8000` (ou votre domaine Cloudflare `https://gustav.votreclinique.com`).
-   * **Clé Secrète Clinique** : `gustav_ext_secret_chatterbox_2026` (ou celle définie dans les variables d'environnement de votre serveur).
-3. Cliquez sur **« Tester la Connexion »** pour valider l'authentification.
+L'extension est pré-configurée par défaut pour :
+* **URL du Serveur GUSTAV** : `https://gustav.plucpel.net`
+* **Clé Secrète** : configurée automatiquement.
+
+Si vous souhaitez changer l'URL pour un serveur local ou un domaine personnalisé, cliquez simplement sur l'icône de l'extension dans Chrome.
 
 ---
 
 ## 📋 Utilisation Quotidienne
 
-1. Ouvrez n'importe quel dossier patient dans Medesync (`https://secure2.medesync.com/...`).
-2. Le bouton **`[ 🧪 GUSTAV ]`** apparaît automatiquement dans la bannière du patient.
+1. Ouvrez un dossier patient dans Medesync (`https://secure2.medesync.com/...`).
+2. Le bouton **`[ 🧪 GUSTAV ]`** apparaît automatiquement dans la barre du patient.
 3. Un simple clic ouvre instantanément GUSTAV dans un nouvel onglet avec :
-   * **Bypass automatique du PIN** (authentification instantanée sans mot de passe).
+   * **Bypass automatique du PIN** (aucune saisie de mot de passe nécessaire).
    * **Pré-remplissage complet** : Nom, RAMQ, Date de naissance, Sexe, No dossier et Prescripteur.
-   * **Sécurité totale** : 0 renseignement personnel dans l'URL ou l'historique du navigateur.
+   * **Sécurité totale** : Zéro donnée personnelle dans l'URL ou l'historique du navigateur.

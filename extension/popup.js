@@ -2,7 +2,7 @@
  * GUSTAV - Extension Settings Popup Logic
  */
 
-const DEFAULT_GUSTAV_URL = "http://chatterbox:8000";
+const DEFAULT_GUSTAV_URL = "https://gustav.plucpel.net";
 const DEFAULT_EXTENSION_SECRET = "gustav_ext_secret_chatterbox_2026";
 
 document.addEventListener("DOMContentLoaded", () => {
