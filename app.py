@@ -94,6 +94,8 @@ class LoginRequest(BaseModel):
     pin: Annotated[str, Field(max_length=50)]
 
 class ContextLaunchRequest(BaseModel):
+    secret: Optional[str] = ""
+    extension_secret: Optional[str] = ""
     patient_name: Optional[str] = ""
     nom: Optional[str] = ""
     prenom: Optional[str] = ""
@@ -144,9 +146,14 @@ async def api_context_launch(req: ContextLaunchRequest, request: Request):
     Reçoit le contexte patient depuis l'extension Chrome sécurisée par clé secrète.
     Génère un jeton éphémère (60s) à usage unique.
     """
-    secret_hdr = request.headers.get("X-Gustav-Secret") or request.headers.get("x-gustav-secret")
+    secret_candidate = (
+        request.headers.get("X-Gustav-Secret") or 
+        request.headers.get("x-gustav-secret") or 
+        req.secret or 
+        req.extension_secret
+    )
     if GUSTAV_EXTENSION_SECRET:
-        if not secret_hdr or not secrets.compare_digest(secret_hdr.strip(), GUSTAV_EXTENSION_SECRET):
+        if not secret_candidate or not secrets.compare_digest(secret_candidate.strip(), GUSTAV_EXTENSION_SECRET):
             raise HTTPException(status_code=401, detail="Clé d'extension non autorisée")
 
     purge_expired_launch_tokens()

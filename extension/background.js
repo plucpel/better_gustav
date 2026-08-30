@@ -236,11 +236,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.storage.sync.set({
+    gustavUrl: DEFAULT_GUSTAV_URL,
+    extensionSecret: DEFAULT_EXTENSION_SECRET
+  });
+  console.log("[GUSTAV Background] Initialized defaults on install/reload.");
+});
+
 async function getStoredSettings() {
   return new Promise((resolve) => {
     chrome.storage.sync.get(["gustavUrl", "extensionSecret"], (items) => {
       resolve({
-        gustavUrl: (items.gustavUrl || DEFAULT_GUSTAV_URL).replace(/\/+$/, ""),
+        gustavUrl: (items.gustavUrl && items.gustavUrl.trim()) ? items.gustavUrl.trim().replace(/\/+$/, "") : DEFAULT_GUSTAV_URL,
         extensionSecret: (items.extensionSecret && items.extensionSecret.trim()) ? items.extensionSecret.trim() : DEFAULT_EXTENSION_SECRET
       });
     });
@@ -250,7 +258,12 @@ async function getStoredSettings() {
 async function handleLaunchGustav(patientPayload) {
   const { gustavUrl, extensionSecret } = await getStoredSettings();
 
-  console.log("[GUSTAV Background] Negotiating launch with:", `${gustavUrl}/api/context/launch`, patientPayload);
+  const bodyData = Object.assign({}, patientPayload || {}, {
+    secret: extensionSecret,
+    extension_secret: extensionSecret
+  });
+
+  console.log("[GUSTAV Background] Negotiating launch with:", `${gustavUrl}/api/context/launch`, bodyData);
 
   try {
     const resp = await fetch(`${gustavUrl}/api/context/launch`, {
@@ -259,7 +272,7 @@ async function handleLaunchGustav(patientPayload) {
         "Content-Type": "application/json",
         "X-Gustav-Secret": extensionSecret
       },
-      body: JSON.stringify(patientPayload || {})
+      body: JSON.stringify(bodyData)
     });
 
     if (!resp.ok) {
